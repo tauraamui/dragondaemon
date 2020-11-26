@@ -1,52 +1,60 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 
+	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
 )
 
-// "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov"
+var shuttingDown bool
 
-func main() {
-	saveFile := os.Args[0]
-
-	webcam, err := gocv.OpenVideoCapture("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
-	if err != nil {
-		fmt.Println("Error opening video capture device")
-		return
-	}
-	defer webcam.Close()
-
-	img := gocv.NewMat()
-	defer img.Close()
-
-	if ok := webcam.Read(&img); !ok {
-		fmt.Println("Unable to read from IP camera")
-		return
-	}
-
-	writer, err := gocv.VideoWriterFile(saveFile, "MJPG", 25, img.Cols(), img.Rows(), true)
-	if err != nil {
-		fmt.Printf("error opening video writer device: %v\n", err)
-		return
-	}
-	defer writer.Close()
-
-	for i := 0; i < 100; i++ {
-		if ok := webcam.Read(&img); !ok {
-			fmt.Printf("Device closed\n")
-			return
-		}
-		if img.Empty() {
-			continue
-		}
-
-		writer.Write(img)
-	}
+type options struct {
+	debug         bool
+	logFileName   string
+	cameraAddress string
 }
 
-func writeFrameToFile(writer gocv.VideoWriter, frame gocv.Mat) error {
-	return nil
+func parseCmdArgs() *options {
+	opts := options{}
+
+	flag.BoolVar(&opts.debug, "debug", false, "Set runtime mode to debug")
+	flag.StringVar(&opts.logFileName, "log", "", "Server log file location")
+	flag.StringVar(&opts.cameraAddress, "c", "", "RTSP address of camera to retrieve stream from")
+
+	flag.Parse()
+
+	loggingLevel := logging.WarnLevel
+	logging.ColorLogLevelLabelOnly = true
+
+	if opts.debug {
+		logging.SetLevel(logging.DebugLevel)
+		return &opts
+	}
+
+	logging.SetLevel(loggingLevel)
+
+	return &opts
+}
+
+func main() {
+	opts := parseCmdArgs()
+
+	flushInitialised := make(chan bool)
+	if len(opts.logFileName) > 0 {
+		go logging.FlushLogs(opts.logFileName, &flushInitialised)
+		//halt main thread until creating file to flush logs to has initialised
+		<-flushInitialised
+	}
+
+	logging.WhiteOutput(fmt.Sprintf("Dragon Daemon v0.0.0\n"))
+
+	camera, err := gocv.OpenVideoCapture(opts.cameraAddress)
+	if err != nil {
+		logging.ErrorAndExit(fmt.Sprintf("Unable to open video capture device at [%s]\n", opts.cameraAddress))
+	}
+	defer camera.Close()
+
+	logging.Info(fmt.Sprintf("Connected to stream at [%s]", opts.cameraAddress))
 }
