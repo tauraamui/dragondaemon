@@ -52,7 +52,7 @@ func main() {
 
 	camera, err := gocv.OpenVideoCapture(opts.cameraAddress)
 	if err != nil {
-		logging.ErrorAndExit(fmt.Sprintf("Unable to open video capture device at [%s]\n", opts.cameraAddress))
+		logging.ErrorAndExit(fmt.Sprintf("Connection to stream at [%s] has failed: %v\n", opts.cameraAddress, err))
 	}
 	defer camera.Close()
 
