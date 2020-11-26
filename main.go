@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
@@ -11,9 +13,11 @@ import (
 var shuttingDown bool
 
 type options struct {
-	debug         bool
-	logFileName   string
-	cameraAddress string
+	debug               bool
+	logFileName         string
+	cameraAddress       string
+	secondsPerClip      uint
+	persistLocationPath string
 }
 
 func parseCmdArgs() *options {
@@ -22,6 +26,8 @@ func parseCmdArgs() *options {
 	flag.BoolVar(&opts.debug, "debug", false, "Set runtime mode to debug")
 	flag.StringVar(&opts.logFileName, "log", "", "Server log file location")
 	flag.StringVar(&opts.cameraAddress, "c", "", "RTSP address of camera to retrieve stream from")
+	flag.UintVar(&opts.secondsPerClip, "s", 30, "Number of seconds per video clip")
+	flag.StringVar(&opts.persistLocationPath, "d", "", "Directory to store video clips")
 
 	flag.Parse()
 
@@ -34,6 +40,10 @@ func parseCmdArgs() *options {
 	}
 
 	logging.SetLevel(loggingLevel)
+
+	if opts.secondsPerClip > 0 {
+		opts.secondsPerClip++
+	}
 
 	return &opts
 }
@@ -48,13 +58,54 @@ func main() {
 		<-flushInitialised
 	}
 
-	logging.WhiteOutput(fmt.Sprintf("Dragon Daemon v0.0.0\n"))
+	logging.WhiteOutput(fmt.Sprintf("Dragon Daemon v0.0.0"))
 
 	camera, err := gocv.OpenVideoCapture(opts.cameraAddress)
 	if err != nil {
-		logging.ErrorAndExit(fmt.Sprintf("Connection to stream at [%s] has failed: %v\n", opts.cameraAddress, err))
+		logging.ErrorAndExit(fmt.Sprintf("Connection to stream at [%s] has failed: %v", opts.cameraAddress, err))
 	}
 	defer camera.Close()
 
 	logging.Info(fmt.Sprintf("Connected to stream at [%s]", opts.cameraAddress))
+
+	img := gocv.NewMat()
+	defer img.Close()
+
+	if ok := camera.Read(&img); !ok {
+		logging.ErrorAndExit(fmt.Sprintf("Unable to read from stream at [%s]\n", opts.cameraAddress))
+	}
+
+	outputFile := fetchClipFileName()
+	writer, err := gocv.VideoWriterFile(outputFile, "MJPG", 30, img.Cols(), img.Rows(), true)
+	if err != nil {
+		logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
+	}
+	defer writer.Close()
+
+	for start := time.Now(); uint(time.Since(start).Seconds()) < opts.secondsPerClip; {
+		if ok := camera.Read(&img); !ok {
+			logging.Error(fmt.Sprintf("Device for stream at [%s] closed", opts.cameraAddress))
+			return
+		}
+		if img.Empty() {
+			logging.Debug("Skipping frame...")
+			continue
+		}
+
+		logging.Info(fmt.Sprintf("Writing to file %s at %d in", outputFile, uint(time.Since(start).Seconds())))
+		writer.Write(img)
+	}
+}
+
+func fetchClipFileName() string {
+	return fmt.Sprintf("%s.avi", time.Now().Format("2006-01-02 15.04.05"))
+}
+
+func ensureDirectoryExists(path string) error {
+	err := os.Mkdir(path, os.ModeDir)
+
+	if err == nil || os.IsExist(err) {
+		return nil
+	}
+	return err
 }
