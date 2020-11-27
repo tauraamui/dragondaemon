@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/tacusci/logging"
@@ -75,7 +76,7 @@ func main() {
 		logging.ErrorAndExit(fmt.Sprintf("Unable to read from stream at [%s]\n", opts.cameraAddress))
 	}
 
-	outputFile := fetchClipFileName()
+	outputFile := fetchClipFilePath(opts.persistLocationPath)
 	writer, err := gocv.VideoWriterFile(outputFile, "MJPG", 30, img.Cols(), img.Rows(), true)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
@@ -93,16 +94,24 @@ func main() {
 		}
 
 		logging.Info(fmt.Sprintf("Writing to file %s at %d in", outputFile, uint(time.Since(start).Seconds())))
-		writer.Write(img)
+		if err := writer.Write(img); err != nil {
+			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
+		}
 	}
 }
 
-func fetchClipFileName() string {
-	return fmt.Sprintf("%s.avi", time.Now().Format("2006-01-02 15.04.05"))
+func fetchClipFilePath(dirPath string) string {
+	if len(dirPath) > 0 {
+		ensureDirectoryExists(dirPath)
+	} else {
+		dirPath = "."
+	}
+
+	return filepath.FromSlash(fmt.Sprintf("%s/%s.avi", dirPath, time.Now().Format("2006-01-02 15.04.05")))
 }
 
 func ensureDirectoryExists(path string) error {
-	err := os.Mkdir(path, os.ModeDir)
+	err := os.Mkdir(path, os.ModePerm)
 
 	if err == nil || os.IsExist(err) {
 		return nil
