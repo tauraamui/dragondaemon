@@ -93,7 +93,7 @@ func main() {
 			continue
 		}
 
-		logging.Info(fmt.Sprintf("Writing to file %s at %d in", outputFile, uint(time.Since(start).Seconds())))
+		logging.Debug(fmt.Sprintf("Writing to file %s at %d in", outputFile, uint(time.Since(start).Seconds())))
 		if err := writer.Write(img); err != nil {
 			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
 		}
