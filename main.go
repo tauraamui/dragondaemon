@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/tacusci/logging"
-	"gocv.io/x/gocv"
+	"github.com/tauraamui/dragondaemon/media"
 )
 
 var shuttingDown bool
@@ -33,6 +35,7 @@ func parseCmdArgs() *options {
 	flag.Parse()
 
 	loggingLevel := logging.WarnLevel
+	logging.OutputPath = false
 	logging.ColorLogLevelLabelOnly = true
 
 	if opts.debug {
@@ -59,45 +62,53 @@ func main() {
 		<-flushInitialised
 	}
 
-	logging.WhiteOutput(fmt.Sprintf("Dragon Daemon v0.0.0"))
+	logging.WhiteOutput(fmt.Sprintf("Dragon Daemon v0.0.0\n"))
 
-	camera, err := gocv.OpenVideoCapture(opts.cameraAddress)
-	if err != nil {
-		logging.ErrorAndExit(fmt.Sprintf("Connection to stream at [%s] has failed: %v", opts.cameraAddress, err))
-	}
-	defer camera.Close()
+	mediaServer := media.NewServer()
+	go listenForStopSig(mediaServer)
+	mediaServer.Connect(opts.cameraAddress)
+	mediaServer.Connect("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
 
-	logging.Info(fmt.Sprintf("Connected to stream at [%s]", opts.cameraAddress))
-
-	img := gocv.NewMat()
-	defer img.Close()
-
-	if ok := camera.Read(&img); !ok {
-		logging.ErrorAndExit(fmt.Sprintf("Unable to read from stream at [%s]\n", opts.cameraAddress))
+	for mediaServer.IsRunning() {
 	}
 
-	outputFile := fetchClipFilePath(opts.persistLocationPath)
-	writer, err := gocv.VideoWriterFile(outputFile, "MJPG", 30, img.Cols(), img.Rows(), true)
-	if err != nil {
-		logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
-	}
-	defer writer.Close()
+	// camera, err := gocv.OpenVideoCapture(opts.cameraAddress)
+	// if err != nil {
+	// 	logging.ErrorAndExit(fmt.Sprintf("Connection to stream at [%s] has failed: %v", opts.cameraAddress, err))
+	// }
+	// defer camera.Close()
 
-	var framesWritten uint
-	for framesWritten = 0; framesWritten < 30*opts.secondsPerClip; framesWritten++ {
-		if ok := camera.Read(&img); !ok {
-			logging.Error(fmt.Sprintf("Device for stream at [%s] closed", opts.cameraAddress))
-			return
-		}
-		if img.Empty() {
-			logging.Debug("Skipping frame...")
-			continue
-		}
+	// logging.Info(fmt.Sprintf("Connected to stream at [%s]", opts.cameraAddress))
 
-		if err := writer.Write(img); err != nil {
-			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
-		}
-	}
+	// img := gocv.NewMat()
+	// defer img.Close()
+
+	// if ok := camera.Read(&img); !ok {
+	// 	logging.ErrorAndExit(fmt.Sprintf("Unable to read from stream at [%s]\n", opts.cameraAddress))
+	// }
+
+	// outputFile := fetchClipFilePath(opts.persistLocationPath)
+	// writer, err := gocv.VideoWriterFile(outputFile, "MJPG", 30, img.Cols(), img.Rows(), true)
+	// if err != nil {
+	// 	logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
+	// }
+	// defer writer.Close()
+
+	// var framesWritten uint
+	// for framesWritten = 0; framesWritten < 30*opts.secondsPerClip; framesWritten++ {
+	// 	if ok := camera.Read(&img); !ok {
+	// 		logging.Error(fmt.Sprintf("Device for stream at [%s] closed", opts.cameraAddress))
+	// 		return
+	// 	}
+	// 	if img.Empty() {
+	// 		logging.Debug("Skipping frame...")
+	// 		continue
+	// 	}
+
+	// 	if err := writer.Write(img); err != nil {
+	// 		logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
+	// 	}
+	// }
 }
 
 func fetchClipFilePath(dirPath string) string {
@@ -117,4 +128,17 @@ func ensureDirectoryExists(path string) error {
 		return nil
 	}
 	return err
+}
+
+func listenForStopSig(srv *media.Server) {
+	var gracefulStop = make(chan os.Signal)
+	signal.Notify(gracefulStop, syscall.SIGTERM)
+	signal.Notify(gracefulStop, syscall.SIGINT)
+	sig := <-gracefulStop
+	// logging.Debug("Stopping, clearing old sessions...")
+	//send a terminate command to the session clearing goroutine's channel
+	shuttingDown = true
+	logging.Error(fmt.Sprintf("☠️ Caught sig: %+v (Shutting down and cleaning up...) ☠️", sig))
+	logging.Info("Stopping media server...")
+	srv.Shutdown()
 }
