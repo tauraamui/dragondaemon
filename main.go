@@ -66,10 +66,10 @@ func main() {
 
 	mediaServer := media.NewServer()
 	go listenForStopSig(mediaServer)
-	mediaServer.Connect(opts.cameraAddress)
-	mediaServer.Connect("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
-
-	for mediaServer.IsRunning() {
+	conn, err := mediaServer.Connect(opts.cameraAddress)
+	if err == nil {
+		conn.ShowInWindow("Front Camera")
+		// mediaServer.OpenInWindow(conn, "Front Camera")
 	}
 
 	// camera, err := gocv.OpenVideoCapture(opts.cameraAddress)

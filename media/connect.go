@@ -7,12 +7,12 @@ import (
 	"gocv.io/x/gocv"
 )
 
-func (s *Server) trackConnection(conn *gocv.VideoCapture, add bool) bool {
+func (s *Server) trackConnection(conn *Connection, add bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.connections == nil {
-		s.connections = make(map[*gocv.VideoCapture]struct{})
+		s.connections = make(map[*Connection]struct{})
 	}
 
 	if add {
@@ -26,15 +26,16 @@ func (s *Server) trackConnection(conn *gocv.VideoCapture, add bool) bool {
 	return true
 }
 
-func (s *Server) Connect(rtspStream string) error {
-	conn, err := gocv.OpenVideoCapture(rtspStream)
+func (s *Server) Connect(rtspStream string) (*Connection, error) {
+	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Unable to connect to stream at [%s]: %v", rtspStream, err))
-		return err
+		return nil, err
 	}
 
 	logging.Info(fmt.Sprintf("Connected to stream at [%s]", rtspStream))
+	conn := NewConnection(vc)
 	s.trackConnection(conn, true)
 
-	return nil
+	return conn, nil
 }

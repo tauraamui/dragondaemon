@@ -5,6 +5,8 @@ import (
 )
 
 func (s *Server) closeConnectionsLocked() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var err error
 	for conn := range s.connections {
 		if cerr := (*conn).Close(); cerr != nil && err == nil {
