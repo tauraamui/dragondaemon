@@ -83,7 +83,8 @@ func main() {
 	}
 	defer writer.Close()
 
-	for start := time.Now(); uint(time.Since(start).Seconds()) < opts.secondsPerClip; {
+	var framesWritten uint
+	for framesWritten = 0; framesWritten < 30*opts.secondsPerClip; framesWritten++ {
 		if ok := camera.Read(&img); !ok {
 			logging.Error(fmt.Sprintf("Device for stream at [%s] closed", opts.cameraAddress))
 			return
@@ -93,7 +94,6 @@ func main() {
 			continue
 		}
 
-		logging.Debug(fmt.Sprintf("Writing to file %s at %d in", outputFile, uint(time.Since(start).Seconds())))
 		if err := writer.Write(img); err != nil {
 			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
 		}
