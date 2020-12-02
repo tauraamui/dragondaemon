@@ -73,11 +73,8 @@ func main() {
 	mediaServer := media.NewServer()
 	go listenForStopSig(mediaServer)
 
-	go func() {
-		for mediaServer.IsRunning() {
-
-		}
-	}()
+	for mediaServer.IsRunning() {
+	}
 
 	// go func() {
 	// 	conn, err := mediaServer.Connect("Front", opts.cameraAddress)
