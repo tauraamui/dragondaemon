@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/tacusci/logging"
+	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
 )
 
@@ -53,6 +54,13 @@ func parseCmdArgs() *options {
 func main() {
 	opts := parseCmdArgs()
 
+	cfg := config.Load()
+	for i, c := range cfg.Cameras {
+		if c.Disabled == false {
+			fmt.Printf("[%d] CAMERA: %v\n", i, c.Title)
+		}
+	}
+
 	flushInitialised := make(chan bool)
 	if len(opts.logFileName) > 0 {
 		go logging.FlushLogs(opts.logFileName, &flushInitialised)
@@ -66,20 +74,26 @@ func main() {
 	go listenForStopSig(mediaServer)
 
 	go func() {
-		conn, err := mediaServer.Connect("Front", opts.cameraAddress)
-		if err == nil {
-			for mediaServer.IsRunning() {
-				conn.PersistToDisk(opts.persistLocationPath, opts.secondsPerClip)
-			}
+		for mediaServer.IsRunning() {
+
 		}
 	}()
 
-	conn, err := mediaServer.Connect("BigBuckBunny", "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
-	if err == nil {
-		for mediaServer.IsRunning() {
-			conn.PersistToDisk(opts.persistLocationPath, opts.secondsPerClip)
-		}
-	}
+	// go func() {
+	// 	conn, err := mediaServer.Connect("Front", opts.cameraAddress)
+	// 	if err == nil {
+	// 		for mediaServer.IsRunning() {
+	// 			conn.PersistToDisk(opts.persistLocationPath, opts.secondsPerClip)
+	// 		}
+	// 	}
+	// }()
+
+	// conn, err := mediaServer.Connect("BigBuckBunny", "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
+	// if err == nil {
+	// 	for mediaServer.IsRunning() {
+	// 		conn.PersistToDisk(opts.persistLocationPath, opts.secondsPerClip)
+	// 	}
+	// }
 }
 
 func listenForStopSig(srv *media.Server) {
