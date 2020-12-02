@@ -9,14 +9,16 @@ import (
 
 type Connection struct {
 	inShutdown int32
+	title      string
 	vc         *gocv.VideoCapture
 	mu         sync.Mutex
 	window     *gocv.Window
 }
 
-func NewConnection(vc *gocv.VideoCapture) *Connection {
+func NewConnection(title string, vc *gocv.VideoCapture) *Connection {
 	return &Connection{
-		vc: vc,
+		title: title,
+		vc:    vc,
 	}
 }
 
@@ -44,6 +46,8 @@ func (c *Connection) ShowInWindow(winTitle string) {
 
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
-	c.window.Close()
+	if c.window != nil {
+		c.window.Close()
+	}
 	return c.vc.Close()
 }
