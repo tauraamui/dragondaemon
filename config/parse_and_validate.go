@@ -10,11 +10,28 @@ import (
 )
 
 type Camera struct {
-	Title          string `json:"title" validate:"empty=false"`
-	Address        string `json:"address"`
-	PersistLoc     string `json:"persist_location"`
-	SecondsPerClip int    `json:"seconds_per_clip"`
-	Disabled       bool   `json:"disabled"`
+	Title          string   `json:"title" validate:"empty=false"`
+	Address        string   `json:"address"`
+	PersistLoc     string   `json:"persist_location"`
+	SecondsPerClip int      `json:"seconds_per_clip"`
+	Disabled       bool     `json:"disabled"`
+	Schedule       Schedule `json:"schedule"`
+}
+
+type Schedule struct {
+	Everyday  OnOffTimes `json:"everyday"`
+	Monday    OnOffTimes `json:"monday"`
+	Tuesday   OnOffTimes `json:"tuesday"`
+	Wednesday OnOffTimes `json:"wednesday"`
+	Thursday  OnOffTimes `json:"thursday"`
+	Friday    OnOffTimes `json:"friday"`
+	Saturday  OnOffTimes `json:"saturday"`
+	Sunday    OnOffTimes `json:"sunday"`
+}
+
+type OnOffTimes struct {
+	Off string `json:"off"`
+	On  string `json:"on"`
 }
 
 type Config struct {

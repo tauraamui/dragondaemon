@@ -54,13 +54,6 @@ func parseCmdArgs() *options {
 func main() {
 	opts := parseCmdArgs()
 
-	cfg := config.Load()
-	for i, c := range cfg.Cameras {
-		if c.Disabled == false {
-			fmt.Printf("[%d] CAMERA: %v\n", i, c.Title)
-		}
-	}
-
 	flushInitialised := make(chan bool)
 	if len(opts.logFileName) > 0 {
 		go logging.FlushLogs(opts.logFileName, &flushInitialised)
@@ -72,6 +65,19 @@ func main() {
 
 	mediaServer := media.NewServer()
 	go listenForStopSig(mediaServer)
+
+	cfg := config.Load()
+
+	for _, c := range cfg.Cameras {
+		if c.Disabled == false {
+			mediaServer.Connect(
+				c.Title,
+				c.Address,
+				c.PersistLoc,
+				c.SecondsPerClip,
+			)
+		}
+	}
 
 	for mediaServer.IsRunning() {
 	}

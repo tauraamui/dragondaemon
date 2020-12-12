@@ -8,17 +8,26 @@ import (
 )
 
 type Connection struct {
-	inShutdown int32
-	title      string
-	vc         *gocv.VideoCapture
-	mu         sync.Mutex
-	window     *gocv.Window
+	inShutdown      int32
+	title           string
+	persistLocation string
+	secondsPerClip  int
+	vc              *gocv.VideoCapture
+	mu              sync.Mutex
+	window          *gocv.Window
 }
 
-func NewConnection(title string, vc *gocv.VideoCapture) *Connection {
+func NewConnection(
+	title string,
+	persistLocation string,
+	secondsPerClip int,
+	vc *gocv.VideoCapture,
+) *Connection {
 	return &Connection{
-		title: title,
-		vc:    vc,
+		title:           title,
+		persistLocation: persistLocation,
+		secondsPerClip:  secondsPerClip,
+		vc:              vc,
 	}
 }
 

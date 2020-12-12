@@ -26,7 +26,12 @@ func (s *Server) trackConnection(conn *Connection, add bool) bool {
 	return true
 }
 
-func (s *Server) Connect(title string, rtspStream string) (*Connection, error) {
+func (s *Server) Connect(
+	title string,
+	rtspStream string,
+	persistLocation string,
+	secondsPerClip int,
+) (*Connection, error) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Unable to connect to stream at [%s]: %v", rtspStream, err))
@@ -34,7 +39,12 @@ func (s *Server) Connect(title string, rtspStream string) (*Connection, error) {
 	}
 
 	logging.Info(fmt.Sprintf("Connected to stream at [%s]", rtspStream))
-	conn := NewConnection(title, vc)
+	conn := NewConnection(
+		title,
+		persistLocation,
+		secondsPerClip,
+		vc,
+	)
 	s.trackConnection(conn, true)
 
 	return conn, nil
