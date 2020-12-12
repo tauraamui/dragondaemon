@@ -9,15 +9,17 @@ import (
 	"gopkg.in/dealancer/validate.v2"
 )
 
+// Camera configuration
 type Camera struct {
 	Title          string   `json:"title" validate:"empty=false"`
 	Address        string   `json:"address"`
 	PersistLoc     string   `json:"persist_location"`
-	SecondsPerClip int      `json:"seconds_per_clip"`
+	SecondsPerClip int      `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
 	Disabled       bool     `json:"disabled"`
 	Schedule       Schedule `json:"schedule"`
 }
 
+// Schedule contains each day of the week and it's off and on time entries
 type Schedule struct {
 	Everyday  OnOffTimes `json:"everyday"`
 	Monday    OnOffTimes `json:"monday"`
@@ -29,15 +31,18 @@ type Schedule struct {
 	Sunday    OnOffTimes `json:"sunday"`
 }
 
+// OnOffTimes for loading up on off time entries
 type OnOffTimes struct {
 	Off string `json:"off"`
 	On  string `json:"on"`
 }
 
+// Config to keep track of each loaded camera's configuration
 type Config struct {
 	Cameras []Camera
 }
 
+// Load parses configuration file and loads settings
 func Load() Config {
 	file, err := ioutil.ReadFile("dd.config")
 	if err != nil {
