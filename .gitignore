@@ -20,3 +20,4 @@ dragondaemon
 proofofconcept.go2
 *.avi
 dd.config
+.dd.config.swp

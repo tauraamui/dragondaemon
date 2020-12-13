@@ -31,11 +31,10 @@ func (s *Server) Connect(
 	rtspStream string,
 	persistLocation string,
 	secondsPerClip int,
-) (*Connection, error) {
+) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
 		logging.Error(fmt.Sprintf("Unable to connect to stream at [%s]: %v", rtspStream, err))
-		return nil, err
 	}
 
 	logging.Info(fmt.Sprintf("Connected to stream at [%s]", rtspStream))
@@ -46,6 +45,15 @@ func (s *Server) Connect(
 		vc,
 	)
 	s.trackConnection(conn, true)
+}
 
-	return conn, nil
+func (s *Server) ActiveConnections() []*Connection {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	connections := make([]*Connection, 0, len(s.connections))
+	for k := range s.connections {
+		connections = append(connections, k)
+	}
+
+	return connections
 }

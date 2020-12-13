@@ -21,7 +21,10 @@ func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
 
-func (s *Server) Shutdown() error {
+func (s *Server) Shutdown() {
 	atomic.StoreInt32(&s.inShutdown, 1)
+}
+
+func (s *Server) Close() error {
 	return s.closeConnectionsLocked()
 }

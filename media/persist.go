@@ -33,12 +33,12 @@ func ensureDirectoryExists(path string) error {
 	return err
 }
 
-func (c *Connection) PersistToDisk(rootDir string, secondsPerClip uint) {
+func (c *Connection) PersistToDisk() {
 	img := gocv.NewMat()
 	defer img.Close()
 
 	c.vc.Read(&img)
-	outputFile := fetchClipFilePath(rootDir, c.title)
+	outputFile := fetchClipFilePath(c.persistLocation, c.title)
 	writer, err := gocv.VideoWriterFile(outputFile, "MJPG", 30, img.Cols(), img.Rows(), true)
 
 	if err != nil {
@@ -47,7 +47,7 @@ func (c *Connection) PersistToDisk(rootDir string, secondsPerClip uint) {
 	defer writer.Close()
 
 	var framesWritten uint
-	for framesWritten = 0; framesWritten < 30*secondsPerClip; framesWritten++ {
+	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
 		if ok := c.vc.Read(&img); !ok {
 			logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
 			return

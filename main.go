@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/tacusci/logging"
@@ -37,12 +38,12 @@ func parseCmdArgs() *options {
 	logging.OutputPath = false
 	logging.ColorLogLevelLabelOnly = true
 
+	logging.SetLevel(loggingLevel)
+
 	if opts.debug {
 		logging.SetLevel(logging.DebugLevel)
 		return &opts
 	}
-
-	logging.SetLevel(loggingLevel)
 
 	if opts.secondsPerClip > 0 {
 		opts.secondsPerClip++
@@ -61,42 +62,49 @@ func main() {
 		<-flushInitialised
 	}
 
-	logging.WhiteOutput(fmt.Sprintf("Dragon Daemon v0.0.0\n"))
+	logging.WhiteOutput(fmt.Sprintf("Starting Dragon Daemon v0.0.0 (c)[tacusci ltd]\n"))
 
 	mediaServer := media.NewServer()
+
 	go listenForStopSig(mediaServer)
 
 	cfg := config.Load()
 
 	for _, c := range cfg.Cameras {
-		if c.Disabled == false {
-			mediaServer.Connect(
-				c.Title,
-				c.Address,
-				c.PersistLoc,
-				c.SecondsPerClip,
-			)
+		if c.Disabled {
+			logging.Warn(fmt.Sprintf("Connection %s is disabled, skipping...", c.Title))
+			continue
 		}
+
+		mediaServer.Connect(
+			c.Title,
+			c.Address,
+			c.PersistLoc,
+			c.SecondsPerClip,
+		)
 	}
 
+	wg := sync.WaitGroup{}
 	for mediaServer.IsRunning() {
+		start := make(chan struct{})
+		for _, conn := range mediaServer.ActiveConnections() {
+			wg.Add(1)
+			go func(conn *media.Connection) {
+				// immediately pause thread
+				<-start
+				// save 3 seconds worth of footage to clip file
+				conn.PersistToDisk()
+				wg.Done()
+			}(conn)
+		}
+		// unpause all threads at the same time
+		close(start)
+		wg.Wait()
 	}
 
-	// go func() {
-	// 	conn, err := mediaServer.Connect("Front", opts.cameraAddress)
-	// 	if err == nil {
-	// 		for mediaServer.IsRunning() {
-	// 			conn.PersistToDisk(opts.persistLocationPath, opts.secondsPerClip)
-	// 		}
-	// 	}
-	// }()
-
-	// conn, err := mediaServer.Connect("BigBuckBunny", "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
-	// if err == nil {
-	// 	for mediaServer.IsRunning() {
-	// 		conn.PersistToDisk(opts.persistLocationPath, opts.secondsPerClip)
-	// 	}
-	// }
+	wg.Wait()
+	mediaServer.Close()
+	logging.Info("Shutdown successful... BYE! 👋")
 }
 
 func listenForStopSig(srv *media.Server) {
@@ -110,4 +118,5 @@ func listenForStopSig(srv *media.Server) {
 	logging.Error(fmt.Sprintf("☠️ Caught sig: %+v (Shutting down and cleaning up...) ☠️", sig))
 	logging.Info("Stopping media server...")
 	srv.Shutdown()
+	logging.Info("Closing stream connections...")
 }

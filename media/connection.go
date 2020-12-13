@@ -53,6 +53,10 @@ func (c *Connection) ShowInWindow(winTitle string) {
 	}
 }
 
+func (c *Connection) Title() string {
+	return c.title
+}
+
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
 	if c.window != nil {
