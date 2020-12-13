@@ -23,7 +23,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		ensureDirectoryExists(fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate))
 	}
 
-	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.avi", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
+	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
 }
 
 func ensureDirectoryExists(path string) error {
@@ -41,7 +41,7 @@ func (c *Connection) PersistToDisk() {
 
 	c.vc.Read(&img)
 	outputFile := fetchClipFilePath(c.persistLocation, c.title)
-	writer, err := gocv.VideoWriterFile(outputFile, "MJPG", 30, img.Cols(), img.Rows(), true)
+	writer, err := gocv.VideoWriterFile(outputFile, "mp4v", 30, img.Cols(), img.Rows(), true)
 
 	if err != nil {
 		logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
