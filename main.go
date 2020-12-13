@@ -103,7 +103,11 @@ func main() {
 	}
 
 	wg.Wait()
-	mediaServer.Close()
+	err := mediaServer.Close()
+	if err != nil {
+		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
+		os.Exit(1)
+	}
 	logging.Info("Shutdown successful... BYE! 👋")
 }
 
