@@ -18,6 +18,7 @@
 .DS_Store
 dragondaemon
 proofofconcept.go2
+clips/*
 *.avi
 dd.config
 .dd.config.swp
