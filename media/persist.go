@@ -17,11 +17,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		rootDir = "."
 	}
 
+	todaysDate := time.Now().Format("2006-01-02")
+
 	if len(clipsDir) > 0 {
-		ensureDirectoryExists(fmt.Sprintf("%s/%s", rootDir, clipsDir))
+		ensureDirectoryExists(fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate))
 	}
 
-	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s.avi", rootDir, clipsDir, time.Now().Format("2006-01-02 15.04.05")))
+	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.avi", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
 }
 
 func ensureDirectoryExists(path string) error {
