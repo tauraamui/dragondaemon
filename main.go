@@ -13,8 +13,6 @@ import (
 	"github.com/tauraamui/dragondaemon/media"
 )
 
-var shuttingDown bool
-
 type options struct {
 	debug               bool
 	logFileName         string
@@ -116,9 +114,7 @@ func listenForStopSig(srv *media.Server) {
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
 	sig := <-gracefulStop
-	// logging.Debug("Stopping, clearing old sessions...")
 	//send a terminate command to the session clearing goroutine's channel
-	shuttingDown = true
 	logging.Error(fmt.Sprintf("☠️ Caught sig: %+v (Shutting down and cleaning up...) ☠️", sig))
 	logging.Info("Stopping media server...")
 	srv.Shutdown()
