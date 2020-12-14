@@ -61,7 +61,7 @@ func (s *Server) ActiveConnections() []*Connection {
 func (s *Server) BeginStreaming() {
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.ActiveConnections() {
-		go conn.Stream(s.stopStreaming)
+		go conn.stream(s.stopStreaming)
 	}
 }
 

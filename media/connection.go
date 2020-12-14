@@ -64,23 +64,6 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c *Connection) Stream(stop chan struct{}) {
-	for {
-		select {
-		case <-stop:
-			break
-		default:
-			img := gocv.NewMat()
-			defer img.Close()
-			if ok := c.vc.Read(&img); !ok {
-				logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
-				break
-			}
-			c.buffer <- img.Clone()
-		}
-	}
-}
-
 func (c *Connection) PersistToDisk() {
 	img := <-c.buffer
 	defer img.Close()
@@ -114,6 +97,23 @@ func (c *Connection) Close() error {
 	}
 	close(c.buffer)
 	return c.vc.Close()
+}
+
+func (c *Connection) stream(stop chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			break
+		default:
+			img := gocv.NewMat()
+			defer img.Close()
+			if ok := c.vc.Read(&img); !ok {
+				logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
+				break
+			}
+			c.buffer <- img.Clone()
+		}
+	}
 }
 
 func fetchClipFilePath(rootDir string, clipsDir string) string {
