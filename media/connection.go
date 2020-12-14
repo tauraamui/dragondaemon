@@ -19,6 +19,7 @@ type Connection struct {
 	secondsPerClip  int
 	vc              *gocv.VideoCapture
 	mu              sync.Mutex
+	buffer          chan gocv.Mat
 	window          *gocv.Window
 }
 
@@ -33,6 +34,7 @@ func NewConnection(
 		persistLocation: persistLocation,
 		secondsPerClip:  secondsPerClip,
 		vc:              vc,
+		buffer:          make(chan gocv.Mat, 100),
 	}
 }
 
@@ -62,7 +64,7 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c *Connection) Stream(buffer chan gocv.Mat, stop chan struct{}) {
+func (c *Connection) Stream(stop chan struct{}) {
 	for {
 		select {
 		case <-stop:
@@ -74,13 +76,13 @@ func (c *Connection) Stream(buffer chan gocv.Mat, stop chan struct{}) {
 				logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
 				break
 			}
-			buffer <- img.Clone()
+			c.buffer <- img.Clone()
 		}
 	}
 }
 
-func (c *Connection) PersistToDisk(buffer chan gocv.Mat) {
-	img := <-buffer
+func (c *Connection) PersistToDisk() {
+	img := <-c.buffer
 	defer img.Close()
 	outputFile := fetchClipFilePath(c.persistLocation, c.title)
 	writer, err := gocv.VideoWriterFile(outputFile, "mp4v", 30, img.Cols(), img.Rows(), true)
@@ -92,7 +94,7 @@ func (c *Connection) PersistToDisk(buffer chan gocv.Mat) {
 
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
-		img = <-buffer
+		img = <-c.buffer
 
 		if img.Empty() {
 			logging.Debug("Skipping frame...")
@@ -110,6 +112,7 @@ func (c *Connection) Close() error {
 	if c.window != nil {
 		c.window.Close()
 	}
+	close(c.buffer)
 	return c.vc.Close()
 }
 

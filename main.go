@@ -11,7 +11,6 @@ import (
 	"github.com/tacusci/logging"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
-	"gocv.io/x/gocv"
 )
 
 type options struct {
@@ -83,13 +82,7 @@ func main() {
 		)
 	}
 
-	stopStreaming := make(chan struct{})
-	streamBuffer := make(chan gocv.Mat, 100)
-	defer close(streamBuffer)
-
-	for _, conn := range mediaServer.ActiveConnections() {
-		go conn.Stream(streamBuffer, stopStreaming)
-	}
+	mediaServer.BeginStreaming()
 
 	wg := sync.WaitGroup{}
 	for mediaServer.IsRunning() {
@@ -100,7 +93,7 @@ func main() {
 				// immediately pause thread
 				<-start
 				// save 3 seconds worth of footage to clip file
-				conn.PersistToDisk(streamBuffer)
+				conn.PersistToDisk()
 				wg.Done()
 			}(conn)
 		}
@@ -108,8 +101,6 @@ func main() {
 		close(start)
 		wg.Wait()
 	}
-
-	close(stopStreaming)
 
 	err := mediaServer.Close()
 	if err != nil {

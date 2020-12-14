@@ -11,9 +11,10 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	inShutdown  int32
-	mu          sync.Mutex
-	connections map[*Connection]struct{}
+	inShutdown    int32
+	mu            sync.Mutex
+	stopStreaming chan struct{}
+	connections   map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
@@ -57,6 +58,22 @@ func (s *Server) ActiveConnections() []*Connection {
 	return connections
 }
 
+func (s *Server) BeginStreaming() {
+	s.stopStreaming = make(chan struct{})
+	for _, conn := range s.ActiveConnections() {
+		go conn.Stream(s.stopStreaming)
+	}
+}
+
+func (s *Server) Shutdown() {
+	atomic.StoreInt32(&s.inShutdown, 1)
+}
+
+func (s *Server) Close() error {
+	close(s.stopStreaming)
+	return s.closeConnectionsLocked()
+}
+
 func (s *Server) trackConnection(conn *Connection, add bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -91,12 +108,4 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
-}
-
-func (s *Server) Shutdown() {
-	atomic.StoreInt32(&s.inShutdown, 1)
-}
-
-func (s *Server) Close() error {
-	return s.closeConnectionsLocked()
 }
