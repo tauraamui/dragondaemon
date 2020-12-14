@@ -98,6 +98,7 @@ func (c *Connection) Close() error {
 		c.window.Close()
 	}
 	close(c.persistBuffer)
+	close(c.uiBuffer)
 	return c.vc.Close()
 }
 
@@ -116,7 +117,6 @@ func (c *Connection) stream(stop chan struct{}) {
 
 			imgCopy := img.Clone()
 			c.persistBuffer <- imgCopy
-			c.uiBuffer <- imgCopy
 		}
 	}
 }
