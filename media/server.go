@@ -47,20 +47,9 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
-func (s *Server) ActiveConnections() []*Connection {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	connections := make([]*Connection, 0, len(s.connections))
-	for k := range s.connections {
-		connections = append(connections, k)
-	}
-
-	return connections
-}
-
 func (s *Server) BeginStreaming() {
 	s.stopStreaming = make(chan struct{})
-	for _, conn := range s.ActiveConnections() {
+	for _, conn := range s.activeConnections() {
 		go conn.stream(s.stopStreaming)
 	}
 }
@@ -69,7 +58,7 @@ func (s *Server) SaveStreams() {
 	wg := sync.WaitGroup{}
 	for s.IsRunning() {
 		start := make(chan struct{})
-		for _, conn := range s.ActiveConnections() {
+		for _, conn := range s.activeConnections() {
 			wg.Add(1)
 			go func(conn *Connection) {
 				// immediately pause thread
@@ -111,6 +100,17 @@ func (s *Server) trackConnection(conn *Connection, add bool) bool {
 		delete(s.connections, conn)
 	}
 	return true
+}
+
+func (s *Server) activeConnections() []*Connection {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	connections := make([]*Connection, 0, len(s.connections))
+	for k := range s.connections {
+		connections = append(connections, k)
+	}
+
+	return connections
 }
 
 func (s *Server) closeConnectionsLocked() error {
