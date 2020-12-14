@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/tacusci/logging"
@@ -83,24 +82,7 @@ func main() {
 	}
 
 	mediaServer.BeginStreaming()
-
-	wg := sync.WaitGroup{}
-	for mediaServer.IsRunning() {
-		start := make(chan struct{})
-		for _, conn := range mediaServer.ActiveConnections() {
-			wg.Add(1)
-			go func(conn *media.Connection) {
-				// immediately pause thread
-				<-start
-				// save 3 seconds worth of footage to clip file
-				conn.PersistToDisk()
-				wg.Done()
-			}(conn)
-		}
-		// unpause all threads at the same time
-		close(start)
-		wg.Wait()
-	}
+	mediaServer.SaveStreams()
 
 	err := mediaServer.Close()
 	if err != nil {

@@ -65,6 +65,26 @@ func (s *Server) BeginStreaming() {
 	}
 }
 
+func (s *Server) SaveStreams() {
+	wg := sync.WaitGroup{}
+	for s.IsRunning() {
+		start := make(chan struct{})
+		for _, conn := range s.ActiveConnections() {
+			wg.Add(1)
+			go func(conn *Connection) {
+				// immediately pause thread
+				<-start
+				// save 3 seconds worth of footage to clip file
+				conn.PersistToDisk()
+				wg.Done()
+			}(conn)
+		}
+		// unpause all threads at the same time
+		close(start)
+		wg.Wait()
+	}
+}
+
 func (s *Server) Shutdown() {
 	atomic.StoreInt32(&s.inShutdown, 1)
 }
