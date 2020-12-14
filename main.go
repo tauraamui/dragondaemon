@@ -83,37 +83,34 @@ func main() {
 		)
 	}
 
-	wg := sync.WaitGroup{}
-	go func() {
-		for mediaServer.IsRunning() {
-			start := make(chan struct{})
-			for _, conn := range mediaServer.ActiveConnections() {
-				wg.Add(1)
-				go func(conn *media.Connection) {
-					// immediately pause thread
-					<-start
-					// save 3 seconds worth of footage to clip file
-					conn.PersistToDisk()
-					wg.Done()
-				}(conn)
-			}
-			// unpause all threads at the same time
-			close(start)
-			wg.Wait()
-		}
-	}()
+	stopStreaming := make(chan struct{})
+	streamBuffer := make(chan gocv.Mat, 100)
+	defer close(streamBuffer)
 
-	window := gocv.NewWindow("Dragon Daemon")
-	defer window.Close()
-	for mediaServer.IsRunning() {
-		frame := mediaServer.ActiveConnections()[0].FetchFrame()
-		if !frame.Empty() {
-			window.IMShow(frame)
-			window.WaitKey(1)
-		}
+	for _, conn := range mediaServer.ActiveConnections() {
+		go conn.Stream(streamBuffer, stopStreaming)
 	}
 
-	wg.Wait()
+	wg := sync.WaitGroup{}
+	for mediaServer.IsRunning() {
+		start := make(chan struct{})
+		for _, conn := range mediaServer.ActiveConnections() {
+			wg.Add(1)
+			go func(conn *media.Connection) {
+				// immediately pause thread
+				<-start
+				// save 3 seconds worth of footage to clip file
+				conn.PersistToDisk(streamBuffer)
+				wg.Done()
+			}(conn)
+		}
+		// unpause all threads at the same time
+		close(start)
+		wg.Wait()
+	}
+
+	close(stopStreaming)
+
 	err := mediaServer.Close()
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))

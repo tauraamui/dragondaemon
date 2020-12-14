@@ -19,7 +19,6 @@ type Connection struct {
 	secondsPerClip  int
 	vc              *gocv.VideoCapture
 	mu              sync.Mutex
-	cf              gocv.Mat
 	window          *gocv.Window
 }
 
@@ -33,7 +32,6 @@ func NewConnection(
 		title:           title,
 		persistLocation: persistLocation,
 		secondsPerClip:  secondsPerClip,
-		cf:              gocv.NewMat(),
 		vc:              vc,
 	}
 }
@@ -64,22 +62,26 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c *Connection) Stream(running chan bool, dsts []chan gocv.Mat) {
-	for <-running {
-		img := gocv.NewMat()
-		defer img.Close()
-		c.vc.Read(&img)
-		for _, dst := range dsts {
-			dst <- img.Clone()
+func (c *Connection) Stream(buffer chan gocv.Mat, stop chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			break
+		default:
+			img := gocv.NewMat()
+			defer img.Close()
+			if ok := c.vc.Read(&img); !ok {
+				logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
+				break
+			}
+			buffer <- img.Clone()
 		}
 	}
 }
 
-func (c *Connection) PersistToDisk() {
-	img := gocv.NewMat()
+func (c *Connection) PersistToDisk(buffer chan gocv.Mat) {
+	img := <-buffer
 	defer img.Close()
-	c.vc.Read(&img)
-	img.CopyTo(&c.cf)
 	outputFile := fetchClipFilePath(c.persistLocation, c.title)
 	writer, err := gocv.VideoWriterFile(outputFile, "mp4v", 30, img.Cols(), img.Rows(), true)
 
@@ -90,17 +92,12 @@ func (c *Connection) PersistToDisk() {
 
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
-		if ok := c.vc.Read(&img); !ok {
-			logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
-			return
-		}
+		img = <-buffer
 
 		if img.Empty() {
 			logging.Debug("Skipping frame...")
 			continue
 		}
-
-		img.CopyTo(&c.cf)
 
 		if err := writer.Write(img); err != nil {
 			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
@@ -108,16 +105,11 @@ func (c *Connection) PersistToDisk() {
 	}
 }
 
-func (c *Connection) FetchFrame() gocv.Mat {
-	return c.cf
-}
-
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
 	if c.window != nil {
 		c.window.Close()
 	}
-	c.cf.Close()
 	return c.vc.Close()
 }
 
