@@ -64,6 +64,17 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
+func (c *Connection) Stream(running chan bool, dsts []chan gocv.Mat) {
+	for <-running {
+		img := gocv.NewMat()
+		defer img.Close()
+		c.vc.Read(&img)
+		for _, dst := range dsts {
+			dst <- img.Clone()
+		}
+	}
+}
+
 func (c *Connection) PersistToDisk() {
 	img := gocv.NewMat()
 	defer img.Close()
