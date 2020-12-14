@@ -54,7 +54,7 @@ func (s *Server) BeginStreaming() {
 	}
 }
 
-func (s *Server) SaveStreams() {
+func (s *Server) SaveStreams(wait *chan struct{}) {
 	wg := sync.WaitGroup{}
 	for s.IsRunning() {
 		start := make(chan struct{})
@@ -71,6 +71,10 @@ func (s *Server) SaveStreams() {
 		// unpause all threads at the same time
 		close(start)
 		wg.Wait()
+	}
+
+	if wait != nil {
+		close(*wait)
 	}
 }
 

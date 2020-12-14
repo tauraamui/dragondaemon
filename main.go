@@ -82,8 +82,7 @@ func main() {
 	}
 
 	mediaServer.BeginStreaming()
-	mediaServer.SaveStreams()
-
+	mediaServer.SaveStreams(nil)
 	err := mediaServer.Close()
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
