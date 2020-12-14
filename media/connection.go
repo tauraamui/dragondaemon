@@ -19,6 +19,7 @@ type Connection struct {
 	secondsPerClip  int
 	vc              *gocv.VideoCapture
 	mu              sync.Mutex
+	cf              gocv.Mat
 	window          *gocv.Window
 }
 
@@ -32,6 +33,7 @@ func NewConnection(
 		title:           title,
 		persistLocation: persistLocation,
 		secondsPerClip:  secondsPerClip,
+		cf:              gocv.NewMat(),
 		vc:              vc,
 	}
 }
@@ -63,8 +65,10 @@ func (c *Connection) Title() string {
 }
 
 func (c *Connection) PersistToDisk() {
-	img := c.FetchFrame()
+	img := gocv.NewMat()
 	defer img.Close()
+	c.vc.Read(&img)
+	img.CopyTo(&c.cf)
 	outputFile := fetchClipFilePath(c.persistLocation, c.title)
 	writer, err := gocv.VideoWriterFile(outputFile, "mp4v", 30, img.Cols(), img.Rows(), true)
 
@@ -75,7 +79,7 @@ func (c *Connection) PersistToDisk() {
 
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
-		if ok := c.vc.Read(img); !ok {
+		if ok := c.vc.Read(&img); !ok {
 			logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
 			return
 		}
@@ -85,16 +89,16 @@ func (c *Connection) PersistToDisk() {
 			continue
 		}
 
-		if err := writer.Write(*img); err != nil {
+		img.CopyTo(&c.cf)
+
+		if err := writer.Write(img); err != nil {
 			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
 		}
 	}
 }
 
-func (c *Connection) FetchFrame() *gocv.Mat {
-	img := gocv.NewMat()
-	c.vc.Read(&img)
-	return &img
+func (c *Connection) FetchFrame() gocv.Mat {
+	return c.cf
 }
 
 func (c *Connection) Close() error {
@@ -102,6 +106,7 @@ func (c *Connection) Close() error {
 	if c.window != nil {
 		c.window.Close()
 	}
+	c.cf.Close()
 	return c.vc.Close()
 }
 

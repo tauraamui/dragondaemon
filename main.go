@@ -11,6 +11,7 @@ import (
 	"github.com/tacusci/logging"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
+	"gocv.io/x/gocv"
 )
 
 type options struct {
@@ -83,21 +84,33 @@ func main() {
 	}
 
 	wg := sync.WaitGroup{}
-	for mediaServer.IsRunning() {
-		start := make(chan struct{})
-		for _, conn := range mediaServer.ActiveConnections() {
-			wg.Add(1)
-			go func(conn *media.Connection) {
-				// immediately pause thread
-				<-start
-				// save 3 seconds worth of footage to clip file
-				conn.PersistToDisk()
-				wg.Done()
-			}(conn)
+	go func() {
+		for mediaServer.IsRunning() {
+			start := make(chan struct{})
+			for _, conn := range mediaServer.ActiveConnections() {
+				wg.Add(1)
+				go func(conn *media.Connection) {
+					// immediately pause thread
+					<-start
+					// save 3 seconds worth of footage to clip file
+					conn.PersistToDisk()
+					wg.Done()
+				}(conn)
+			}
+			// unpause all threads at the same time
+			close(start)
+			wg.Wait()
 		}
-		// unpause all threads at the same time
-		close(start)
-		wg.Wait()
+	}()
+
+	window := gocv.NewWindow("Dragon Daemon")
+	defer window.Close()
+	for mediaServer.IsRunning() {
+		frame := mediaServer.ActiveConnections()[0].FetchFrame()
+		if !frame.Empty() {
+			window.IMShow(frame)
+			window.WaitKey(1)
+		}
 	}
 
 	wg.Wait()
