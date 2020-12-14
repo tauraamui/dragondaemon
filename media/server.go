@@ -33,10 +33,10 @@ func (s *Server) Connect(
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
-		logging.Error(fmt.Sprintf("Unable to connect to stream at [%s]: %v", rtspStream, err))
+		logging.Error(fmt.Sprintf("Unable to connect to stream [%s] at [%s]: %v", title, rtspStream, err))
 	}
 
-	logging.Info(fmt.Sprintf("Connected to stream at [%s]", rtspStream))
+	logging.Info(fmt.Sprintf("Connected to stream [%s] at [%s]", title, rtspStream))
 	conn := NewConnection(
 		title,
 		persistLocation,

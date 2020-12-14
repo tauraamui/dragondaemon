@@ -112,7 +112,10 @@ func (c *Connection) Close() error {
 
 func fetchClipFilePath(rootDir string, clipsDir string) string {
 	if len(rootDir) > 0 {
-		ensureDirectoryExists(rootDir)
+		err := ensureDirectoryExists(rootDir)
+		if err != nil {
+			logging.Error(fmt.Sprintf("Unable to create directory %s: %v", rootDir, err))
+		}
 	} else {
 		rootDir = "."
 	}
@@ -120,7 +123,17 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	todaysDate := time.Now().Format("2006-01-02")
 
 	if len(clipsDir) > 0 {
-		ensureDirectoryExists(fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate))
+		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
+		err := ensureDirectoryExists(path)
+		if err != nil {
+			logging.Error(fmt.Sprintf("Unable to create directory %s: %v", path, err))
+		}
+
+		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
+		err = ensureDirectoryExists(path)
+		if err != nil {
+			logging.Error(fmt.Sprintf("Unable to create directory %s: %v", path, err))
+		}
 	}
 
 	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
