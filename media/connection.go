@@ -120,6 +120,7 @@ func (c *Connection) stream(stop chan struct{}) {
 			}
 
 			imgCopy := img.Clone()
+			// writing to buffers is non-blocking even if not read
 			select {
 			case c.buffer <- imgCopy:
 			default:
