@@ -120,8 +120,14 @@ func (c *Connection) stream(stop chan struct{}) {
 			}
 
 			imgCopy := img.Clone()
-			c.buffer <- imgCopy
-			c.lastFrame <- imgCopy
+			select {
+			case c.buffer <- imgCopy:
+			default:
+			}
+			select {
+			case c.lastFrame <- imgCopy:
+			default:
+			}
 		}
 	}
 }
