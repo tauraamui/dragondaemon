@@ -117,8 +117,7 @@ func (c *Connection) stream(stop chan struct{}) {
 		default:
 			img := gocv.NewMat()
 			if ok := c.vc.Read(&img); !ok {
-				logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
-				break
+				logging.Warn(fmt.Sprintf("Device for stream at [%s] closed", c.title))
 			}
 
 			img.CopyTo(&c.lastFrameData)
