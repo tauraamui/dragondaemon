@@ -2,8 +2,10 @@ package media
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
@@ -23,6 +25,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
+	time.Sleep(time.Millisecond * 1)
 	return !s.shuttingDown()
 }
 
@@ -54,7 +57,15 @@ func (s *Server) BeginStreaming() {
 	}
 }
 
-func (s *Server) SaveStreams(wait chan struct{}) {
+func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
+	if rwg != nil {
+		rwg.Add(1)
+	}
+	defer func() {
+		if rwg != nil {
+			rwg.Done()
+		}
+	}()
 	wg := sync.WaitGroup{}
 	for s.IsRunning() {
 		start := make(chan struct{})
@@ -63,8 +74,8 @@ func (s *Server) SaveStreams(wait chan struct{}) {
 			go func(conn *Connection) {
 				// immediately pause thread
 				<-start
-				// save 3 seconds worth of footage to clip file
-				conn.PersistToDisk()
+				// save 1-3 seconds worth of footage to clip file
+				conn.persistToDisk()
 				wg.Done()
 			}(conn)
 		}
@@ -72,10 +83,15 @@ func (s *Server) SaveStreams(wait chan struct{}) {
 		close(start)
 		wg.Wait()
 	}
+}
 
-	if wait != nil {
-		close(wait)
+func (s *Server) FetchLastFrameStream(title string) (chan gocv.Mat, error) {
+	for _, conn := range s.activeConnections() {
+		if strings.Compare(conn.title, title) == 0 {
+			return conn.lastFrame, nil
+		}
 	}
+	return nil, fmt.Errorf("Unable to find connection of title %s", title)
 }
 
 func (s *Server) Shutdown() {

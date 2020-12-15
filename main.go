@@ -83,6 +83,29 @@ func main() {
 
 	mediaServer.BeginStreaming()
 	mediaServer.SaveStreams(nil)
+	// wg := sync.WaitGroup{}
+	// go mediaServer.SaveStreams(&wg)
+
+	// bigBuckBunnyStream, err := mediaServer.FetchLastFrameStream("Back2")
+	// if err != nil {
+	// 	logging.Error(err.Error())
+	// }
+
+	// window := gocv.NewWindow("Dragon Daemon")
+	// for mediaServer.IsRunning() {
+	// 	select {
+	// 	case lastFrame := <-bigBuckBunnyStream:
+	// 		defer lastFrame.Close()
+	// 		if !(lastFrame.Cols() <= 0 || lastFrame.Rows() <= 0 || lastFrame.Empty()) {
+	// 			window.IMShow(lastFrame)
+	// 			window.WaitKey(1)
+	// 		}
+	// 	default:
+	// 	}
+	// }
+	// window.Close()
+
+	// wg.Wait()
 	err := mediaServer.Close()
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))

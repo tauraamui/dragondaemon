@@ -19,7 +19,8 @@ type Connection struct {
 	secondsPerClip  int
 	vc              *gocv.VideoCapture
 	mu              sync.Mutex
-	buffer          chan gocv.Mat
+	lastFrameData   gocv.Mat
+	buffer          chan *gocv.Mat
 	lastFrame       chan gocv.Mat
 	window          *gocv.Window
 }
@@ -35,8 +36,9 @@ func NewConnection(
 		persistLocation: persistLocation,
 		secondsPerClip:  secondsPerClip,
 		vc:              vc,
-		buffer:          make(chan gocv.Mat, 100),
-		lastFrame:       make(chan gocv.Mat),
+		lastFrameData:   gocv.NewMat(),
+		buffer:          make(chan *gocv.Mat, 3),
+		lastFrame:       make(chan gocv.Mat, 1),
 	}
 }
 
@@ -66,7 +68,17 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c *Connection) PersistToDisk() {
+func (c *Connection) Close() error {
+	atomic.StoreInt32(&c.inShutdown, 1)
+	if c.window != nil {
+		c.window.Close()
+	}
+	close(c.lastFrame)
+	close(c.buffer)
+	return c.vc.Close()
+}
+
+func (c *Connection) persistToDisk() {
 	img := <-c.buffer
 	defer img.Close()
 	outputFile := fetchClipFilePath(c.persistLocation, c.title)
@@ -80,55 +92,47 @@ func (c *Connection) PersistToDisk() {
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
 		img = <-c.buffer
+		defer img.Close()
 
 		if img.Empty() {
 			logging.Debug("Skipping frame...")
 			continue
 		}
 
-		if err := writer.Write(img); err != nil {
-			logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
+		if writer.IsOpened() {
+			if err := writer.Write(*img); err != nil {
+				logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
+			}
 		}
 	}
 }
 
-func (c *Connection) LastFrame() chan gocv.Mat {
-	return c.lastFrame
-}
-
-func (c *Connection) Close() error {
-	atomic.StoreInt32(&c.inShutdown, 1)
-	if c.window != nil {
-		c.window.Close()
-	}
-	close(c.lastFrame)
-	close(c.buffer)
-	return c.vc.Close()
-}
-
 func (c *Connection) stream(stop chan struct{}) {
 	for {
+		time.Sleep(time.Millisecond * 1)
 		select {
 		case <-stop:
+			c.lastFrameData.Close()
 			break
 		default:
 			img := gocv.NewMat()
-			defer img.Close()
 			if ok := c.vc.Read(&img); !ok {
 				logging.Error(fmt.Sprintf("Device for stream at [%s] closed", c.title))
 				break
 			}
 
-			imgCopy := img.Clone()
-			// writing to buffers is non-blocking even if not read
+			img.CopyTo(&c.lastFrameData)
+			bufferClone := c.lastFrameData.Clone()
 			select {
-			case c.buffer <- imgCopy:
+			case c.buffer <- &bufferClone:
 			default:
 			}
+
 			select {
-			case c.lastFrame <- imgCopy:
+			case c.lastFrame <- c.lastFrameData:
 			default:
 			}
+			img.Close()
 		}
 	}
 }
