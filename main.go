@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
+	"fyne.io/fyne/app"
+	"fyne.io/fyne/widget"
 	"github.com/tacusci/logging"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
@@ -62,8 +65,11 @@ func main() {
 	logging.WhiteOutput(fmt.Sprintf("Starting Dragon Daemon v0.0.0 (c)[tacusci ltd]\n"))
 
 	mediaServer := media.NewServer()
+	uiApp := app.New()
+	window := uiApp.NewWindow("Dragon Daemon")
+	window.SetContent(widget.NewLabel("RUNNING!"))
 
-	go listenForStopSig(mediaServer)
+	go listenForStopSig(mediaServer, window.Close)
 
 	cfg := config.Load()
 
@@ -82,30 +88,13 @@ func main() {
 	}
 
 	mediaServer.BeginStreaming()
-	mediaServer.SaveStreams(nil)
-	// wg := sync.WaitGroup{}
-	// go mediaServer.SaveStreams(&wg)
+	wg := sync.WaitGroup{}
+	go mediaServer.SaveStreams(&wg)
 
-	// bigBuckBunnyStream, err := mediaServer.FetchLastFrameStream("Back2")
-	// if err != nil {
-	// 	logging.Error(err.Error())
-	// }
+	window.ShowAndRun()
 
-	// window := gocv.NewWindow("Dragon Daemon")
-	// for mediaServer.IsRunning() {
-	// 	select {
-	// 	case lastFrame := <-bigBuckBunnyStream:
-	// 		defer lastFrame.Close()
-	// 		if !(lastFrame.Cols() <= 0 || lastFrame.Rows() <= 0 || lastFrame.Empty()) {
-	// 			window.IMShow(lastFrame)
-	// 			window.WaitKey(1)
-	// 		}
-	// 	default:
-	// 	}
-	// }
-	// window.Close()
-
-	// wg.Wait()
+	logging.Debug("Waiting for persist process...")
+	wg.Wait()
 	err := mediaServer.Close()
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
@@ -114,7 +103,7 @@ func main() {
 	logging.Info("Shutdown successful... BYE! 👋")
 }
 
-func listenForStopSig(srv *media.Server) {
+func listenForStopSig(srv *media.Server, windowClose func()) {
 	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
@@ -122,6 +111,7 @@ func listenForStopSig(srv *media.Server) {
 	//send a terminate command to the session clearing goroutine's channel
 	logging.Error(fmt.Sprintf("☠️ Caught sig: %+v (Shutting down and cleaning up...) ☠️", sig))
 	logging.Info("Stopping media server...")
+	windowClose()
 	srv.Shutdown()
 	logging.Info("Closing stream connections...")
 }
