@@ -2,8 +2,10 @@ package media
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
@@ -11,9 +13,10 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	inShutdown  int32
-	mu          sync.Mutex
-	connections map[*Connection]struct{}
+	inShutdown    int32
+	mu            sync.Mutex
+	stopStreaming chan struct{}
+	connections   map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
@@ -22,6 +25,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
+	time.Sleep(time.Millisecond * 1)
 	return !s.shuttingDown()
 }
 
@@ -46,15 +50,57 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
-func (s *Server) ActiveConnections() []*Connection {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	connections := make([]*Connection, 0, len(s.connections))
-	for k := range s.connections {
-		connections = append(connections, k)
+func (s *Server) BeginStreaming() {
+	s.stopStreaming = make(chan struct{})
+	for _, conn := range s.activeConnections() {
+		go conn.stream(s.stopStreaming)
 	}
+}
 
-	return connections
+func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
+	if rwg != nil {
+		rwg.Add(1)
+	}
+	defer func() {
+		if rwg != nil {
+			rwg.Done()
+		}
+	}()
+	wg := sync.WaitGroup{}
+	for s.IsRunning() {
+		start := make(chan struct{})
+		for _, conn := range s.activeConnections() {
+			wg.Add(1)
+			go func(conn *Connection) {
+				// immediately pause thread
+				<-start
+				// save 1-3 seconds worth of footage to clip file
+				conn.persistToDisk()
+				wg.Done()
+			}(conn)
+		}
+		// unpause all threads at the same time
+		close(start)
+		wg.Wait()
+	}
+}
+
+func (s *Server) FetchLastFrameStream(title string) (chan gocv.Mat, error) {
+	for _, conn := range s.activeConnections() {
+		if strings.Compare(conn.title, title) == 0 {
+			return conn.lastFrame, nil
+		}
+	}
+	return nil, fmt.Errorf("Unable to find connection of title %s", title)
+}
+
+func (s *Server) Shutdown() {
+	atomic.StoreInt32(&s.inShutdown, 1)
+}
+
+func (s *Server) Close() error {
+	close(s.stopStreaming)
+	return s.closeConnectionsLocked()
 }
 
 func (s *Server) trackConnection(conn *Connection, add bool) bool {
@@ -76,6 +122,17 @@ func (s *Server) trackConnection(conn *Connection, add bool) bool {
 	return true
 }
 
+func (s *Server) activeConnections() []*Connection {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	connections := make([]*Connection, 0, len(s.connections))
+	for k := range s.connections {
+		connections = append(connections, k)
+	}
+
+	return connections
+}
+
 func (s *Server) closeConnectionsLocked() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -91,12 +148,4 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
-}
-
-func (s *Server) Shutdown() {
-	atomic.StoreInt32(&s.inShutdown, 1)
-}
-
-func (s *Server) Close() error {
-	return s.closeConnectionsLocked()
 }
