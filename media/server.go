@@ -91,6 +91,7 @@ func (s *Server) Shutdown() {
 
 func (s *Server) Close() error {
 	close(s.stopStreaming)
+	time.Sleep(time.Millisecond * 10)
 	return s.closeConnectionsLocked()
 }
 

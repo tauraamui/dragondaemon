@@ -49,6 +49,8 @@ func (service *Service) Manage() (string, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
+	stdlog.Println("Starting dragon daemon...")
+
 	mediaServer := media.NewServer()
 	cfg := config.Load(stdlog, errlog)
 
