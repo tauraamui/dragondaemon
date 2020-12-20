@@ -1,78 +1,65 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
+	"runtime"
+	"sync"
 	"syscall"
 
-	"github.com/tacusci/logging"
+	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
 )
 
-type options struct {
-	debug               bool
-	logFileName         string
-	cameraAddress       string
-	secondsPerClip      uint
-	persistLocationPath string
+const (
+	name        = "dragon_daemon"
+	description = "Dragon daemon saves RTSP media streams to disk"
+)
+
+var stdlog, errlog *log.Logger
+
+type Service struct {
+	daemon.Daemon
 }
 
-func parseCmdArgs() *options {
-	opts := options{}
+func (service *Service) Manage() (string, error) {
+	usage := "Usage: dragond install | remove | start | stop | status"
 
-	flag.BoolVar(&opts.debug, "debug", false, "Set runtime mode to debug")
-	flag.StringVar(&opts.logFileName, "log", "", "Server log file location")
-	flag.StringVar(&opts.cameraAddress, "c", "", "RTSP address of camera to retrieve stream from")
-	flag.UintVar(&opts.secondsPerClip, "s", 30, "Number of seconds per video clip")
-	flag.StringVar(&opts.persistLocationPath, "d", "", "Directory to store video clips")
-
-	flag.Parse()
-
-	loggingLevel := logging.WarnLevel
-	logging.OutputPath = false
-	logging.ColorLogLevelLabelOnly = true
-
-	logging.SetLevel(loggingLevel)
-
-	if opts.debug {
-		logging.SetLevel(logging.DebugLevel)
-		return &opts
+	if len(os.Args) > 1 {
+		command := os.Args[1]
+		switch command {
+		case "install":
+			service.Install()
+		case "remove":
+			service.Remove()
+		case "start":
+			service.Start()
+		case "stop":
+			service.Stop()
+		case "status":
+			service.Status()
+		default:
+			return usage, nil
+		}
 	}
 
-	if opts.secondsPerClip > 0 {
-		opts.secondsPerClip++
-	}
-
-	return &opts
-}
-
-func main() {
-	opts := parseCmdArgs()
-
-	flushInitialised := make(chan bool)
-	if len(opts.logFileName) > 0 {
-		go logging.FlushLogs(opts.logFileName, &flushInitialised)
-		//halt main thread until creating file to flush logs to has initialised
-		<-flushInitialised
-	}
-
-	logging.WhiteOutput(fmt.Sprintf("Starting Dragon Daemon v0.0.0 (c)[tacusci ltd]\n"))
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	mediaServer := media.NewServer()
-	go listenForStopSig(mediaServer)
-
-	cfg := config.Load()
+	cfg := config.Load(stdlog, errlog)
 
 	for _, c := range cfg.Cameras {
 		if c.Disabled {
-			logging.Warn(fmt.Sprintf("Connection %s is disabled, skipping...", c.Title))
+			stdlog.Printf("WARN: Connection %s is disabled, skipping...\n", c.Title)
 			continue
 		}
 
 		mediaServer.Connect(
+			stdlog, errlog,
 			c.Title,
 			c.Address,
 			c.PersistLoc,
@@ -81,24 +68,48 @@ func main() {
 	}
 
 	mediaServer.BeginStreaming()
-	mediaServer.SaveStreams(nil)
+	wg := sync.WaitGroup{}
+	go mediaServer.SaveStreams(&wg)
 
+	killSignal := <-interrupt
+	stdlog.Println("Received signal:", killSignal)
+
+	stdlog.Println("Waiting for persist process...")
+	wg.Wait()
+	stdlog.Println("Persist process has finished...")
+	mediaServer.Shutdown()
 	err := mediaServer.Close()
 	if err != nil {
-		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
+		errlog.Printf("Safe shutdown unsuccessful: %v\n", err)
 		os.Exit(1)
 	}
-	logging.Info("Shutdown successful... BYE! 👋")
+
+	return "Shutdown successful... BYE! �", nil
 }
 
-func listenForStopSig(srv *media.Server) {
-	var gracefulStop = make(chan os.Signal)
-	signal.Notify(gracefulStop, syscall.SIGTERM)
-	signal.Notify(gracefulStop, syscall.SIGINT)
-	sig := <-gracefulStop
-	//send a terminate command to the session clearing goroutine's channel
-	logging.Error(fmt.Sprintf("☠️ Caught sig: %+v (Shutting down and cleaning up...) ☠️", sig))
-	logging.Info("Stopping media server...")
-	srv.Shutdown()
-	logging.Info("Closing stream connections...")
+func init() {
+	stdlog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	errlog = log.New(os.Stderr, "", log.Ldate|log.Ltime)
+}
+
+func main() {
+	daemonType := daemon.SystemDaemon
+	if runtime.GOOS == "darwin" {
+		daemonType = daemon.GlobalDaemon
+	}
+
+	srv, err := daemon.New(name, description, daemonType)
+	if err != nil {
+		errlog.Println("Error: ", err)
+		os.Exit(1)
+	}
+
+	service := &Service{srv}
+	status, err := service.Manage()
+	if err != nil {
+		errlog.Println(status, "\nError ", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(status)
 }
