@@ -50,6 +50,7 @@ func Load(stdlog, errlog *log.Logger) Config {
 		configPath = "dd.config"
 	}
 
+	stdlog.Println("Loading configuration:", configPath)
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)

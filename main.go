@@ -16,7 +16,7 @@ import (
 
 const (
 	name        = "dragon_daemon"
-	description = "Dragon daemon saves RTSP media streams to disk"
+	description = "Dragon service daemon which saves RTSP media streams to disk"
 )
 
 var stdlog, errlog *log.Logger
@@ -95,7 +95,7 @@ func init() {
 func main() {
 	daemonType := daemon.SystemDaemon
 	if runtime.GOOS == "darwin" {
-		daemonType = daemon.GlobalDaemon
+		daemonType = daemon.UserAgent
 	}
 
 	srv, err := daemon.New(name, description, daemonType)
