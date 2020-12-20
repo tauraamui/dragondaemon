@@ -1,13 +1,11 @@
 package media
 
 import (
-	"fmt"
-	"strings"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
 )
 
@@ -30,6 +28,7 @@ func (s *Server) IsRunning() bool {
 }
 
 func (s *Server) Connect(
+	stdlog, errlog *log.Logger,
 	title string,
 	rtspStream string,
 	persistLocation string,
@@ -37,11 +36,12 @@ func (s *Server) Connect(
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
-		logging.Error(fmt.Sprintf("Unable to connect to stream [%s] at [%s]: %v", title, rtspStream, err))
+		errlog.Printf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err)
 	}
 
-	logging.Info(fmt.Sprintf("Connected to stream [%s] at [%s]", title, rtspStream))
+	stdlog.Printf("Connected to stream [%s] at [%s]\n", title, rtspStream)
 	conn := NewConnection(
+		stdlog, errlog,
 		title,
 		persistLocation,
 		secondsPerClip,
@@ -83,15 +83,6 @@ func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
 		close(start)
 		wg.Wait()
 	}
-}
-
-func (s *Server) FetchLastFrameStream(title string) (chan gocv.Mat, error) {
-	for _, conn := range s.activeConnections() {
-		if strings.Compare(conn.title, title) == 0 {
-			return conn.lastFrame, nil
-		}
-	}
-	return nil, fmt.Errorf("Unable to find connection of title %s", title)
 }
 
 func (s *Server) Shutdown() {
