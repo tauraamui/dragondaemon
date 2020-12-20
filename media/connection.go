@@ -18,8 +18,8 @@ type Connection struct {
 	title           string
 	persistLocation string
 	secondsPerClip  int
-	vc              *gocv.VideoCapture
 	mu              sync.Mutex
+	vc              *gocv.VideoCapture
 	lastFrameData   gocv.Mat
 	buffer          chan *gocv.Mat
 	window          *gocv.Window
@@ -90,6 +90,8 @@ func (c *Connection) persistToDisk() {
 	}
 	defer writer.Close()
 
+	c.stdlog.Printf("Saving to clip file: %s\n", outputFile)
+
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
 		img = <-c.buffer
@@ -115,19 +117,22 @@ func (c *Connection) stream(stop chan struct{}) {
 			c.lastFrameData.Close()
 			break
 		default:
-			img := gocv.NewMat()
-			if ok := c.vc.Read(&img); !ok {
-				c.stdlog.Printf("WARN: Device for stream at [%s] closed\n", c.title)
-			}
+			if c.vc.IsOpened() {
+				img := gocv.NewMat()
 
-			img.CopyTo(&c.lastFrameData)
-			bufferClone := c.lastFrameData.Clone()
-			select {
-			case c.buffer <- &bufferClone:
-			default:
-			}
+				if ok := c.vc.Read(&img); !ok {
+					c.stdlog.Printf("WARN: Device for stream at [%s] closed\n", c.title)
+				}
 
-			img.Close()
+				img.CopyTo(&c.lastFrameData)
+				bufferClone := c.lastFrameData.Clone()
+				select {
+				case c.buffer <- &bufferClone:
+				default:
+				}
+
+				img.Close()
+			}
 		}
 	}
 }

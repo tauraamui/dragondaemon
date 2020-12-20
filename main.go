@@ -74,17 +74,17 @@ func (service *Service) Manage() (string, error) {
 	killSignal := <-interrupt
 	stdlog.Println("Received signal:", killSignal)
 
+	mediaServer.Shutdown()
 	stdlog.Println("Waiting for persist process...")
 	wg.Wait()
 	stdlog.Println("Persist process has finished...")
-	mediaServer.Shutdown()
 	err := mediaServer.Close()
 	if err != nil {
 		errlog.Printf("Safe shutdown unsuccessful: %v\n", err)
 		os.Exit(1)
 	}
 
-	return "Shutdown successful... BYE! �", nil
+	return "Shutdown successful... BYE! 👋", nil
 }
 
 func init() {
