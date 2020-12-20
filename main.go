@@ -32,15 +32,15 @@ func (service *Service) Manage() (string, error) {
 		command := os.Args[1]
 		switch command {
 		case "install":
-			service.Install()
+			return service.Install()
 		case "remove":
-			service.Remove()
+			return service.Remove()
 		case "start":
-			service.Start()
+			return service.Start()
 		case "stop":
-			service.Stop()
+			return service.Stop()
 		case "status":
-			service.Status()
+			return service.Status()
 		default:
 			return usage, nil
 		}
@@ -100,14 +100,14 @@ func main() {
 
 	srv, err := daemon.New(name, description, daemonType)
 	if err != nil {
-		errlog.Println("Error: ", err)
+		errlog.Println("Error:", err)
 		os.Exit(1)
 	}
 
 	service := &Service{srv}
 	status, err := service.Manage()
 	if err != nil {
-		errlog.Println(status, "\nError ", err)
+		errlog.Println(status, "\nError:", err)
 		os.Exit(1)
 	}
 
