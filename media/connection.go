@@ -2,17 +2,18 @@ package media
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
 )
 
 type Connection struct {
+	stdlog, errlog  *log.Logger
 	inShutdown      int32
 	title           string
 	persistLocation string
@@ -21,24 +22,25 @@ type Connection struct {
 	mu              sync.Mutex
 	lastFrameData   gocv.Mat
 	buffer          chan *gocv.Mat
-	lastFrame       chan gocv.Mat
 	window          *gocv.Window
 }
 
 func NewConnection(
+	stdlog, errlog *log.Logger,
 	title string,
 	persistLocation string,
 	secondsPerClip int,
 	vc *gocv.VideoCapture,
 ) *Connection {
 	return &Connection{
+		stdlog:          stdlog,
+		errlog:          errlog,
 		title:           title,
 		persistLocation: persistLocation,
 		secondsPerClip:  secondsPerClip,
 		vc:              vc,
 		lastFrameData:   gocv.NewMat(),
 		buffer:          make(chan *gocv.Mat, 3),
-		lastFrame:       make(chan gocv.Mat, 1),
 	}
 }
 
@@ -73,7 +75,6 @@ func (c *Connection) Close() error {
 	if c.window != nil {
 		c.window.Close()
 	}
-	close(c.lastFrame)
 	close(c.buffer)
 	return c.vc.Close()
 }
@@ -81,11 +82,11 @@ func (c *Connection) Close() error {
 func (c *Connection) persistToDisk() {
 	img := <-c.buffer
 	defer img.Close()
-	outputFile := fetchClipFilePath(c.persistLocation, c.title)
+	outputFile := fetchClipFilePath(c.errlog, c.persistLocation, c.title)
 	writer, err := gocv.VideoWriterFile(outputFile, "mp4v", 30, img.Cols(), img.Rows(), true)
 
 	if err != nil {
-		logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
+		c.errlog.Printf("Opening video writer device: %v\n", err)
 	}
 	defer writer.Close()
 
@@ -95,13 +96,12 @@ func (c *Connection) persistToDisk() {
 		defer img.Close()
 
 		if img.Empty() {
-			logging.Debug("Skipping frame...")
 			continue
 		}
 
 		if writer.IsOpened() {
 			if err := writer.Write(*img); err != nil {
-				logging.Error(fmt.Sprintf("Unable to write frame to file: %v", err))
+				c.errlog.Printf("Unable to write frame to file: %v\n", err)
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func (c *Connection) stream(stop chan struct{}) {
 		default:
 			img := gocv.NewMat()
 			if ok := c.vc.Read(&img); !ok {
-				logging.Warn(fmt.Sprintf("Device for stream at [%s] closed", c.title))
+				c.stdlog.Printf("WARN: Device for stream at [%s] closed\n", c.title)
 			}
 
 			img.CopyTo(&c.lastFrameData)
@@ -127,20 +127,16 @@ func (c *Connection) stream(stop chan struct{}) {
 			default:
 			}
 
-			select {
-			case c.lastFrame <- c.lastFrameData:
-			default:
-			}
 			img.Close()
 		}
 	}
 }
 
-func fetchClipFilePath(rootDir string, clipsDir string) string {
+func fetchClipFilePath(errlog *log.Logger, rootDir string, clipsDir string) string {
 	if len(rootDir) > 0 {
 		err := ensureDirectoryExists(rootDir)
 		if err != nil {
-			logging.Error(fmt.Sprintf("Unable to create directory %s: %v", rootDir, err))
+			errlog.Printf("Unable to create directory %s: %v\n", rootDir, err)
 		}
 	} else {
 		rootDir = "."
@@ -152,13 +148,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error(fmt.Sprintf("Unable to create directory %s: %v", path, err))
+			errlog.Printf("Unable to create directory %s: %v\n", path, err)
 		}
 
 		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error(fmt.Sprintf("Unable to create directory %s: %v", path, err))
+			errlog.Printf("Unable to create directory %s: %v\n", path, err)
 		}
 	}
 
