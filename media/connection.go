@@ -83,7 +83,7 @@ func (c *Connection) persistToDisk() {
 	img := <-c.buffer
 	defer img.Close()
 	outputFile := fetchClipFilePath(c.errlog, c.persistLocation, c.title)
-	writer, err := gocv.VideoWriterFile(outputFile, "mp4v", 30, img.Cols(), img.Rows(), true)
+	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", 30, img.Cols(), img.Rows(), true)
 
 	if err != nil {
 		c.errlog.Printf("Opening video writer device: %v\n", err)
@@ -111,6 +111,7 @@ func (c *Connection) persistToDisk() {
 
 func (c *Connection) stream(stop chan struct{}) {
 	for {
+		// throttle CPU usage
 		time.Sleep(time.Millisecond * 1)
 		select {
 		case <-stop:
