@@ -115,7 +115,7 @@ func (c *Connection) persistToDisk() {
 func (c *Connection) stream(stop chan struct{}) {
 	for {
 		// throttle CPU usage
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 100)
 		select {
 		case <-stop:
 			c.lastFrameData.Close()

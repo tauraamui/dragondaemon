@@ -23,7 +23,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
-	time.Sleep(time.Millisecond * 10)
+	time.Sleep(time.Millisecond * 100)
 	return !s.shuttingDown()
 }
 
