@@ -65,6 +65,7 @@ func (service *Service) Manage() (string, error) {
 			c.Title,
 			c.Address,
 			c.PersistLoc,
+			c.FPS,
 			c.SecondsPerClip,
 		)
 	}

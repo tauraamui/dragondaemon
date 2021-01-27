@@ -17,6 +17,7 @@ type Connection struct {
 	inShutdown      int32
 	title           string
 	persistLocation string
+	fps             int
 	secondsPerClip  int
 	mu              sync.Mutex
 	vc              *gocv.VideoCapture
@@ -29,6 +30,7 @@ func NewConnection(
 	stdlog, errlog *log.Logger,
 	title string,
 	persistLocation string,
+	fps int,
 	secondsPerClip int,
 	vc *gocv.VideoCapture,
 ) *Connection {
@@ -37,10 +39,11 @@ func NewConnection(
 		errlog:          errlog,
 		title:           title,
 		persistLocation: persistLocation,
+		fps:             fps,
 		secondsPerClip:  secondsPerClip,
 		vc:              vc,
 		lastFrameData:   gocv.NewMat(),
-		buffer:          make(chan *gocv.Mat, 3),
+		buffer:          make(chan *gocv.Mat, 6),
 	}
 }
 
@@ -83,7 +86,7 @@ func (c *Connection) persistToDisk() {
 	img := <-c.buffer
 	defer img.Close()
 	outputFile := fetchClipFilePath(c.errlog, c.persistLocation, c.title)
-	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", 30, img.Cols(), img.Rows(), true)
+	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
 
 	if err != nil {
 		c.errlog.Printf("Opening video writer device: %v\n", err)
@@ -93,7 +96,7 @@ func (c *Connection) persistToDisk() {
 	c.stdlog.Printf("Saving to clip file: %s\n", outputFile)
 
 	var framesWritten uint
-	for framesWritten = 0; framesWritten < 30*uint(c.secondsPerClip); framesWritten++ {
+	for framesWritten = 0; framesWritten < uint(c.fps)*uint(c.secondsPerClip); framesWritten++ {
 		img = <-c.buffer
 		defer img.Close()
 
@@ -112,7 +115,7 @@ func (c *Connection) persistToDisk() {
 func (c *Connection) stream(stop chan struct{}) {
 	for {
 		// throttle CPU usage
-		time.Sleep(time.Millisecond * 1)
+		time.Sleep(time.Millisecond * 10)
 		select {
 		case <-stop:
 			c.lastFrameData.Close()

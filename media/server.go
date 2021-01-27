@@ -23,7 +23,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
-	time.Sleep(time.Millisecond * 1)
+	time.Sleep(time.Millisecond * 10)
 	return !s.shuttingDown()
 }
 
@@ -32,11 +32,13 @@ func (s *Server) Connect(
 	title string,
 	rtspStream string,
 	persistLocation string,
+	fps int,
 	secondsPerClip int,
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
 		errlog.Printf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err)
+		return
 	}
 
 	stdlog.Printf("Connected to stream [%s] at [%s]\n", title, rtspStream)
@@ -44,6 +46,7 @@ func (s *Server) Connect(
 		stdlog, errlog,
 		title,
 		persistLocation,
+		fps,
 		secondsPerClip,
 		vc,
 	)

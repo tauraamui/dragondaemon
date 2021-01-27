@@ -14,6 +14,7 @@ type Camera struct {
 	Title          string   `json:"title" validate:"empty=false"`
 	Address        string   `json:"address"`
 	PersistLoc     string   `json:"persist_location"`
+	FPS            int      `json:"fps" validate:"gte=1 & lte=30"`
 	SecondsPerClip int      `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
 	Disabled       bool     `json:"disabled"`
 	Schedule       Schedule `json:"schedule"`
