@@ -51,7 +51,7 @@ func (service *Service) Manage() (string, error) {
 
 	stdlog.Println("Starting dragon daemon...")
 
-	mediaServer := media.NewServer()
+	mediaServer := media.NewServer(stdlog, errlog)
 	cfg := config.Load(stdlog, errlog)
 
 	for _, c := range cfg.Cameras {
@@ -61,7 +61,6 @@ func (service *Service) Manage() (string, error) {
 		}
 
 		mediaServer.Connect(
-			stdlog, errlog,
 			c.Title,
 			c.Address,
 			c.PersistLoc,

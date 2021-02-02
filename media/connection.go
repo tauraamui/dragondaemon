@@ -13,17 +13,19 @@ import (
 )
 
 type Connection struct {
-	stdlog, errlog  *log.Logger
-	inShutdown      int32
-	title           string
-	persistLocation string
-	fps             int
-	secondsPerClip  int
-	mu              sync.Mutex
-	vc              *gocv.VideoCapture
-	lastFrameData   gocv.Mat
-	buffer          chan *gocv.Mat
-	window          *gocv.Window
+	stdlog, errlog     *log.Logger
+	inShutdown         int32
+	attemptToReconnect chan bool
+	title              string
+	persistLocation    string
+	fps                int
+	secondsPerClip     int
+	mu                 sync.Mutex
+	vc                 *gocv.VideoCapture
+	rtspStream         string
+	lastFrameData      gocv.Mat
+	buffer             chan *gocv.Mat
+	window             *gocv.Window
 }
 
 func NewConnection(
@@ -33,17 +35,20 @@ func NewConnection(
 	fps int,
 	secondsPerClip int,
 	vc *gocv.VideoCapture,
+	rtspStream string,
 ) *Connection {
 	return &Connection{
-		stdlog:          stdlog,
-		errlog:          errlog,
-		title:           title,
-		persistLocation: persistLocation,
-		fps:             fps,
-		secondsPerClip:  secondsPerClip,
-		vc:              vc,
-		lastFrameData:   gocv.NewMat(),
-		buffer:          make(chan *gocv.Mat, 6),
+		stdlog:             stdlog,
+		errlog:             errlog,
+		attemptToReconnect: make(chan bool, 1),
+		title:              title,
+		persistLocation:    persistLocation,
+		fps:                fps,
+		secondsPerClip:     secondsPerClip,
+		vc:                 vc,
+		rtspStream:         rtspStream,
+		lastFrameData:      gocv.NewMat(),
+		buffer:             make(chan *gocv.Mat, 6),
 	}
 }
 
@@ -120,12 +125,26 @@ func (c *Connection) stream(stop chan struct{}) {
 		case <-stop:
 			c.lastFrameData.Close()
 			break
+		case reconnect := <-c.attemptToReconnect:
+			if reconnect {
+				c.stdlog.Printf("Reconnecting to connection [%s]", c.title)
+				err := c.reconnect()
+				if err != nil {
+					c.errlog.Printf("Error occurred reconnecting to connection [%s]... ERROR: %v", c.title, err)
+					c.attemptToReconnect <- true
+					continue
+				}
+				c.stdlog.Printf("Re-connected to connection [%s]...", c.title)
+				continue
+			}
 		default:
 			if c.vc.IsOpened() {
 				img := gocv.NewMat()
 
 				if ok := c.vc.Read(&img); !ok {
 					c.stdlog.Printf("WARN: Device for stream at [%s] closed\n", c.title)
+					c.attemptToReconnect <- true
+					continue
 				}
 
 				img.CopyTo(&c.lastFrameData)
@@ -139,6 +158,25 @@ func (c *Connection) stream(stop chan struct{}) {
 			}
 		}
 	}
+}
+
+func (c *Connection) reconnect() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	var err error
+	if err = c.vc.Close(); err != nil {
+		c.errlog.Printf("Error attempting to close connection... ERROR: %v\n", err)
+	}
+
+	c.vc, err = gocv.OpenVideoCapture(c.rtspStream)
+	if err != nil {
+		return err
+	}
+
+	c.stdlog.Printf("Successfully reconnected to connection [%s] at [%s]", c.title, c.rtspStream)
+
+	return nil
 }
 
 func fetchClipFilePath(errlog *log.Logger, rootDir string, clipsDir string) string {

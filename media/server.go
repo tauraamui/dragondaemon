@@ -11,15 +11,19 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	inShutdown    int32
-	mu            sync.Mutex
-	stopStreaming chan struct{}
-	connections   map[*Connection]struct{}
+	stdlog, errlog *log.Logger
+	inShutdown     int32
+	mu             sync.Mutex
+	stopStreaming  chan struct{}
+	connections    map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
-func NewServer() *Server {
-	return &Server{}
+func NewServer(stdlog, errlog *log.Logger) *Server {
+	return &Server{
+		stdlog: stdlog,
+		errlog: errlog,
+	}
 }
 
 func (s *Server) IsRunning() bool {
@@ -28,7 +32,6 @@ func (s *Server) IsRunning() bool {
 }
 
 func (s *Server) Connect(
-	stdlog, errlog *log.Logger,
 	title string,
 	rtspStream string,
 	persistLocation string,
@@ -37,25 +40,28 @@ func (s *Server) Connect(
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
-		errlog.Printf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err)
+		s.errlog.Printf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err)
 		return
 	}
 
-	stdlog.Printf("Connected to stream [%s] at [%s]\n", title, rtspStream)
+	s.stdlog.Printf("Connected to stream [%s] at [%s]\n", title, rtspStream)
 	conn := NewConnection(
-		stdlog, errlog,
+		s.stdlog, s.errlog,
 		title,
 		persistLocation,
 		fps,
 		secondsPerClip,
 		vc,
+		rtspStream,
 	)
 	s.trackConnection(conn, true)
 }
 
 func (s *Server) BeginStreaming() {
+	s.stdlog.Println("Beginning to read from connected streams...")
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
+		s.stdlog.Printf("Reading stream from connection: [%s]", conn.title)
 		go conn.stream(s.stopStreaming)
 	}
 }
