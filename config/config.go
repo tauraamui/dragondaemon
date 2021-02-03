@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/tacusci/logging"
+	"github.com/tacusci/logging/v2"
 	"gopkg.in/dealancer/validate.v2"
 )
 
@@ -55,8 +55,7 @@ func Load() Config {
 	logging.Info(fmt.Sprintf("Loading configuration: %s", configPath))
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		logging.ErrorAndExit(err.Error())
-		// log.Fatalf("Error: %v\n", err)
+		logging.Fatal(err.Error())
 	}
 
 	logging.Info("Loaded configuration...")
@@ -64,12 +63,12 @@ func Load() Config {
 	cfg := Config{}
 	err = json.Unmarshal(file, &cfg)
 	if err != nil {
-		logging.ErrorAndExit(fmt.Sprintf("Error parsing dd.config: %v\n", err))
+		logging.Fatal("Error passing dd.config: %v\n", err)
 	}
 
 	err = validate.Validate(&cfg)
 	if err != nil {
-		logging.ErrorAndExit(fmt.Sprintf("Error validating dd.config content: %v\n", err))
+		logging.Fatal("Error validation dd.config content: %v\n", err)
 	}
 
 	return cfg

@@ -1,12 +1,11 @@
 package media
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/tacusci/logging"
+	"github.com/tacusci/logging/v2"
 	"gocv.io/x/gocv"
 )
 
@@ -37,11 +36,11 @@ func (s *Server) Connect(
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
-		logging.Error(fmt.Sprintf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err))
+		logging.Error("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err)
 		return
 	}
 
-	logging.Info(fmt.Sprintf("Connected to stream [%s] at [%s]\n", title, rtspStream))
+	logging.Info("Connected to stream [%s] at [%s]\n", title, rtspStream)
 	conn := NewConnection(
 		title,
 		persistLocation,
@@ -56,7 +55,7 @@ func (s *Server) Connect(
 func (s *Server) BeginStreaming() {
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
-		logging.Info(fmt.Sprintf("Reading stream from connection [%s]", conn.title))
+		logging.Info("Reading stream from connection [%s]", conn.title)
 		go conn.stream(s.stopStreaming)
 	}
 }

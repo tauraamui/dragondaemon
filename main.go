@@ -8,7 +8,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/tacusci/logging"
+	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"

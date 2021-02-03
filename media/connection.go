@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tacusci/logging"
+	"github.com/tacusci/logging/v2"
 	"gocv.io/x/gocv"
 )
 
@@ -90,11 +90,11 @@ func (c *Connection) persistToDisk() {
 	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
 
 	if err != nil {
-		logging.Error(fmt.Sprintf("Opening video writer device: %v\n", err))
+		logging.Error("Opening video writer device: %v", err)
 	}
 	defer writer.Close()
 
-	logging.Info(fmt.Sprintf("Saving to clip file: %s\n", outputFile))
+	logging.Info(fmt.Sprintf("Saving to clip file: %s", outputFile))
 
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < uint(c.fps)*uint(c.secondsPerClip); framesWritten++ {
@@ -107,7 +107,7 @@ func (c *Connection) persistToDisk() {
 
 		if writer.IsOpened() {
 			if err := writer.Write(*img); err != nil {
-				logging.Error(fmt.Sprintf("Unable to write frame to file: %v\n", err))
+				logging.Error("Unable to write frame to file: %v", err)
 			}
 		}
 	}
@@ -123,14 +123,14 @@ func (c *Connection) stream(stop chan struct{}) {
 			break
 		case reconnect := <-c.attemptToReconnect:
 			if reconnect {
-				logging.Warn(fmt.Sprintf("Attempting to reconnect to [%s]", c.title))
+				logging.Warn("Attempting to reconnect to [%s]", c.title)
 				err := c.reconnect()
 				if err != nil {
-					logging.Error(fmt.Sprintf("Unable to reconnect to [%s]... ERROR: %v", c.title, err))
+					logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
 					c.attemptToReconnect <- true
 					continue
 				}
-				logging.Info(fmt.Sprintf("Re-connected to [%s]...", c.title))
+				logging.Info("Re-connected to [%s]...", c.title)
 				continue
 			}
 		default:
@@ -138,7 +138,7 @@ func (c *Connection) stream(stop chan struct{}) {
 				img := gocv.NewMat()
 
 				if ok := c.vc.Read(&img); !ok {
-					logging.Warn(fmt.Sprintf("Connection for stream at [%s] closed\n", c.title))
+					logging.Warn("Connection for stream at [%s] closed", c.title)
 					c.attemptToReconnect <- true
 					continue
 				}
@@ -162,7 +162,7 @@ func (c *Connection) reconnect() error {
 
 	var err error
 	if err = c.vc.Close(); err != nil {
-		logging.Error(fmt.Sprintf("Failed to close connection... ERROR: %v\n", err))
+		logging.Error("Failed to close connection... ERROR: %v\n", err)
 	}
 
 	c.vc, err = gocv.OpenVideoCapture(c.rtspStream)
@@ -170,7 +170,7 @@ func (c *Connection) reconnect() error {
 		return err
 	}
 
-	logging.Info(fmt.Sprintf("Successfully reconnected to connection [%s] at [%s]", c.title, c.rtspStream))
+	logging.Info("Successfully reconnected to connection [%s] at [%s]", c.title, c.rtspStream)
 
 	return nil
 }
@@ -179,7 +179,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	if len(rootDir) > 0 {
 		err := ensureDirectoryExists(rootDir)
 		if err != nil {
-			logging.Error(fmt.Sprintf("Unable to create directory %s: %v\n", rootDir, err))
+			logging.Error("Unable to create directory %s: %v\n", rootDir, err)
 		}
 	} else {
 		rootDir = "."
@@ -191,13 +191,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error(fmt.Sprintf("Unable to create directory %s: %v\n", path, err))
+			logging.Error("Unable to create directory %s: %v\n", path, err)
 		}
 
 		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error(fmt.Sprintf("Unable to create directory %s: %v\n", path, err))
+			logging.Error("Unable to create directory %s: %v\n", path, err)
 		}
 	}
 
