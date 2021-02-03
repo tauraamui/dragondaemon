@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -52,7 +51,7 @@ func Load() Config {
 		configPath = "dd.config"
 	}
 
-	logging.Info(fmt.Sprintf("Loading configuration: %s", configPath))
+	logging.Info("Loading configuration: %s", configPath)
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		logging.Fatal(err.Error())

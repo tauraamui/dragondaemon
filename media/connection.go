@@ -170,8 +170,6 @@ func (c *Connection) reconnect() error {
 		return err
 	}
 
-	logging.Info("Successfully reconnected to connection [%s] at [%s]", c.title, c.rtspStream)
-
 	return nil
 }
 
