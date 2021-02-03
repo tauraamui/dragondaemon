@@ -22,7 +22,6 @@ type Connection struct {
 	mu                 sync.Mutex
 	vc                 *gocv.VideoCapture
 	rtspStream         string
-	lastFrameData      gocv.Mat
 	buffer             chan *gocv.Mat
 	window             *gocv.Window
 }
@@ -43,7 +42,6 @@ func NewConnection(
 		secondsPerClip:     secondsPerClip,
 		vc:                 vc,
 		rtspStream:         rtspStream,
-		lastFrameData:      gocv.NewMat(),
 		buffer:             make(chan *gocv.Mat, 6),
 	}
 }
@@ -85,9 +83,9 @@ func (c *Connection) Close() error {
 
 func (c *Connection) persistToDisk() {
 	img := <-c.buffer
-	defer img.Close()
 	outputFile := fetchClipFilePath(c.persistLocation, c.title)
 	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
+	img.Close()
 
 	if err != nil {
 		logging.Error("Opening video writer device: %v", err)
@@ -99,10 +97,10 @@ func (c *Connection) persistToDisk() {
 	var framesWritten uint
 	for framesWritten = 0; framesWritten < uint(c.fps)*uint(c.secondsPerClip); framesWritten++ {
 		img = <-c.buffer
-		defer img.Close()
 
 		if img.Empty() {
-			continue
+			img.Close()
+			return
 		}
 
 		if writer.IsOpened() {
@@ -110,6 +108,7 @@ func (c *Connection) persistToDisk() {
 				logging.Error("Unable to write frame to file: %v", err)
 			}
 		}
+		img.Close()
 	}
 }
 
@@ -119,7 +118,6 @@ func (c *Connection) stream(stop chan struct{}) {
 		time.Sleep(time.Millisecond * 100)
 		select {
 		case <-stop:
-			c.lastFrameData.Close()
 			break
 		case reconnect := <-c.attemptToReconnect:
 			if reconnect {
@@ -138,19 +136,18 @@ func (c *Connection) stream(stop chan struct{}) {
 				img := gocv.NewMat()
 
 				if ok := c.vc.Read(&img); !ok {
+					img.Close()
 					logging.Warn("Connection for stream at [%s] closed", c.title)
 					c.attemptToReconnect <- true
 					continue
 				}
 
-				img.CopyTo(&c.lastFrameData)
-				bufferClone := c.lastFrameData.Clone()
 				select {
-				case c.buffer <- &bufferClone:
+				case c.buffer <- &img:
+					logging.Debug("Sending read from to buffer...")
 				default:
+					logging.Debug("Buffer currently full...")
 				}
-
-				img.Close()
 			}
 		}
 	}

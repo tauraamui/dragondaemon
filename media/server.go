@@ -1,6 +1,7 @@
 package media
 
 import (
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -23,6 +24,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
+	runtime.GC()
 	time.Sleep(time.Millisecond * 100)
 	return !s.shuttingDown()
 }
