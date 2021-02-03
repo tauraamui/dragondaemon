@@ -72,6 +72,7 @@ func (service *Service) Manage() (string, error) {
 	go mediaServer.SaveStreams(&wg)
 
 	killSignal := <-interrupt
+	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
 
 	mediaServer.Shutdown()
