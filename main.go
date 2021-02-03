@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
 	"sync"
 	"syscall"
 
+	"github.com/tacusci/logging"
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
@@ -18,8 +18,6 @@ const (
 	name        = "dragon_daemon"
 	description = "Dragon service daemon which saves RTSP media streams to disk"
 )
-
-var stdlog, errlog *log.Logger
 
 type Service struct {
 	daemon.Daemon
@@ -49,14 +47,14 @@ func (service *Service) Manage() (string, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	stdlog.Println("Starting dragon daemon...")
+	logging.Info("Starting dragon daemon...")
 
-	mediaServer := media.NewServer(stdlog, errlog)
-	cfg := config.Load(stdlog, errlog)
+	mediaServer := media.NewServer()
+	cfg := config.Load()
 
 	for _, c := range cfg.Cameras {
 		if c.Disabled {
-			stdlog.Printf("WARN: Connection %s is disabled, skipping...\n", c.Title)
+			logging.Warn(fmt.Sprintf("WARN: Connection %s is disabled, skipping...\n", c.Title))
 			continue
 		}
 
@@ -74,15 +72,15 @@ func (service *Service) Manage() (string, error) {
 	go mediaServer.SaveStreams(&wg)
 
 	killSignal := <-interrupt
-	stdlog.Println("Received signal:", killSignal)
+	logging.Error(fmt.Sprintf("Received signal: %s", killSignal))
 
 	mediaServer.Shutdown()
-	stdlog.Println("Waiting for persist process...")
+	logging.Warn("Waiting for persist process...")
 	wg.Wait()
-	stdlog.Println("Persist process has finished...")
+	logging.Info("Persist process has finished...")
 	err := mediaServer.Close()
 	if err != nil {
-		errlog.Printf("Safe shutdown unsuccessful: %v\n", err)
+		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v\n", err))
 		os.Exit(1)
 	}
 
@@ -90,8 +88,7 @@ func (service *Service) Manage() (string, error) {
 }
 
 func init() {
-	stdlog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	errlog = log.New(os.Stderr, "", log.Ldate|log.Ltime)
+	logging.ColorLogLevelLabelOnly = true
 }
 
 func main() {
@@ -102,14 +99,14 @@ func main() {
 
 	srv, err := daemon.New(name, description, daemonType)
 	if err != nil {
-		errlog.Println("Error:", err)
+		logging.Error(err.Error())
 		os.Exit(1)
 	}
 
 	service := &Service{srv}
 	status, err := service.Manage()
 	if err != nil {
-		errlog.Println(status, "\nError:", err)
+		logging.Error(fmt.Sprint(status, err.Error()))
 		os.Exit(1)
 	}
 

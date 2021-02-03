@@ -1,29 +1,26 @@
 package media
 
 import (
-	"log"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/tacusci/logging"
 	"gocv.io/x/gocv"
 )
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	stdlog, errlog *log.Logger
-	inShutdown     int32
-	mu             sync.Mutex
-	stopStreaming  chan struct{}
-	connections    map[*Connection]struct{}
+	inShutdown    int32
+	mu            sync.Mutex
+	stopStreaming chan struct{}
+	connections   map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
-func NewServer(stdlog, errlog *log.Logger) *Server {
-	return &Server{
-		stdlog: stdlog,
-		errlog: errlog,
-	}
+func NewServer() *Server {
+	return &Server{}
 }
 
 func (s *Server) IsRunning() bool {
@@ -40,13 +37,12 @@ func (s *Server) Connect(
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
-		s.errlog.Printf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err)
+		logging.Error(fmt.Sprintf("Unable to connect to stream [%s] at [%s]: %v\n", title, rtspStream, err))
 		return
 	}
 
-	s.stdlog.Printf("Connected to stream [%s] at [%s]\n", title, rtspStream)
+	logging.Info(fmt.Sprintf("Connected to stream [%s] at [%s]\n", title, rtspStream))
 	conn := NewConnection(
-		s.stdlog, s.errlog,
 		title,
 		persistLocation,
 		fps,
@@ -58,10 +54,9 @@ func (s *Server) Connect(
 }
 
 func (s *Server) BeginStreaming() {
-	s.stdlog.Println("Beginning to read from connected streams...")
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
-		s.stdlog.Printf("Reading stream from connection: [%s]", conn.title)
+		logging.Info(fmt.Sprintf("Reading stream from connection [%s]", conn.title))
 		go conn.stream(s.stopStreaming)
 	}
 }

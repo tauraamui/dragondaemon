@@ -2,10 +2,11 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
+	"github.com/tacusci/logging"
 	"gopkg.in/dealancer/validate.v2"
 )
 
@@ -45,29 +46,30 @@ type Config struct {
 }
 
 // Load parses configuration file and loads settings
-func Load(stdlog, errlog *log.Logger) Config {
+func Load() Config {
 	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
 	if configPath == "" {
 		configPath = "dd.config"
 	}
 
-	stdlog.Println("Loading configuration:", configPath)
+	logging.Info(fmt.Sprintf("Loading configuration: %s", configPath))
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Fatalf("Error: %v\n", err)
+		logging.ErrorAndExit(err.Error())
+		// log.Fatalf("Error: %v\n", err)
 	}
 
-	stdlog.Println("Loaded configuration...")
+	logging.Info("Loaded configuration...")
 
 	cfg := Config{}
 	err = json.Unmarshal(file, &cfg)
 	if err != nil {
-		log.Fatalf("Error parsing dd.config: %v\n", err)
+		logging.ErrorAndExit(fmt.Sprintf("Error parsing dd.config: %v\n", err))
 	}
 
 	err = validate.Validate(&cfg)
 	if err != nil {
-		log.Fatalf("Error validating dd.config content: %v\n", err)
+		logging.ErrorAndExit(fmt.Sprintf("Error validating dd.config content: %v\n", err))
 	}
 
 	return cfg
