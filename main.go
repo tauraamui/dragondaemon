@@ -107,9 +107,9 @@ func main() {
 	service := &Service{srv}
 	status, err := service.Manage()
 	if err != nil {
-		logging.Error(fmt.Sprint(status, err.Error()))
+		logging.Error(err.Error())
 		os.Exit(1)
 	}
 
-	fmt.Println(status)
+	logging.Info(status)
 }
