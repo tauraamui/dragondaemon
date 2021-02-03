@@ -123,7 +123,7 @@ func (c *Connection) stream(stop chan struct{}) {
 			break
 		case reconnect := <-c.attemptToReconnect:
 			if reconnect {
-				logging.Warn("Attempting to reconnect to [%s]", c.title)
+				logging.Info("Attempting to reconnect to [%s]", c.title)
 				err := c.reconnect()
 				if err != nil {
 					logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
@@ -162,7 +162,7 @@ func (c *Connection) reconnect() error {
 
 	var err error
 	if err = c.vc.Close(); err != nil {
-		logging.Error("Failed to close connection... ERROR: %v\n", err)
+		logging.Error("Failed to close connection... ERROR: %v", err)
 	}
 
 	c.vc, err = gocv.OpenVideoCapture(c.rtspStream)
@@ -179,7 +179,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	if len(rootDir) > 0 {
 		err := ensureDirectoryExists(rootDir)
 		if err != nil {
-			logging.Error("Unable to create directory %s: %v\n", rootDir, err)
+			logging.Error("Unable to create directory %s: %v", rootDir, err)
 		}
 	} else {
 		rootDir = "."
@@ -191,13 +191,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error("Unable to create directory %s: %v\n", path, err)
+			logging.Error("Unable to create directory %s: %v", path, err)
 		}
 
 		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error("Unable to create directory %s: %v\n", path, err)
+			logging.Error("Unable to create directory %s: %v", path, err)
 		}
 	}
 

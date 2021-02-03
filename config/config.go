@@ -63,12 +63,12 @@ func Load() Config {
 	cfg := Config{}
 	err = json.Unmarshal(file, &cfg)
 	if err != nil {
-		logging.Fatal("Error passing dd.config: %v\n", err)
+		logging.Fatal("Error passing dd.config: %v", err)
 	}
 
 	err = validate.Validate(&cfg)
 	if err != nil {
-		logging.Fatal("Error validation dd.config content: %v\n", err)
+		logging.Fatal("Error validation dd.config content: %v", err)
 	}
 
 	return cfg

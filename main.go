@@ -54,7 +54,7 @@ func (service *Service) Manage() (string, error) {
 
 	for _, c := range cfg.Cameras {
 		if c.Disabled {
-			logging.Warn(fmt.Sprintf("WARN: Connection %s is disabled, skipping...\n", c.Title))
+			logging.Warn("Connection %s is disabled, skipping...", c.Title)
 			continue
 		}
 
@@ -72,7 +72,7 @@ func (service *Service) Manage() (string, error) {
 	go mediaServer.SaveStreams(&wg)
 
 	killSignal := <-interrupt
-	logging.Error(fmt.Sprintf("Received signal: %s", killSignal))
+	logging.Error("Received signal: %s", killSignal)
 
 	mediaServer.Shutdown()
 	logging.Warn("Waiting for persist process...")
@@ -80,7 +80,7 @@ func (service *Service) Manage() (string, error) {
 	logging.Info("Persist process has finished...")
 	err := mediaServer.Close()
 	if err != nil {
-		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v\n", err))
+		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
 		os.Exit(1)
 	}
 
@@ -89,6 +89,7 @@ func (service *Service) Manage() (string, error) {
 
 func init() {
 	logging.ColorLogLevelLabelOnly = true
+	logging.SetLevel(logging.WarnLevel)
 }
 
 func main() {
