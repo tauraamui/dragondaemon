@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	. "github.com/franela/goblin"
@@ -21,6 +22,21 @@ func Test(t *testing.T) {
 					}
 				]
 			}`)
+
+		g.It("Should pass the expected ENV value for config location into file reader", func() {
+			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
+
+			cfg := Config{
+				r: func(path string) ([]byte, error) {
+					g.Assert(path).Equal("test-config-path")
+					return []byte{}, nil
+				},
+				um: json.Unmarshal,
+				v:  validate.Validate,
+			}
+
+			cfg.Load()
+		})
 
 		g.It("Should load values from config file into struct", func() {
 			cfg := Config{
