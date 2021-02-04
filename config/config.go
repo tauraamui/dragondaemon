@@ -2,10 +2,11 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 
-	"github.com/tacusci/logging/v2"
+	"github.com/pkg/errors"
 	"gopkg.in/dealancer/validate.v2"
 )
 
@@ -40,35 +41,41 @@ type OnOffTimes struct {
 
 // Config to keep track of each loaded camera's configuration
 type Config struct {
+	r       func(string) ([]byte, error)
+	um      func([]byte, interface{}) error
+	v       func(interface{}) error
 	Debug   bool     `json:"debug"`
 	Cameras []Camera `json:"cameras"`
 }
 
-// Load parses configuration file and loads settings
-func Load() Config {
+func NewConfig() *Config {
+	return &Config{
+		r:  ioutil.ReadFile,
+		um: json.Unmarshal,
+		v:  validate.Validate,
+	}
+}
+
+func (c *Config) Load() error {
 	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
 	if configPath == "" {
 		configPath = "dd.config"
 	}
 
-	logging.Info("Loading configuration: %s", configPath)
-	file, err := ioutil.ReadFile(configPath)
+	file, err := c.r(configPath)
 	if err != nil {
-		logging.Fatal(err.Error())
+		return err
 	}
 
-	logging.Info("Loaded configuration...")
-
-	cfg := Config{}
-	err = json.Unmarshal(file, &cfg)
+	err = c.um(file, c)
 	if err != nil {
-		logging.Fatal("Error passing dd.config: %v", err)
+		return errors.Wrap(err, fmt.Sprintf("Unable to read from path %s", configPath))
 	}
 
-	err = validate.Validate(&cfg)
+	err = c.v(c)
 	if err != nil {
-		logging.Fatal("Error validation dd.config content: %v", err)
+		return errors.Wrap(err, "Unable to validate configuration")
 	}
 
-	return cfg
+	return nil
 }

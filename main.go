@@ -50,7 +50,14 @@ func (service *Service) Manage() (string, error) {
 	logging.Info("Starting dragon daemon...")
 
 	mediaServer := media.NewServer()
-	cfg := config.Load()
+
+	cfg := config.NewConfig()
+	logging.Info("Loading configuration")
+	err := cfg.Load()
+	if err != nil {
+		logging.Fatal("Error loading configuration: %v", err)
+	}
+	logging.Info("Loaded configuration")
 
 	for _, c := range cfg.Cameras {
 		if c.Disabled {
@@ -79,7 +86,7 @@ func (service *Service) Manage() (string, error) {
 	logging.Warn("Waiting for persist process...")
 	wg.Wait()
 	logging.Info("Persist process has finished...")
-	err := mediaServer.Close()
+	err = mediaServer.Close()
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
 		os.Exit(1)
