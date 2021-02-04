@@ -12,7 +12,7 @@ import (
 
 func Test(t *testing.T) {
 	g := Goblin(t)
-	g.Describe("Configuration loading", func() {
+	g.Describe("Loading configuration from file", func() {
 
 		mockValidConfigContent := []byte(`{
 				"debug": true,
@@ -35,6 +35,14 @@ func Test(t *testing.T) {
 
 		mockInvalidJSONConfigContent := []byte(`{
 			"debug" true,
+		}`)
+
+		mockValidationErroringConfigContent := []byte(`{
+			"cameras": [
+				{
+					"title": "Test Cam 2"
+				}
+			]
 		}`)
 
 		g.It("Should pass the expected ENV value for config location into file reader", func() {
@@ -105,6 +113,22 @@ func Test(t *testing.T) {
 			err := cfg.Load()
 			g.Assert(err).IsNotNil()
 			g.Assert(err.Error()).Equal("Parsing configuration file error: invalid character 't' after object key")
+		})
+
+		g.It("Should return error if configuration unable to pass validation", func() {
+			cfg := Config{
+				r: func(string) ([]byte, error) {
+					return mockValidationErroringConfigContent, nil
+				},
+				um: json.Unmarshal,
+				v:  validate.Validate,
+			}
+
+			err := cfg.Load()
+			g.Assert(err).IsNotNil()
+			g.Assert(err.Error()).Equal(
+				"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
+			)
 		})
 	})
 }
