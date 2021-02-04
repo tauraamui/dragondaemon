@@ -14,16 +14,26 @@ func Test(t *testing.T) {
 	g.Describe("Configuration loading", func() {
 
 		mockValidConfigContent := []byte(`{
+				"debug": true,
 				"cameras": [
 					{
 						"title": "Test Cam 1",
+						"address": "camera-network-addr",
 						"fps": 1,
-						"seconds_per_clip": 2
+						"seconds_per_clip": 2,
+						"disabled": false,
+						"schedule": {
+							"monday": {
+								"on": "08:00",
+								"off": "19:00"
+							}
+						}
 					}
 				]
 			}`)
 
 		g.It("Should pass the expected ENV value for config location into file reader", func() {
+			// set the ENV var to known value
 			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
 
 			cfg := Config{
@@ -49,11 +59,20 @@ func Test(t *testing.T) {
 
 			err := cfg.Load()
 			g.Assert(err).IsNil()
+			g.Assert(cfg.Debug).IsTrue()
 			g.Assert(cfg.Cameras).Equal([]Camera{
 				{
 					Title:          "Test Cam 1",
+					Address:        "camera-network-addr",
 					FPS:            1,
 					SecondsPerClip: 2,
+					Disabled:       false,
+					Schedule: Schedule{
+						Monday: OnOffTimes{
+							On:  "08:00",
+							Off: "19:00",
+						},
+					},
 				},
 			})
 		})
