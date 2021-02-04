@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"testing"
 
@@ -75,6 +76,18 @@ func Test(t *testing.T) {
 					},
 				},
 			})
+		})
+
+		g.It("Should return error if unable to read configuration", func() {
+			cfg := Config{
+				r: func(string) ([]byte, error) {
+					return nil, errors.New("read failure")
+				},
+			}
+
+			err := cfg.Load()
+			g.Assert(err).IsNotNil()
+			g.Assert(err.Error()).Equal("read failure")
 		})
 	})
 }
