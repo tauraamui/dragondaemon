@@ -33,6 +33,10 @@ func Test(t *testing.T) {
 				]
 			}`)
 
+		mockInvalidJSONConfigContent := []byte(`{
+			"debug" true,
+		}`)
+
 		g.It("Should pass the expected ENV value for config location into file reader", func() {
 			// set the ENV var to known value
 			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
@@ -87,7 +91,20 @@ func Test(t *testing.T) {
 
 			err := cfg.Load()
 			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal("read failure")
+			g.Assert(err.Error()).Equal("Unable to read from path test-config-path: read failure")
+		})
+
+		g.It("Should return error if unable to unmarshal JSON into configuration struct", func() {
+			cfg := Config{
+				r: func(string) ([]byte, error) {
+					return mockInvalidJSONConfigContent, nil
+				},
+				um: json.Unmarshal,
+			}
+
+			err := cfg.Load()
+			g.Assert(err).IsNotNil()
+			g.Assert(err.Error()).Equal("Parsing configuration file error: invalid character 't' after object key")
 		})
 	})
 }

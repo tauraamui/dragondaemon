@@ -64,12 +64,12 @@ func (c *Config) Load() error {
 
 	file, err := c.r(configPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("Unable to read from path %s", configPath))
 	}
 
 	err = c.um(file, c)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Unable to read from path %s", configPath))
+		return errors.Wrap(err, "Parsing configuration file error")
 	}
 
 	err = c.v(c)
