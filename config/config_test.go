@@ -8,6 +8,7 @@ import (
 	"time"
 
 	. "github.com/franela/goblin"
+	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
 
@@ -81,14 +82,14 @@ func Test(t *testing.T) {
 					FPS:            1,
 					SecondsPerClip: 2,
 					Disabled:       false,
-					Schedule: Schedule{
-						Monday: OnOffTimes{
-							On: func() *ShortTime {
-								t, _ := ParseShorttime("08:00:00")
+					Schedule: schedule.Schedule{
+						Monday: schedule.OnOffTimes{
+							On: func() *schedule.Time {
+								t, _ := schedule.ParseTime("08:00:00")
 								return &t
 							}(),
-							Off: func() *ShortTime {
-								t, _ := ParseShorttime("19:00:00")
+							Off: func() *schedule.Time {
+								t, _ := schedule.ParseTime("19:00:00")
 								return &t
 							}(),
 						},
@@ -172,7 +173,7 @@ func Test(t *testing.T) {
 			g.Assert(camera).IsNotNil()
 			g.Assert(camera.Schedule).IsNotNil()
 
-			g.Assert(camera.Schedule.IsOn(time.Now())).IsTrue()
+			g.Assert(camera.Schedule.IsOn(time.Now())).IsFalse()
 		})
 	})
 }

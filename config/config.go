@@ -7,18 +7,19 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
 
 // Camera configuration
 type Camera struct {
-	Title          string   `json:"title" validate:"empty=false"`
-	Address        string   `json:"address"`
-	PersistLoc     string   `json:"persist_location"`
-	FPS            int      `json:"fps" validate:"gte=1 & lte=30"`
-	SecondsPerClip int      `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
-	Disabled       bool     `json:"disabled"`
-	Schedule       Schedule `json:"schedule"`
+	Title          string            `json:"title" validate:"empty=false"`
+	Address        string            `json:"address"`
+	PersistLoc     string            `json:"persist_location"`
+	FPS            int               `json:"fps" validate:"gte=1 & lte=30"`
+	SecondsPerClip int               `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
+	Disabled       bool              `json:"disabled"`
+	Schedule       schedule.Schedule `json:"schedule"`
 }
 
 // Config to keep track of each loaded camera's configuration

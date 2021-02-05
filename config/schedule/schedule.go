@@ -1,4 +1,4 @@
-package config
+package schedule
 
 import (
 	"fmt"
@@ -6,28 +6,28 @@ import (
 	"time"
 )
 
-type ShortTime time.Time
+type Time time.Time
 
 const stLayout = "15:04:05"
 
-func (st *ShortTime) UnmarshalJSON(b []byte) (err error) {
+func (st *Time) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), `"`)
 	nt, err := time.Parse(stLayout, s)
-	*st = ShortTime(nt)
+	*st = Time(nt)
 	return
 }
 
-func (st *ShortTime) MarshalJSON() ([]byte, error) {
+func (st *Time) MarshalJSON() ([]byte, error) {
 	return []byte(st.String()), nil
 }
 
-func ParseShorttime(value string) (ShortTime, error) {
+func ParseTime(value string) (Time, error) {
 	nt, err := time.Parse(stLayout, value)
-	st := ShortTime(nt)
+	st := Time(nt)
 	return st, err
 }
 
-func (st *ShortTime) String() string {
+func (st *Time) String() string {
 	t := time.Time(*st)
 	return fmt.Sprintf("%q", t.Format(stLayout))
 }
@@ -80,6 +80,6 @@ func (s Schedule) IsOn(t time.Time) bool {
 
 // OnOffTimes for loading up on off time entries
 type OnOffTimes struct {
-	Off *ShortTime `json:"off"`
-	On  *ShortTime `json:"on"`
+	Off *Time `json:"off"`
+	On  *Time `json:"on"`
 }
