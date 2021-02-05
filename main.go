@@ -51,7 +51,7 @@ func (service *Service) Manage() (string, error) {
 
 	mediaServer := media.NewServer()
 
-	cfg := config.NewConfig()
+	cfg := config.New()
 	logging.Info("Loading configuration")
 	err := cfg.Load()
 	if err != nil {
@@ -71,6 +71,7 @@ func (service *Service) Manage() (string, error) {
 			c.PersistLoc,
 			c.FPS,
 			c.SecondsPerClip,
+			c.Schedule,
 		)
 	}
 

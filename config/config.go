@@ -21,26 +21,8 @@ type Camera struct {
 	Schedule       Schedule `json:"schedule"`
 }
 
-// Schedule contains each day of the week and it's off and on time entries
-type Schedule struct {
-	Everyday  OnOffTimes `json:"everyday"`
-	Monday    OnOffTimes `json:"monday"`
-	Tuesday   OnOffTimes `json:"tuesday"`
-	Wednesday OnOffTimes `json:"wednesday"`
-	Thursday  OnOffTimes `json:"thursday"`
-	Friday    OnOffTimes `json:"friday"`
-	Saturday  OnOffTimes `json:"saturday"`
-	Sunday    OnOffTimes `json:"sunday"`
-}
-
-// OnOffTimes for loading up on off time entries
-type OnOffTimes struct {
-	Off string `json:"off"`
-	On  string `json:"on"`
-}
-
 // Config to keep track of each loaded camera's configuration
-type Config struct {
+type values struct {
 	r       func(string) ([]byte, error)
 	um      func([]byte, interface{}) error
 	v       func(interface{}) error
@@ -48,15 +30,15 @@ type Config struct {
 	Cameras []Camera `json:"cameras"`
 }
 
-func NewConfig() *Config {
-	return &Config{
+func New() *values {
+	return &values{
 		r:  ioutil.ReadFile,
 		um: json.Unmarshal,
 		v:  validate.Validate,
 	}
 }
 
-func (c *Config) Load() error {
+func (c *values) Load() error {
 	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
 	if configPath == "" {
 		configPath = "dd.config"

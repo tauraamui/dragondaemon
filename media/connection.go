@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/config"
 	"gocv.io/x/gocv"
 )
 
@@ -19,6 +20,7 @@ type Connection struct {
 	persistLocation    string
 	fps                int
 	secondsPerClip     int
+	schedule           config.Schedule
 	mu                 sync.Mutex
 	vc                 *gocv.VideoCapture
 	rtspStream         string
@@ -31,6 +33,7 @@ func NewConnection(
 	persistLocation string,
 	fps int,
 	secondsPerClip int,
+	schedule config.Schedule,
 	vc *gocv.VideoCapture,
 	rtspStream string,
 ) *Connection {
@@ -40,6 +43,7 @@ func NewConnection(
 		persistLocation:    persistLocation,
 		fps:                fps,
 		secondsPerClip:     secondsPerClip,
+		schedule:           schedule,
 		vc:                 vc,
 		rtspStream:         rtspStream,
 		buffer:             make(chan *gocv.Mat, 6),
@@ -132,6 +136,10 @@ func (c *Connection) stream(stop chan struct{}) {
 				continue
 			}
 		default:
+			if c.schedule.IsOn(time.Now()) == false {
+				continue
+			}
+
 			if c.vc.IsOpened() {
 				img := gocv.NewMat()
 
