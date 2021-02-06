@@ -147,24 +147,27 @@ func Test(t *testing.T) {
 						"schedule": {
 							"monday": {
 								"on": "09:30:00"
+							},
+							"tuesday": {
+								"off": "17:00:00"
 							}
 						}
 					}
 				]
 			}`)
 
-		g.It("Camera is on given time after on time on Monday", func() {
-			cfg := values{
-				r: func(string) ([]byte, error) {
-					return mockValidConfigWithSchedule, nil
-				},
-				um: json.Unmarshal,
-				// disable validation to allow for smaller mock config
-				v: func(interface{}) error {
-					return nil
-				},
-			}
+		cfg := values{
+			r: func(string) ([]byte, error) {
+				return mockValidConfigWithSchedule, nil
+			},
+			um: json.Unmarshal,
+			// disable validation to allow for smaller mock config
+			v: func(interface{}) error {
+				return nil
+			},
+		}
 
+		g.It("Camera is on given time after on time on Monday", func() {
 			// back date today to Monday 1st Feb 2021
 			schedule.TODAY = time.Date(2021, 02, 1, 0, 0, 0, 0, time.UTC)
 
@@ -177,6 +180,21 @@ func Test(t *testing.T) {
 
 			currentTime := time.Date(2021, 02, 1, 13, 0, 0, 0, time.Now().Location())
 			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsTrue()
+		})
+
+		g.It("Camera is off given time after off time on Tuesday", func() {
+			// back date today to Monday 1st Feb 2021
+			schedule.TODAY = time.Date(2021, 02, 2, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 2, 17, 10, 0, 0, time.Now().Location())
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
 		})
 	})
 }
