@@ -106,33 +106,33 @@ func (s Schedule) IsOn(t Time) bool {
 }
 
 func isTimeOnOrOff(onOff OnOffTimes, t Time) bool {
-	if onOff.On != nil {
+	if onOff.On != nil && onOff.Off == nil {
 		if t.After(*onOff.On) {
-			if onOff.Off == nil {
-				return true
-			}
-
-			if t.After(*onOff.Off) {
-				return false
-			}
-
 			return true
 		}
 	}
 
-	if onOff.Off != nil {
+	if onOff.Off != nil && onOff.On == nil {
 		if t.After(*onOff.Off) {
 			return false
 		}
-
-		return true
 	}
 
-	if onOff.On == nil && onOff.Off == nil {
-		return true
+	if onOff.On != nil && onOff.Off != nil {
+		if onOff.On.After(*onOff.Off) {
+			if t.After(*onOff.On) {
+				return true
+			}
+		}
+
+		if onOff.Off.After(*onOff.On) {
+			if t.After(*onOff.Off) {
+				return false
+			}
+		}
 	}
 
-	return false
+	return true
 }
 
 // OnOffTimes for loading up on off time entries

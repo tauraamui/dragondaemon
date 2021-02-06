@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/config"
+	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gocv.io/x/gocv"
 )
 
@@ -36,7 +36,7 @@ func (s *Server) Connect(
 	persistLocation string,
 	fps int,
 	secondsPerClip int,
-	schedule config.Schedule,
+	schedule schedule.Schedule,
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
