@@ -183,7 +183,7 @@ func Test(t *testing.T) {
 		})
 
 		g.It("Camera is off given time after off time on Tuesday", func() {
-			// back date today to Monday 1st Feb 2021
+			// back date today to Tuesday 2nd Feb 2021
 			schedule.TODAY = time.Date(2021, 02, 2, 0, 0, 0, 0, time.UTC)
 
 			err := cfg.Load()
