@@ -146,15 +146,14 @@ func Test(t *testing.T) {
 					{
 						"schedule": {
 							"monday": {
-								"on": "08:00:00",
-								"off": "19:00:00"
+								"on": "09:30:00"
 							}
 						}
 					}
 				]
 			}`)
 
-		g.It("Should provide whether camera on or off given time value", func() {
+		g.It("Camera is on given time after on time on Monday", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockValidConfigWithSchedule, nil
@@ -166,6 +165,9 @@ func Test(t *testing.T) {
 				},
 			}
 
+			// back date today to Monday 1st Feb 2021
+			schedule.TODAY = time.Date(2021, 02, 1, 0, 0, 0, 0, time.UTC)
+
 			err := cfg.Load()
 			g.Assert(err).IsNil()
 
@@ -173,7 +175,8 @@ func Test(t *testing.T) {
 			g.Assert(camera).IsNotNil()
 			g.Assert(camera.Schedule).IsNotNil()
 
-			g.Assert(camera.Schedule.IsOn(time.Now())).IsFalse()
+			currentTime := time.Date(2021, 02, 1, 13, 0, 0, 0, time.Now().Location())
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsTrue()
 		})
 	})
 }
