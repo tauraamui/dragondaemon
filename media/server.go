@@ -39,6 +39,7 @@ func (s *Server) Connect(
 	schedule schedule.Schedule,
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
+	vc.Set(gocv.VideoCaptureFPS, float64(fps))
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]: %v", title, rtspStream, err)
 		return
