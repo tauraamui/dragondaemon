@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/tacusci/logging/v2"
 )
 
 type Time time.Time
@@ -67,6 +69,31 @@ func (st *Time) Weekday() time.Weekday {
 	return t.Weekday()
 }
 
+func (st *Time) Hour() int {
+	t := time.Time(*st)
+	return t.Hour()
+}
+
+func (st *Time) Minute() int {
+	t := time.Time(*st)
+	return t.Hour()
+}
+
+func (st *Time) Second() int {
+	t := time.Time(*st)
+	return t.Second()
+}
+
+func (st *Time) Nanosecond() int {
+	t := time.Time(*st)
+	return t.Nanosecond()
+}
+
+func (st *Time) Location() *time.Location {
+	t := time.Time(*st)
+	return t.Location()
+}
+
 func (st *Time) String() string {
 	t := time.Time(*st)
 	return fmt.Sprintf("%q", t.Format(stLayout))
@@ -74,35 +101,114 @@ func (st *Time) String() string {
 
 // Schedule contains each day of the week and it's off and on time entries
 type Schedule struct {
-	Everyday  OnOffTimes `json:"everyday"`
-	Monday    OnOffTimes `json:"monday"`
-	Tuesday   OnOffTimes `json:"tuesday"`
-	Wednesday OnOffTimes `json:"wednesday"`
-	Thursday  OnOffTimes `json:"thursday"`
-	Friday    OnOffTimes `json:"friday"`
-	Saturday  OnOffTimes `json:"saturday"`
-	Sunday    OnOffTimes `json:"sunday"`
+	hasRunSetup            bool
+	weekdayStringToWeekDay map[string]*OnOffTimes
+	Everyday               OnOffTimes `json:"everyday"`
+	Monday                 OnOffTimes `json:"monday"`
+	Tuesday                OnOffTimes `json:"tuesday"`
+	Wednesday              OnOffTimes `json:"wednesday"`
+	Thursday               OnOffTimes `json:"thursday"`
+	Friday                 OnOffTimes `json:"friday"`
+	Saturday               OnOffTimes `json:"saturday"`
+	Sunday                 OnOffTimes `json:"sunday"`
+}
+
+func (s *Schedule) setupState() {
+	if s.hasRunSetup {
+		return
+	}
+	s.weekdayStringToWeekDay = map[string]*OnOffTimes{
+		"Monday":    &s.Monday,
+		"Tuesday":   &s.Tuesday,
+		"Wednesday": &s.Wednesday,
+		"Thursday":  &s.Thursday,
+		"Friday":    &s.Friday,
+		"Saturday":  &s.Saturday,
+		"Sunday":    &s.Sunday,
+	}
+
+	// from today to a week before set each weekday time to have relative date
+	for i := 0; i < 7; i++ {
+		previousDay := TODAY.AddDate(0, 0, i*-1)
+		logging.Debug("Setting relative date from TODAY for %s", previousDay.Weekday().String())
+		previousDayRef := s.weekdayStringToWeekDay[previousDay.Weekday().String()]
+		if previousDayRef.On != nil {
+			*previousDayRef.On = Time(
+				time.Date(
+					previousDay.Year(),
+					previousDay.Month(),
+					previousDay.Day(),
+					previousDayRef.On.Hour(),
+					previousDayRef.On.Minute(),
+					previousDayRef.On.Second(),
+					previousDayRef.On.Nanosecond(),
+					previousDayRef.On.Location(),
+				),
+			)
+		}
+
+		if previousDayRef.Off != nil {
+			*previousDayRef.Off = Time(
+				time.Date(
+					previousDay.Year(),
+					previousDay.Month(),
+					previousDay.Day(),
+					previousDayRef.Off.Hour(),
+					previousDayRef.Off.Minute(),
+					previousDayRef.Off.Second(),
+					previousDayRef.Off.Nanosecond(),
+					previousDayRef.Off.Location(),
+				),
+			)
+		}
+	}
+	s.hasRunSetup = true
 }
 
 // IsOn returns whether given time is within on period from schedule
-func (s Schedule) IsOn(t Time) bool {
-	switch t.Weekday().String() {
-	case "Monday":
-		return isTimeOnOrOff(s.Monday, t)
-	case "Tuesday":
-		return isTimeOnOrOff(s.Tuesday, t)
-	case "Wednesday":
-		return isTimeOnOrOff(s.Wednesday, t)
-	case "Thursday":
-		return isTimeOnOrOff(s.Thursday, t)
-	case "Friday":
-		return isTimeOnOrOff(s.Friday, t)
-	case "Saturday":
-		return isTimeOnOrOff(s.Saturday, t)
-	case "Sunday":
-		return isTimeOnOrOff(s.Sunday, t)
+func (s *Schedule) IsOn(t Time) bool {
+	s.setupState()
+
+	for i := 0; i < 7; i++ {
+		previousDay := TODAY.AddDate(0, 0, i*-1)
+		previousDayRef := s.weekdayStringToWeekDay[previousDay.Weekday().String()]
+		empty, state := timeAfterOnOrOff(t, previousDayRef)
+		if !empty {
+			return state
+		}
 	}
-	return false
+
+	return true
+}
+
+func timeAfterOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	if weekday.On != nil && weekday.Off != nil {
+		if weekday.On.After(*weekday.Off) {
+			if t.After(*weekday.On) {
+				return false, true
+			}
+		}
+
+		if weekday.Off.After(*weekday.On) {
+			if t.After(*weekday.Off) {
+				return false, false
+			}
+		}
+	}
+
+	if weekday.On == nil && weekday.Off != nil {
+		if t.After(*weekday.Off) {
+			return false, false
+		}
+	}
+
+	if weekday.On != nil && weekday.Off == nil {
+		if t.After(*weekday.On) {
+			return false, true
+		}
+	}
+
+	return true, true
 }
 
 func isTimeOnOrOff(onOff OnOffTimes, t Time) bool {
@@ -137,6 +243,7 @@ func isTimeOnOrOff(onOff OnOffTimes, t Time) bool {
 
 // OnOffTimes for loading up on off time entries
 type OnOffTimes struct {
-	Off *Time `json:"off"`
-	On  *Time `json:"on"`
+	Off       *Time `json:"off"`
+	On        *Time `json:"on"`
+	weekIndex int
 }

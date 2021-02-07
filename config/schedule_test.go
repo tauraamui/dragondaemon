@@ -38,7 +38,7 @@ func TestSchedule(t *testing.T) {
 			},
 		}
 
-		g.It("Camera is off if given time after off time on Tuesday", func() {
+		g.It("Should return off if given time after off time on Tuesday", func() {
 			// back date today to Tuesday 2nd Feb 2021
 			schedule.TODAY = time.Date(2021, 02, 2, 0, 0, 0, 0, time.UTC)
 
@@ -49,7 +49,21 @@ func TestSchedule(t *testing.T) {
 			g.Assert(camera).IsNotNil()
 			g.Assert(camera.Schedule).IsNotNil()
 
-			currentTime := time.Date(2021, 02, 2, 9, 10, 0, 0, time.Now().Location())
+			currentTime := time.Date(2021, 02, 2, 9, 10, 0, 0, time.UTC)
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
+		})
+
+		g.It("Should return off if given time on Wednesday is after off time on Tuesday", func() {
+			schedule.TODAY = time.Date(2021, 02, 3, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 3, 7, 0, 0, 0, time.UTC)
 			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
 		})
 	})
