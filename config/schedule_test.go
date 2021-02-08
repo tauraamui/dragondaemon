@@ -11,7 +11,7 @@ import (
 
 func TestSchedule(t *testing.T) {
 	g := goblin.Goblin(t)
-	g.Describe("Configuration schedule time checking", func() {
+	g.Describe("Configuration schedule time from Tuesday 9am off to Saturday 7pm", func() {
 		mockValidConfigWithSchedule := []byte(`{
 				"cameras": [
 					{
