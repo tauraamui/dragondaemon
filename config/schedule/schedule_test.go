@@ -10,19 +10,40 @@ import (
 
 func TestSchedule(t *testing.T) {
 	g := goblin.Goblin(t)
+
+	g.Describe("Configuration schedule time from 10am off to 5pm on Sunday", func() {
+		mockSchedule := []byte(`{
+			"sunday": {
+				"off": "10:00:00",
+				"on": "17:00:00"
+			}
+		}`)
+
+		g.It("Should return on if given time on Sunday before same day off time", func() {
+			TODAY = time.Date(2021, 02, 7, 0, 0, 0, 0, time.UTC)
+
+			testSchedule := Schedule{}
+			err := json.Unmarshal(mockSchedule, &testSchedule)
+			g.Assert(err).IsNil()
+
+			currentTime := time.Date(2021, 02, 7, 9, 0, 0, 0, time.UTC)
+			g.Assert(testSchedule.IsOn(Time(currentTime))).IsTrue()
+		})
+	})
+
 	g.Describe("Configuration schedule time from Tuesday 9am off to Saturday 7pm", func() {
 		mockValidConfigWithSchedule := []byte(`{
-												"tuesday": {
-													"off": "09:00:00"
-												},
-												"saturday": {
-													"on": "19:00:00"
-												}
-											}`)
+			"tuesday": {
+				"off": "09:00:00"
+			},
+			"saturday": {
+				"on": "19:00:00"
+			}
+		}`)
 
 		g.It("Should return on if given time on Monday before off time Tuesday", func() {
 			// back date today to Monday 1nd Feb 2021
-			TODAY = time.Date(2021, 01, 2, 0, 0, 0, 0, time.UTC)
+			TODAY = time.Date(2021, 02, 2, 0, 0, 0, 0, time.UTC)
 
 			testSchedule := Schedule{}
 			err := json.Unmarshal(mockValidConfigWithSchedule, &testSchedule)
