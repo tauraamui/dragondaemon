@@ -149,7 +149,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(camera).IsNotNil()
 			g.Assert(camera.Schedule).IsNotNil()
 
-			currentTime := time.Date(2021, 02, 6, 17, 20, 0, 0, time.UTC)
+			currentTime := time.Date(2021, 02, 6, 19, 0, 0, 0, time.UTC)
 			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsTrue()
 		})
 
