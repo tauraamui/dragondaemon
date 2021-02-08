@@ -96,5 +96,75 @@ func TestSchedule(t *testing.T) {
 			currentTime := time.Date(2021, 02, 3, 7, 0, 0, 0, time.UTC)
 			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
 		})
+
+		g.It("Should return off if given time on Thursday is after off time on Tuesday", func() {
+			schedule.TODAY = time.Date(2021, 02, 4, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 4, 7, 0, 0, 0, time.UTC)
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
+		})
+
+		g.It("Should return off if given time on Friday is after off time on Tuesday", func() {
+			schedule.TODAY = time.Date(2021, 02, 5, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 5, 7, 0, 0, 0, time.UTC)
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
+		})
+
+		g.It("Should return off if given time on Saturday is after off time on Tuesday and before same day on time", func() {
+			schedule.TODAY = time.Date(2021, 02, 6, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 6, 7, 0, 0, 0, time.UTC)
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsFalse()
+		})
+
+		g.It("Should return on if given time on Saturday is after off time on Tuesday and after same day on time", func() {
+			schedule.TODAY = time.Date(2021, 02, 6, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 6, 17, 20, 0, 0, time.UTC)
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsTrue()
+		})
+
+		g.It("Should return on if given time on Sunday is after on time on Saturday", func() {
+			schedule.TODAY = time.Date(2021, 02, 7, 0, 0, 0, 0, time.UTC)
+
+			err := cfg.Load()
+			g.Assert(err).IsNil()
+
+			camera := cfg.Cameras[0]
+			g.Assert(camera).IsNotNil()
+			g.Assert(camera.Schedule).IsNotNil()
+
+			currentTime := time.Date(2021, 02, 7, 7, 0, 0, 0, time.UTC)
+			g.Assert(camera.Schedule.IsOn(schedule.Time(currentTime))).IsTrue()
+		})
 	})
 }

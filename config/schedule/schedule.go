@@ -172,7 +172,7 @@ func (s *Schedule) IsOn(t Time) bool {
 	for i := 0; i < 7; i++ {
 		previousDay := TODAY.AddDate(0, 0, i*-1)
 		previousDayRef := s.weekdayStringToWeekDay[previousDay.Weekday().String()]
-		empty, state := timeAfterOnOrOff(t, previousDayRef)
+		empty, state := isTimeOnOrOff(t, previousDayRef)
 		if !empty {
 			return state
 		}
@@ -181,7 +181,7 @@ func (s *Schedule) IsOn(t Time) bool {
 	return true
 }
 
-func timeAfterOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+func isTimeOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
 	if weekday.On != nil && weekday.Off != nil {
 		if weekday.On.After(*weekday.Off) {
 			if t.After(*weekday.On) {
@@ -209,36 +209,6 @@ func timeAfterOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
 	}
 
 	return true, true
-}
-
-func isTimeOnOrOff(onOff OnOffTimes, t Time) bool {
-	if onOff.On != nil && onOff.Off == nil {
-		if t.After(*onOff.On) {
-			return true
-		}
-	}
-
-	if onOff.Off != nil && onOff.On == nil {
-		if t.After(*onOff.Off) {
-			return false
-		}
-	}
-
-	if onOff.On != nil && onOff.Off != nil {
-		if onOff.On.After(*onOff.Off) {
-			if t.After(*onOff.On) {
-				return true
-			}
-		}
-
-		if onOff.Off.After(*onOff.On) {
-			if t.After(*onOff.Off) {
-				return false
-			}
-		}
-	}
-
-	return true
 }
 
 // OnOffTimes for loading up on off time entries
