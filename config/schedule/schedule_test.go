@@ -29,6 +29,28 @@ func TestSchedule(t *testing.T) {
 			currentTime := time.Date(2021, 02, 7, 9, 0, 0, 0, time.UTC)
 			g.Assert(testSchedule.IsOn(Time(currentTime))).IsTrue()
 		})
+
+		g.It("Should return off if given time on Sunday after same day off time", func() {
+			TODAY = time.Date(2021, 02, 7, 0, 0, 0, 0, time.UTC)
+
+			testSchedule := Schedule{}
+			err := json.Unmarshal(mockSchedule, &testSchedule)
+			g.Assert(err).IsNil()
+
+			currentTime := time.Date(2021, 02, 7, 11, 0, 0, 0, time.UTC)
+			g.Assert(testSchedule.IsOn(Time(currentTime))).IsFalse()
+		})
+
+		g.It("Should return on if given time on Sunday after same day on time", func() {
+			TODAY = time.Date(2021, 02, 7, 0, 0, 0, 0, time.UTC)
+
+			testSchedule := Schedule{}
+			err := json.Unmarshal(mockSchedule, &testSchedule)
+			g.Assert(err).IsNil()
+
+			currentTime := time.Date(2021, 02, 7, 17, 20, 0, 0, time.UTC)
+			g.Assert(testSchedule.IsOn(Time(currentTime))).IsTrue()
+		})
 	})
 
 	g.Describe("Configuration schedule time from Tuesday 9am off to Saturday 7pm", func() {
@@ -128,7 +150,7 @@ func TestSchedule(t *testing.T) {
 			err := json.Unmarshal(mockValidConfigWithSchedule, &testSchedule)
 			g.Assert(err).IsNil()
 
-			currentTime := time.Date(2021, 02, 6, 19, 0, 0, 0, time.UTC)
+			currentTime := time.Date(2021, 02, 6, 19, 20, 0, 0, time.UTC)
 			g.Assert(testSchedule.IsOn(Time(currentTime))).IsTrue()
 		})
 
