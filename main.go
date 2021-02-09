@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -48,6 +49,18 @@ func (service *Service) Manage() (string, error) {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
+	loggingLevel := os.Getenv("DRAGON_LOGGING_LEVEL")
+	switch strings.ToLower(loggingLevel) {
+	case "info":
+		logging.CurrentLoggingLevel = logging.InfoLevel
+	case "warn":
+		logging.CurrentLoggingLevel = logging.WarnLevel
+	case "debug":
+		logging.CurrentLoggingLevel = logging.DebugLevel
+	default:
+		logging.CurrentLoggingLevel = logging.InfoLevel
+	}
 
 	logging.Info("Starting dragon daemon...")
 
