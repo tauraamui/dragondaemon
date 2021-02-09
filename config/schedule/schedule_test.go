@@ -17,6 +17,17 @@ func TestSchedule(t *testing.T) {
 			g.Assert(empty).IsTrue()
 			g.Assert(onOrOff).IsTrue()
 		})
+
+		g.It("Should return on if current time before off", func() {
+			currentTime := time.Date(2021, 9, 10, 0, 0, 0, 0, time.UTC)
+			offTime := Time(time.Date(2021, 9, 13, 0, 0, 0, 0, time.UTC))
+			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
+				Off: &offTime,
+			})
+
+			g.Assert(empty).IsFalse()
+			g.Assert(onOrOff).IsTrue()
+		})
 	})
 
 	g.Describe("Configuration schedule time from 10am off to 5pm on Sunday", func() {
