@@ -53,6 +53,18 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsTrue()
 		})
 
+		g.It("Should return off if current time after off", func() {
+			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
+			offTime := Time(time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC))
+
+			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
+				Off: &offTime,
+			})
+
+			g.Assert(empty).IsFalse()
+			g.Assert(onOrOff).IsFalse()
+		})
+
 		g.It("Should return off if current time before on after off", func() {
 			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 10, 0, 0, 0, time.UTC))
