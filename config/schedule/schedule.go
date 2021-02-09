@@ -182,6 +182,10 @@ func (s *Schedule) IsOn(t Time) bool {
 }
 
 func isTimeOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	if weekday == nil {
+		return true, true
+	}
+
 	if weekday.On != nil && weekday.Off != nil {
 		if t.After(*weekday.On) && t.Before(*weekday.Off) {
 			return false, true
