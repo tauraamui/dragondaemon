@@ -1,7 +1,6 @@
 package media
 
 import (
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,8 +24,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
-	runtime.GC()
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 1)
 	return !s.shuttingDown()
 }
 
@@ -41,7 +39,7 @@ func (s *Server) Connect(
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
 	if err != nil {
-		logging.Error("Unable to connect to stream [%s] at [%s]: %v", title, rtspStream, err)
+		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
 	}
 
