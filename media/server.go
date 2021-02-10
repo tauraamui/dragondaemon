@@ -14,6 +14,7 @@ import (
 type Server struct {
 	inShutdown    int32
 	mu            sync.Mutex
+	wg            sync.WaitGroup
 	stopStreaming chan struct{}
 	connections   map[*Connection]struct{}
 }
@@ -57,10 +58,11 @@ func (s *Server) Connect(
 }
 
 func (s *Server) BeginStreaming() {
+	s.wg = sync.WaitGroup{}
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
 		logging.Info("Reading stream from connection [%s]", conn.title)
-		go conn.stream(s.stopStreaming)
+		go conn.stream(&s.wg, s.stopStreaming)
 	}
 }
 
@@ -98,7 +100,7 @@ func (s *Server) Shutdown() {
 
 func (s *Server) Close() error {
 	close(s.stopStreaming)
-	time.Sleep(time.Millisecond * 10)
+	s.wg.Wait()
 	return s.closeConnectionsLocked()
 }
 

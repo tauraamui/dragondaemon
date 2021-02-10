@@ -24,7 +24,7 @@ type Connection struct {
 	mu                 sync.Mutex
 	vc                 *gocv.VideoCapture
 	rtspStream         string
-	buffer             chan *gocv.Mat
+	buffer             chan gocv.Mat
 	window             *gocv.Window
 }
 
@@ -46,7 +46,7 @@ func NewConnection(
 		schedule:           schedule,
 		vc:                 vc,
 		rtspStream:         rtspStream,
-		buffer:             make(chan *gocv.Mat, 6),
+		buffer:             make(chan gocv.Mat, 6),
 	}
 }
 
@@ -108,7 +108,7 @@ func (c *Connection) persistToDisk() {
 		}
 
 		if writer.IsOpened() {
-			if err := writer.Write(*img); err != nil {
+			if err := writer.Write(img); err != nil {
 				logging.Error("Unable to write frame to file: %v", err)
 			}
 		}
@@ -116,12 +116,25 @@ func (c *Connection) persistToDisk() {
 	}
 }
 
-func (c *Connection) stream(stop chan struct{}) {
+func (c *Connection) stream(wg *sync.WaitGroup, stop chan struct{}) {
+	logging.Debug("Opening root image mat")
+	img := gocv.NewMat()
+
+	wg.Add(1)
 	for {
 		// throttle CPU usage
 		time.Sleep(time.Millisecond * 100)
 		select {
 		case <-stop:
+			logging.Debug("Stopped stream goroutine")
+			logging.Debug("Closing root image mat")
+			img.Close()
+			logging.Debug("Flushing img mat buffer")
+			for len(c.buffer) > 0 {
+				e := <-c.buffer
+				e.Close()
+			}
+			wg.Done()
 			break
 		case reconnect := <-c.attemptToReconnect:
 			if reconnect {
@@ -137,19 +150,19 @@ func (c *Connection) stream(stop chan struct{}) {
 			}
 		default:
 			if c.vc.IsOpened() {
-				img := gocv.NewMat()
-
 				if ok := c.vc.Read(&img); !ok {
-					img.Close()
 					logging.Warn("Connection for stream at [%s] closed", c.title)
 					c.attemptToReconnect <- true
 					continue
 				}
 
+				imgClone := img.Clone()
+				defer imgClone.Close()
 				select {
-				case c.buffer <- &img:
+				case c.buffer <- imgClone:
 					logging.Debug("Sending read from to buffer...")
 				default:
+					imgClone.Close()
 					logging.Debug("Buffer currently full...")
 				}
 			}
