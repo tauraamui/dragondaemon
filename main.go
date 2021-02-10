@@ -99,7 +99,7 @@ func (service *Service) Manage() (string, error) {
 }
 
 func init() {
-	logging.CallbackLabel = true
+	// logging.CallbackLabel = true
 	logging.CallbackLabelLevel = 4
 	logging.ColorLogLevelLabelOnly = true
 	loggingLevel := os.Getenv("DRAGON_LOGGING_LEVEL")
