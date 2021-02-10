@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/signal"
@@ -14,7 +13,6 @@ import (
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
-	"gocv.io/x/gocv"
 )
 
 const (
@@ -129,8 +127,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("initial MatProfile count: %v\n", gocv.MatProfile.Count())
-
 	service := &Service{srv}
 	status, err := service.Manage()
 	if err != nil {
@@ -138,9 +134,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("final MatProfile count: %v\n", gocv.MatProfile.Count())
-	var b bytes.Buffer
-	gocv.MatProfile.WriteTo(&b, 1)
-	fmt.Print(b.String())
 	logging.Info(status)
 }
