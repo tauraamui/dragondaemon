@@ -85,7 +85,7 @@ func (service *Service) Manage() (string, error) {
 	logging.Error("Received signal: %s", killSignal)
 
 	mediaServer.Shutdown()
-	logging.Warn("Waiting for persist process...")
+	logging.Info("Waiting for persist process...")
 	wg.Wait()
 	logging.Info("Persist process has finished...")
 	logging.Info("Closing connections, flushing buffers...")
