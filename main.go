@@ -89,6 +89,7 @@ func (service *Service) Manage() (string, error) {
 	wg.Wait()
 	logging.Info("Persist process has finished...")
 	err = mediaServer.Close()
+	logging.Info("Closing connections, flushing buffers...")
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
 		os.Exit(1)
