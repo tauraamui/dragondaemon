@@ -24,11 +24,12 @@ type Camera struct {
 
 // Config to keep track of each loaded camera's configuration
 type values struct {
-	r       func(string) ([]byte, error)
-	um      func([]byte, interface{}) error
-	v       func(interface{}) error
-	Debug   bool     `json:"debug"`
-	Cameras []Camera `json:"cameras"`
+	r                func(string) ([]byte, error)
+	um               func([]byte, interface{}) error
+	v                func(interface{}) error
+	Debug            bool     `json:"debug"`
+	MaxNumDaysToKeep uint     `json:"max_num_days_to_keep"`
+	Cameras          []Camera `json:"cameras"`
 }
 
 func New() *values {

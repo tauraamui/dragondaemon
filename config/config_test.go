@@ -17,6 +17,7 @@ func TestConfig(t *testing.T) {
 
 		mockValidConfigContent := []byte(`{
 				"debug": true,
+				"max_num_days_to_keep": 7,
 				"cameras": [
 					{
 						"title": "Test Cam 1",
@@ -74,6 +75,7 @@ func TestConfig(t *testing.T) {
 			err := cfg.Load()
 			g.Assert(err).IsNil()
 			g.Assert(cfg.Debug).IsTrue()
+			g.Assert(cfg.MaxNumDaysToKeep).Equal(7)
 			g.Assert(cfg.Cameras).Equal([]Camera{
 				{
 					Title:          "Test Cam 1",
