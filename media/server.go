@@ -71,9 +71,9 @@ func (s *Server) BeginStreaming() {
 	}
 }
 
-func (s *Server) RemoveOldClips() {
+func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 	if s.t == nil {
-		s.t = time.NewTicker(5 * time.Second)
+		s.t = time.NewTicker(10 * time.Second)
 	}
 
 	if s.stopRemovingClips == nil {
@@ -98,6 +98,16 @@ func (s *Server) RemoveOldClips() {
 				}
 
 				for _, file := range files {
+					date, err := time.Parse("2006-01-02", file.Name())
+					if err != nil {
+						continue
+					}
+
+					oldestAllowedDay := time.Now().AddDate(0, 0, -1*maxClipAgeInDays)
+					if date.Before(oldestAllowedDay) {
+						logging.Info("REMOVING DIR %s", file.Name())
+					}
+
 					logging.Debug("FILE %s IN %s's persist location", file.Name(), conn.title)
 				}
 			}
