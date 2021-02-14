@@ -30,7 +30,6 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
-	time.Sleep(time.Millisecond * 1)
 	return !s.shuttingDown()
 }
 
@@ -82,6 +81,7 @@ func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 
 	var currentConnection int
 	for {
+		time.Sleep(time.Millisecond * 10)
 		// clipDirsToRemove := []string{}
 		select {
 		case <-s.t.C:
@@ -105,10 +105,13 @@ func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 
 					oldestAllowedDay := time.Now().AddDate(0, 0, -1*maxClipAgeInDays)
 					if date.Before(oldestAllowedDay) {
-						logging.Info("REMOVING DIR %s", file.Name())
+						dirToRemove := fmt.Sprintf("%s%c%s", fullPersistLocation, os.PathSeparator, file.Name())
+						logging.Info("REMOVING DIR %s", dirToRemove)
+						err := os.RemoveAll(dirToRemove)
+						if err != nil {
+							logging.Error("Failed to RemoveAll %s", dirToRemove)
+						}
 					}
-
-					logging.Debug("FILE %s IN %s's persist location", file.Name(), conn.title)
 				}
 			}
 
