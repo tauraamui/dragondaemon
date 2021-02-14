@@ -1,6 +1,9 @@
 package media
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,11 +15,13 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	inShutdown    int32
-	mu            sync.Mutex
-	wg            sync.WaitGroup
-	stopStreaming chan struct{}
-	connections   map[*Connection]struct{}
+	inShutdown        int32
+	mu                sync.Mutex
+	wg                sync.WaitGroup
+	t                 *time.Ticker
+	stopStreaming     chan struct{}
+	stopRemovingClips chan struct{}
+	connections       map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
@@ -66,6 +71,45 @@ func (s *Server) BeginStreaming() {
 	}
 }
 
+func (s *Server) RemoveOldClips() {
+	if s.t == nil {
+		s.t = time.NewTicker(5 * time.Second)
+	}
+
+	if s.stopRemovingClips == nil {
+		s.stopRemovingClips = make(chan struct{})
+	}
+
+	var currentConnection int
+	for {
+		// clipDirsToRemove := []string{}
+		select {
+		case <-s.t.C:
+			activeConnections := s.activeConnections()
+			if currentConnection >= len(activeConnections) {
+				currentConnection = 0
+			}
+
+			if conn := activeConnections[currentConnection]; conn != nil {
+				fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
+				files, err := ioutil.ReadDir(fullPersistLocation)
+				if err != nil {
+					logging.Error("Unable to read contents of connection persist location %s", fullPersistLocation)
+				}
+
+				for _, file := range files {
+					logging.Debug("FILE %s IN %s's persist location", file.Name(), conn.title)
+				}
+			}
+
+			currentConnection++
+		case <-s.stopRemovingClips:
+			s.t.Stop()
+			return
+		}
+	}
+}
+
 func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
 	if rwg != nil {
 		rwg.Add(1)
@@ -100,6 +144,7 @@ func (s *Server) Shutdown() {
 
 func (s *Server) Close() error {
 	close(s.stopStreaming)
+	close(s.stopRemovingClips)
 	s.wg.Wait()
 	return s.closeConnectionsLocked()
 }
