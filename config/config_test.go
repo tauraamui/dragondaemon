@@ -17,6 +17,7 @@ func TestConfig(t *testing.T) {
 
 		mockValidConfigContent := []byte(`{
 				"debug": true,
+				"max_clip_age_in_days": 7,
 				"cameras": [
 					{
 						"title": "Test Cam 1",
@@ -38,7 +39,8 @@ func TestConfig(t *testing.T) {
 			"debug" true,
 		}`)
 
-		mockValidationErroringConfigContent := []byte(`{
+		mockValidationMissingRequiredFPSField := []byte(`{
+			"max_clip_age_in_days": 1,
 			"cameras": [
 				{
 					"title": "Test Cam 2"
@@ -74,6 +76,7 @@ func TestConfig(t *testing.T) {
 			err := cfg.Load()
 			g.Assert(err).IsNil()
 			g.Assert(cfg.Debug).IsTrue()
+			g.Assert(cfg.MaxClipAgeInDays).Equal(7)
 			g.Assert(cfg.Cameras).Equal([]Camera{
 				{
 					Title:          "Test Cam 1",
@@ -122,10 +125,10 @@ func TestConfig(t *testing.T) {
 			g.Assert(err.Error()).Equal("Parsing configuration file error: invalid character 't' after object key")
 		})
 
-		g.It("Should return error if configuration unable to pass validation", func() {
+		g.It("Should return error if configuration unable to pass validation due to missing FPS field", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
-					return mockValidationErroringConfigContent, nil
+					return mockValidationMissingRequiredFPSField, nil
 				},
 				um: json.Unmarshal,
 				v:  validate.Validate,

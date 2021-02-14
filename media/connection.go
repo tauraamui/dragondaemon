@@ -123,7 +123,7 @@ func (c *Connection) stream(wg *sync.WaitGroup, stop chan struct{}) {
 	wg.Add(1)
 	for {
 		// throttle CPU usage
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 10)
 		select {
 		case <-stop:
 			logging.Debug("Stopped stream goroutine")
@@ -163,7 +163,7 @@ func (c *Connection) stream(wg *sync.WaitGroup, stop chan struct{}) {
 					logging.Debug("Sending read from to buffer...")
 				default:
 					imgClone.Close()
-					logging.Debug("Buffer currently full...")
+					logging.Debug("Buffer full...")
 				}
 			}
 		}

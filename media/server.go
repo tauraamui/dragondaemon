@@ -1,6 +1,9 @@
 package media
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,11 +15,13 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	inShutdown    int32
-	mu            sync.Mutex
-	wg            sync.WaitGroup
-	stopStreaming chan struct{}
-	connections   map[*Connection]struct{}
+	inShutdown        int32
+	mu                sync.Mutex
+	wg                sync.WaitGroup
+	t                 *time.Ticker
+	stopStreaming     chan struct{}
+	stopRemovingClips chan struct{}
+	connections       map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
@@ -25,7 +30,6 @@ func NewServer() *Server {
 }
 
 func (s *Server) IsRunning() bool {
-	time.Sleep(time.Millisecond * 1)
 	return !s.shuttingDown()
 }
 
@@ -66,6 +70,58 @@ func (s *Server) BeginStreaming() {
 	}
 }
 
+func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
+	if s.t == nil {
+		s.t = time.NewTicker(10 * time.Second)
+	}
+
+	if s.stopRemovingClips == nil {
+		s.stopRemovingClips = make(chan struct{})
+	}
+
+	var currentConnection int
+	for {
+		time.Sleep(time.Millisecond * 10)
+		select {
+		case <-s.t.C:
+			activeConnections := s.activeConnections()
+			if currentConnection >= len(activeConnections) {
+				currentConnection = 0
+			}
+
+			if conn := activeConnections[currentConnection]; conn != nil {
+				fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
+				files, err := ioutil.ReadDir(fullPersistLocation)
+				if err != nil {
+					logging.Error("Unable to read contents of connection persist location %s", fullPersistLocation)
+				}
+
+				for _, file := range files {
+					date, err := time.Parse("2006-01-02", file.Name())
+					if err != nil {
+						continue
+					}
+
+					oldestAllowedDay := time.Now().AddDate(0, 0, -1*maxClipAgeInDays)
+					if date.Before(oldestAllowedDay) {
+						dirToRemove := fmt.Sprintf("%s%c%s", fullPersistLocation, os.PathSeparator, file.Name())
+						logging.Info("REMOVING DIR %s", dirToRemove)
+						err := os.RemoveAll(dirToRemove)
+						if err != nil {
+							logging.Error("Failed to RemoveAll %s", dirToRemove)
+						}
+					}
+				}
+			}
+
+			currentConnection++
+		case <-s.stopRemovingClips:
+			s.t.Stop()
+			return
+		}
+	}
+}
+
 func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
 	if rwg != nil {
 		rwg.Add(1)
@@ -100,6 +156,7 @@ func (s *Server) Shutdown() {
 
 func (s *Server) Close() error {
 	close(s.stopStreaming)
+	close(s.stopRemovingClips)
 	s.wg.Wait()
 	return s.closeConnectionsLocked()
 }
