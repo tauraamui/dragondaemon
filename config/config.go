@@ -28,7 +28,7 @@ type values struct {
 	um               func([]byte, interface{}) error
 	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
-	MaxNumDaysToKeep uint     `json:"max_num_days_to_keep"`
+	MaxClipAgeInDays uint     `json:"max_clip_age_in_days" validate:"empty=true & gte=1"`
 	Cameras          []Camera `json:"cameras"`
 }
 
