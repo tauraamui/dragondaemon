@@ -82,7 +82,6 @@ func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 	var currentConnection int
 	for {
 		time.Sleep(time.Millisecond * 10)
-		// clipDirsToRemove := []string{}
 		select {
 		case <-s.t.C:
 			activeConnections := s.activeConnections()
