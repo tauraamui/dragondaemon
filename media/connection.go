@@ -116,58 +116,63 @@ func (c *Connection) persistToDisk() {
 	}
 }
 
-func (c *Connection) stream(wg *sync.WaitGroup, stop chan struct{}) {
+func (c *Connection) stream(stop chan struct{}) chan struct{} {
 	logging.Debug("Opening root image mat")
 	img := gocv.NewMat()
 
-	wg.Add(1)
-	for {
-		// throttle CPU usage
-		time.Sleep(time.Millisecond * 1)
-		select {
-		case <-stop:
-			logging.Debug("Stopped stream goroutine")
-			logging.Debug("Closing root image mat")
-			img.Close()
-			logging.Debug("Flushing img mat buffer")
-			for len(c.buffer) > 0 {
-				e := <-c.buffer
-				e.Close()
-			}
-			wg.Done()
-			break
-		case reconnect := <-c.attemptToReconnect:
-			if reconnect {
-				logging.Info("Attempting to reconnect to [%s]", c.title)
-				err := c.reconnect()
-				if err != nil {
-					logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
-					c.attemptToReconnect <- true
-					continue
-				}
-				logging.Info("Re-connected to [%s]...", c.title)
-				continue
-			}
-		default:
-			if c.vc.IsOpened() {
-				if ok := c.vc.Read(&img); !ok {
-					logging.Warn("Connection for stream at [%s] closed", c.title)
-					c.attemptToReconnect <- true
-					continue
-				}
+	stopping := make(chan struct{})
 
-				imgClone := img.Clone()
-				defer imgClone.Close()
-				select {
-				case c.buffer <- imgClone:
-					logging.Debug("Sending read from to buffer...")
-				default:
-					imgClone.Close()
-					logging.Debug("Buffer full...")
+	go func() {
+		for {
+			// throttle CPU usage
+			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-stop:
+				logging.Debug("Stopped stream goroutine")
+				logging.Debug("Closing root image mat")
+				img.Close()
+				logging.Debug("Flushing img mat buffer")
+				for len(c.buffer) > 0 {
+					e := <-c.buffer
+					e.Close()
+				}
+				close(stopping)
+				break
+			case reconnect := <-c.attemptToReconnect:
+				if reconnect {
+					logging.Info("Attempting to reconnect to [%s]", c.title)
+					err := c.reconnect()
+					if err != nil {
+						logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
+						c.attemptToReconnect <- true
+						continue
+					}
+					logging.Info("Re-connected to [%s]...", c.title)
+					continue
+				}
+			default:
+				if c.vc.IsOpened() {
+					if ok := c.vc.Read(&img); !ok {
+						logging.Warn("Connection for stream at [%s] closed", c.title)
+						c.attemptToReconnect <- true
+						continue
+					}
+
+					imgClone := img.Clone()
+					defer imgClone.Close()
+					select {
+					case c.buffer <- imgClone:
+						logging.Debug("Sending read from to buffer...")
+					default:
+						imgClone.Close()
+						logging.Debug("Buffer full...")
+					}
 				}
 			}
 		}
-	}
+	}()
+
+	return stopping
 }
 
 func (c *Connection) reconnect() error {
