@@ -72,7 +72,7 @@ func (s *Server) BeginStreaming() {
 
 func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 	if s.t == nil {
-		s.t = time.NewTicker(10 * time.Second)
+		s.t = time.NewTicker(1 * time.Minute)
 	}
 
 	if s.stopRemovingClips == nil {
@@ -81,7 +81,7 @@ func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 
 	var currentConnection int
 	for {
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 1)
 		select {
 		case <-s.t.C:
 			activeConnections := s.activeConnections()
