@@ -122,7 +122,7 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 
 	stopping := make(chan struct{})
 
-	go func() {
+	go func(stop chan struct{}) {
 		for {
 			// throttle CPU usage
 			time.Sleep(time.Millisecond * 10)
@@ -170,7 +170,7 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 				}
 			}
 		}
-	}()
+	}(stop)
 
 	return stopping
 }
