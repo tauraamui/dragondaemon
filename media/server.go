@@ -17,7 +17,6 @@ import (
 type Server struct {
 	inShutdown        int32
 	mu                sync.Mutex
-	wg                sync.WaitGroup
 	t                 *time.Ticker
 	stopStreaming     chan struct{}
 	stoppedStreaming  chan struct{}
@@ -63,7 +62,6 @@ func (s *Server) Connect(
 }
 
 func (s *Server) BeginStreaming() {
-	s.wg = sync.WaitGroup{}
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
 		logging.Info("Reading stream from connection [%s]", conn.title)
