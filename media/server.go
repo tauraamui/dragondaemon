@@ -19,7 +19,7 @@ type Server struct {
 	mu                sync.Mutex
 	t                 *time.Ticker
 	stopStreaming     chan struct{}
-	stoppedStreaming  chan struct{}
+	stoppedStreaming  []chan struct{}
 	stopRemovingClips chan struct{}
 	connections       map[*Connection]struct{}
 }
@@ -65,7 +65,7 @@ func (s *Server) BeginStreaming() {
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
 		logging.Info("Reading stream from connection [%s]", conn.title)
-		s.stoppedStreaming = conn.stream(s.stopStreaming)
+		s.stoppedStreaming = append(s.stoppedStreaming, conn.stream(s.stopStreaming))
 	}
 }
 
@@ -156,7 +156,9 @@ func (s *Server) Shutdown() {
 func (s *Server) Close() error {
 	close(s.stopStreaming)
 	close(s.stopRemovingClips)
-	<-s.stoppedStreaming
+	for _, stoppedStreaming := range s.stoppedStreaming {
+		<-stoppedStreaming
+	}
 	return s.closeConnectionsLocked()
 }
 
