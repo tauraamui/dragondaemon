@@ -1,6 +1,6 @@
 # Dragon Daemon - An RTSP based streaming server
 
-Connect to multiple RTSP based streams (IP cameras) and save timestamped clips to a local directory as specified within the configuration. Following the UNIX philosophy of one program to one thing well, the idea is to be able to run this concurrently with a separate media server which will serve the clips to a DASH based player within a web interface.
+Connect to multiple RTSP based streams (IP cameras) and save timestamped clips to a local directory as specified within the configuration. Following the UNIX philosophy of one program to one thing well, the idea is to be able to run this concurrently with a separate media server which will serve the clips to a DASH based player within a web interface. Future features include: motion detection, facial detection, object categorization, zones. It records everything live initially to then go back and remove clips which don't match certain event criteria after analysis.
 
 ![terminalexample](/doc/screenshots/terminal.png)
 
