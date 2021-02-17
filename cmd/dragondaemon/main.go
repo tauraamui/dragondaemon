@@ -79,7 +79,7 @@ func (service *Service) Manage() (string, error) {
 	wg := sync.WaitGroup{}
 
 	mediaServer.BeginStreaming()
-	go mediaServer.RemoveOldClips(cfg.MaxClipAgeInDays)
+	mediaServer.RemoveOldClips(cfg.MaxClipAgeInDays)
 	go mediaServer.SaveStreams(&wg)
 
 	killSignal := <-interrupt

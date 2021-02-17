@@ -15,13 +15,13 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	inShutdown        int32
-	mu                sync.Mutex
-	wg                sync.WaitGroup
-	t                 *time.Ticker
-	stopStreaming     chan struct{}
-	stopRemovingClips chan struct{}
-	connections       map[*Connection]struct{}
+	inShutdown           int32
+	mu                   sync.Mutex
+	stopStreaming        chan struct{}
+	stoppedStreaming     []chan struct{}
+	stopRemovingClips    chan struct{}
+	stoppedRemovingClips chan struct{}
+	connections          map[*Connection]struct{}
 }
 
 // NewServer returns a pointer to media server instance
@@ -62,64 +62,20 @@ func (s *Server) Connect(
 }
 
 func (s *Server) BeginStreaming() {
-	s.wg = sync.WaitGroup{}
 	s.stopStreaming = make(chan struct{})
 	for _, conn := range s.activeConnections() {
 		logging.Info("Reading stream from connection [%s]", conn.title)
-		go conn.stream(&s.wg, s.stopStreaming)
+		s.stoppedStreaming = append(s.stoppedStreaming, conn.stream(s.stopStreaming))
 	}
 }
 
 func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
-	if s.t == nil {
-		s.t = time.NewTicker(10 * time.Second)
-	}
-
 	if s.stopRemovingClips == nil {
 		s.stopRemovingClips = make(chan struct{})
 	}
 
-	var currentConnection int
-	for {
-		time.Sleep(time.Millisecond * 10)
-		select {
-		case <-s.t.C:
-			activeConnections := s.activeConnections()
-			if currentConnection >= len(activeConnections) {
-				currentConnection = 0
-			}
+	s.stoppedRemovingClips = s.removeOldClips(maxClipAgeInDays, s.stopRemovingClips)
 
-			if conn := activeConnections[currentConnection]; conn != nil {
-				fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
-				files, err := ioutil.ReadDir(fullPersistLocation)
-				if err != nil {
-					logging.Error("Unable to read contents of connection persist location %s", fullPersistLocation)
-				}
-
-				for _, file := range files {
-					date, err := time.Parse("2006-01-02", file.Name())
-					if err != nil {
-						continue
-					}
-
-					oldestAllowedDay := time.Now().AddDate(0, 0, -1*maxClipAgeInDays)
-					if date.Before(oldestAllowedDay) {
-						dirToRemove := fmt.Sprintf("%s%c%s", fullPersistLocation, os.PathSeparator, file.Name())
-						logging.Info("REMOVING DIR %s", dirToRemove)
-						err := os.RemoveAll(dirToRemove)
-						if err != nil {
-							logging.Error("Failed to RemoveAll %s", dirToRemove)
-						}
-					}
-				}
-			}
-
-			currentConnection++
-		case <-s.stopRemovingClips:
-			s.t.Stop()
-			return
-		}
-	}
 }
 
 func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
@@ -157,7 +113,10 @@ func (s *Server) Shutdown() {
 func (s *Server) Close() error {
 	close(s.stopStreaming)
 	close(s.stopRemovingClips)
-	s.wg.Wait()
+	for _, stoppedStreaming := range s.stoppedStreaming {
+		<-stoppedStreaming
+	}
+	<-s.stoppedRemovingClips
 	return s.closeConnectionsLocked()
 }
 
@@ -178,6 +137,59 @@ func (s *Server) trackConnection(conn *Connection, add bool) bool {
 		delete(s.connections, conn)
 	}
 	return true
+}
+
+func (s *Server) removeOldClips(maxClipAgeInDays int, stop chan struct{}) chan struct{} {
+	stopping := make(chan struct{})
+
+	ticker := time.NewTicker(5 * time.Second)
+
+	go func(stop chan struct{}) {
+		var currentConnection int
+		for {
+			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-ticker.C:
+				activeConnections := s.activeConnections()
+				if currentConnection >= len(activeConnections) {
+					currentConnection = 0
+				}
+
+				if conn := activeConnections[currentConnection]; conn != nil {
+					fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
+					files, err := ioutil.ReadDir(fullPersistLocation)
+					if err != nil {
+						logging.Error("Unable to read contents of connection persist location %s", fullPersistLocation)
+					}
+
+					for _, file := range files {
+						date, err := time.Parse("2006-01-02", file.Name())
+						if err != nil {
+							continue
+						}
+
+						oldestAllowedDay := time.Now().AddDate(0, 0, -1*maxClipAgeInDays)
+						if date.Before(oldestAllowedDay) {
+							dirToRemove := fmt.Sprintf("%s%c%s", fullPersistLocation, os.PathSeparator, file.Name())
+							logging.Info("REMOVING DIR %s", dirToRemove)
+							err := os.RemoveAll(dirToRemove)
+							if err != nil {
+								logging.Error("Failed to RemoveAll %s", dirToRemove)
+							}
+						}
+					}
+				}
+
+				currentConnection++
+			case <-stop:
+				ticker.Stop()
+				close(s.stoppedRemovingClips)
+				return
+			}
+		}
+	}(stop)
+
+	return stopping
 }
 
 func (s *Server) activeConnections() []*Connection {
