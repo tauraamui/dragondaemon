@@ -122,7 +122,8 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 
 	stopping := make(chan struct{})
 
-	go func(stop chan struct{}) {
+	go func(stop, stopping chan struct{}) {
+		closedStopping := false
 		for {
 			// throttle CPU usage
 			time.Sleep(time.Millisecond * 10)
@@ -136,7 +137,10 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 					e := <-c.buffer
 					e.Close()
 				}
-				close(stopping)
+				if !closedStopping {
+					close(stopping)
+					closedStopping = true
+				}
 				break
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
@@ -170,7 +174,7 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 				}
 			}
 		}
-	}(stop)
+	}(stop, stopping)
 
 	return stopping
 }
