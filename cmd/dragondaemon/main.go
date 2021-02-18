@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"runtime"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/tacusci/logging/v2"
@@ -76,19 +75,24 @@ func (service *Service) Manage() (string, error) {
 		)
 	}
 
-	wg := sync.WaitGroup{}
+	// mediaServer.BeginStreaming()
+	// mediaServer.RemoveOldClips(cfg.MaxClipAgeInDays)
+	// go mediaServer.SaveStreams(&wg)
 
-	mediaServer.BeginStreaming()
-	mediaServer.RemoveOldClips(cfg.MaxClipAgeInDays)
-	go mediaServer.SaveStreams(&wg)
+	shutdown := make(chan struct{})
+	serverFinished := mediaServer.Run(shutdown)
 
 	killSignal := <-interrupt
 	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
 
+	logging.Debug("CLOSING SHUTDOWN CHANNEL")
+	close(shutdown)
+	logging.Debug("WAITING FOR SERVER FINISHED SIGNAL")
+	<-serverFinished
+
 	mediaServer.Shutdown()
 	logging.Info("Waiting for persist process...")
-	wg.Wait()
 	logging.Info("Persist process has finished...")
 	logging.Info("Closing connections, flushing buffers...")
 	err = mediaServer.Close()

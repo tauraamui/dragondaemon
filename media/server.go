@@ -61,12 +61,37 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
-func (s *Server) BeginStreaming() {
-	s.stopStreaming = make(chan struct{})
+func (s *Server) Run(shutdown chan struct{}) chan struct{} {
+	stopped := make(chan struct{})
+
+	go func(stopped chan struct{}) {
+		stopStreaming := make(chan struct{})
+		// streaming connections is core and is the dependancy to all subsequent processes
+		stoppedStreaming := s.beginStreaming(stopStreaming)
+
+		// wait for shutdown signal
+		<-shutdown
+
+		// stopping the streaming process should be done last
+		// stop all streaming
+		close(stopStreaming)
+		// wait for streaming to stop
+		<-stoppedStreaming
+
+		// send signal saying shutdown process has finished
+		close(stopped)
+	}(stopped)
+
+	return stopped
+}
+
+func (s *Server) beginStreaming(stop chan struct{}) chan chan struct{} {
+	stoppedStreaming := make(chan chan struct{})
 	for _, conn := range s.activeConnections() {
 		logging.Info("Reading stream from connection [%s]", conn.title)
-		s.stoppedStreaming = append(s.stoppedStreaming, conn.stream(s.stopStreaming))
+		stoppedStreaming <- conn.stream(stop)
 	}
+	return stoppedStreaming
 }
 
 func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
