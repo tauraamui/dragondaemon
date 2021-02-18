@@ -181,10 +181,12 @@ func (s *Server) removeOldClips(maxClipAgeInDays int, stop chan struct{}) chan s
 				}
 
 				currentConnection++
-			case <-stop:
-				ticker.Stop()
-				close(s.stoppedRemovingClips)
-				return
+			case _, notStopped := <-stop:
+				if !notStopped {
+					ticker.Stop()
+					close(s.stoppedRemovingClips)
+					return
+				}
 			}
 		}
 	}(stop)

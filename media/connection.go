@@ -123,25 +123,23 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 	stopping := make(chan struct{})
 
 	go func(stop, stopping chan struct{}) {
-		closedStopping := false
 		for {
 			// throttle CPU usage
 			time.Sleep(time.Millisecond * 10)
 			select {
-			case <-stop:
-				logging.Debug("Stopped stream goroutine")
-				logging.Debug("Closing root image mat")
-				img.Close()
-				logging.Debug("Flushing img mat buffer")
-				for len(c.buffer) > 0 {
-					e := <-c.buffer
-					e.Close()
-				}
-				if !closedStopping {
+			case _, notStopped := <-stop:
+				if !notStopped {
+					logging.Debug("Stopped stream goroutine")
+					logging.Debug("Closing root image mat")
+					img.Close()
+					logging.Debug("Flushing img mat buffer")
+					for len(c.buffer) > 0 {
+						e := <-c.buffer
+						e.Close()
+					}
 					close(stopping)
-					closedStopping = true
+					break
 				}
-				break
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
 					logging.Info("Attempting to reconnect to [%s]", c.title)
