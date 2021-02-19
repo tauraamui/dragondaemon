@@ -71,34 +71,31 @@ func (s *Server) Run() {
 
 	go func(ctx context.Context, stopped chan struct{}) {
 		streamingCtx, cancelStreaming := context.WithCancel(context.Background())
+		savingCtx, cancelSaving := context.WithCancel(context.Background())
+
 		// streaming connections is core and is the dependancy to all subsequent processes
 		stoppedStreaming := s.beginStreaming(streamingCtx)
+		stoppedSaving := s.saveStreams(savingCtx)
 
 		// wait for shutdown signal
 		<-ctx.Done()
 
+		cancelSaving()
+		// wait for saving streams to stop
+		<-stoppedSaving
+
 		// stopping the streaming process should be done last
 		// stop all streaming
 		cancelStreaming()
-
 		// wait for all streams to stop
 		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
-		for _, stoppedSig := range stoppedStreaming {
-			<-stoppedSig
+		for _, stoppedStreamSig := range stoppedStreaming {
+			<-stoppedStreamSig
 		}
 
 		// send signal saying shutdown process has finished
 		close(stopped)
 	}(s.ctx, s.stoppedAll)
-}
-
-func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
-	var stoppedStreaming []chan struct{}
-	for _, conn := range s.activeConnections() {
-		logging.Info("Reading stream from connection [%s]", conn.title)
-		stoppedStreaming = append(stoppedStreaming, conn.stream(ctx))
-	}
-	return stoppedStreaming
 }
 
 func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
@@ -110,32 +107,51 @@ func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
 
 }
 
-func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
-	if rwg != nil {
-		rwg.Add(1)
+func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
+	var stoppedStreaming []chan struct{}
+	for _, conn := range s.activeConnections() {
+		logging.Info("Reading stream from connection [%s]", conn.title)
+		stoppedStreaming = append(stoppedStreaming, conn.stream(ctx))
 	}
-	defer func() {
-		if rwg != nil {
-			rwg.Done()
+	return stoppedStreaming
+}
+
+func (s *Server) saveStreams(ctx context.Context) chan struct{} {
+	stopping := make(chan struct{})
+
+	reachedShutdownCase := false
+	go func(ctx context.Context, stopping chan struct{}) {
+		for {
+			select {
+			case <-ctx.Done():
+				// TODO(:tauraamui) Investigate why this case is reached more than once anyway
+				if reachedShutdownCase == false {
+					reachedShutdownCase = true
+					close(stopping)
+					break
+				}
+				break
+			default:
+				start := make(chan struct{})
+				wg := sync.WaitGroup{}
+				for _, conn := range s.activeConnections() {
+					wg.Add(1)
+					go func(conn *Connection) {
+						// immediately pause thread
+						<-start
+						// save 1-3 seconds worth of footage to clip file
+						conn.persistToDisk()
+						wg.Done()
+					}(conn)
+				}
+				// unpause all threads at the same time
+				close(start)
+				wg.Wait()
+			}
 		}
-	}()
-	wg := sync.WaitGroup{}
-	for s.IsRunning() {
-		start := make(chan struct{})
-		for _, conn := range s.activeConnections() {
-			wg.Add(1)
-			go func(conn *Connection) {
-				// immediately pause thread
-				<-start
-				// save 1-3 seconds worth of footage to clip file
-				conn.persistToDisk()
-				wg.Done()
-			}(conn)
-		}
-		// unpause all threads at the same time
-		close(start)
-		wg.Wait()
-	}
+	}(ctx, stopping)
+
+	return stopping
 }
 
 func (s *Server) Shutdown() chan struct{} {

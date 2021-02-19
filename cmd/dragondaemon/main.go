@@ -85,7 +85,7 @@ func (service *Service) Manage() (string, error) {
 	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
 
-	// begin shutdown server and wait
+	// trigger server shutdown and wait
 	<-mediaServer.Shutdown()
 
 	logging.Info("Closing connections, flushing buffers...")
