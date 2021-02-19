@@ -11,10 +11,22 @@ type Instance struct {
 	s *media.Server
 }
 
+type Connection struct {
+	UUID  string
+	Title string
+}
+
 func New(server *media.Server) *Instance {
 	return &Instance{s: server}
 }
 
-func (i *Instance) ActiveConnections() []media.Connection {
-	return i.s.APIFetchActiveConnections()
+func (i *Instance) ActiveConnections() []Connection {
+	connections := []Connection{}
+	for _, conn := range i.s.APIFetchActiveConnections() {
+		connections = append(connections, Connection{
+			UUID:  conn.UUID,
+			Title: conn.Title,
+		})
+	}
+	return connections
 }

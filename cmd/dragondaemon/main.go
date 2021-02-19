@@ -82,7 +82,9 @@ func (service *Service) Manage() (string, error) {
 		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
 	})
 
-	apiInst.ActiveConnections()
+	for _, conn := range apiInst.ActiveConnections() {
+		logging.Debug("RECEIVED ACTIVE CONNECTION: %s FROM API", conn)
+	}
 
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt

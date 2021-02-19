@@ -1,11 +1,19 @@
 package media
 
-// FetchActiveConnections returns list of copies of current active connections
-func (s *Server) APIFetchActiveConnections() []Connection {
-	connections := []Connection{}
+type apiConnection struct {
+	UUID  string
+	Title string
+}
+
+// APIFetchActiveConnections returns list of current active connection titles
+func (s *Server) APIFetchActiveConnections() []apiConnection {
+	connections := []apiConnection{}
 	for _, connPtr := range s.activeConnections() {
 		if connPtr != nil {
-			connections = append(connections, *connPtr)
+			connections = append(connections, apiConnection{
+				UUID:  connPtr.uuid,
+				Title: connPtr.title,
+			})
 		}
 	}
 	return connections
