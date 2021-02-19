@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,6 +18,9 @@ import (
 type Server struct {
 	inShutdown           int32
 	mu                   sync.Mutex
+	ctx                  context.Context
+	ctxCancel            context.CancelFunc
+	stoppedAll           chan struct{}
 	stopStreaming        chan struct{}
 	stoppedStreaming     []chan struct{}
 	stopRemovingClips    chan struct{}
@@ -61,35 +65,38 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
-func (s *Server) Run(shutdown chan struct{}) chan struct{} {
-	stopped := make(chan struct{})
+func (s *Server) Run() {
+	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
+	s.stoppedAll = make(chan struct{})
 
-	go func(stopped chan struct{}) {
-		stopStreaming := make(chan struct{})
+	go func(ctx context.Context, stopped chan struct{}) {
+		streamingCtx, cancelStreaming := context.WithCancel(context.Background())
 		// streaming connections is core and is the dependancy to all subsequent processes
-		stoppedStreaming := s.beginStreaming(stopStreaming)
+		stoppedStreaming := s.beginStreaming(streamingCtx)
 
 		// wait for shutdown signal
-		<-shutdown
+		<-ctx.Done()
 
 		// stopping the streaming process should be done last
 		// stop all streaming
-		close(stopStreaming)
-		// wait for streaming to stop
-		<-stoppedStreaming
+		cancelStreaming()
+
+		// wait for all streams to stop
+		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
+		for _, stoppedSig := range stoppedStreaming {
+			<-stoppedSig
+		}
 
 		// send signal saying shutdown process has finished
 		close(stopped)
-	}(stopped)
-
-	return stopped
+	}(s.ctx, s.stoppedAll)
 }
 
-func (s *Server) beginStreaming(stop chan struct{}) chan chan struct{} {
-	stoppedStreaming := make(chan chan struct{})
+func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
+	var stoppedStreaming []chan struct{}
 	for _, conn := range s.activeConnections() {
 		logging.Info("Reading stream from connection [%s]", conn.title)
-		stoppedStreaming <- conn.stream(stop)
+		stoppedStreaming = append(stoppedStreaming, conn.stream(ctx))
 	}
 	return stoppedStreaming
 }
@@ -131,17 +138,13 @@ func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
 	}
 }
 
-func (s *Server) Shutdown() {
+func (s *Server) Shutdown() chan struct{} {
+	s.ctxCancel()
 	atomic.StoreInt32(&s.inShutdown, 1)
+	return s.stoppedAll
 }
 
 func (s *Server) Close() error {
-	close(s.stopStreaming)
-	close(s.stopRemovingClips)
-	for _, stoppedStreaming := range s.stoppedStreaming {
-		<-stoppedStreaming
-	}
-	<-s.stoppedRemovingClips
 	return s.closeConnectionsLocked()
 }
 

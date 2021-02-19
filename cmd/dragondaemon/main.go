@@ -79,21 +79,15 @@ func (service *Service) Manage() (string, error) {
 	// mediaServer.RemoveOldClips(cfg.MaxClipAgeInDays)
 	// go mediaServer.SaveStreams(&wg)
 
-	shutdown := make(chan struct{})
-	serverFinished := mediaServer.Run(shutdown)
+	mediaServer.Run()
 
 	killSignal := <-interrupt
 	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
 
-	logging.Debug("CLOSING SHUTDOWN CHANNEL")
-	close(shutdown)
-	logging.Debug("WAITING FOR SERVER FINISHED SIGNAL")
-	<-serverFinished
+	// begin shutdown server and wait
+	<-mediaServer.Shutdown()
 
-	mediaServer.Shutdown()
-	logging.Info("Waiting for persist process...")
-	logging.Info("Persist process has finished...")
 	logging.Info("Closing connections, flushing buffers...")
 	err = mediaServer.Close()
 	if err != nil {
