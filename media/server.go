@@ -124,6 +124,7 @@ func (s *Server) saveStreams(ctx context.Context) chan struct{} {
 	reachedShutdownCase := false
 	go func(ctx context.Context, stopping chan struct{}) {
 		for {
+			time.Sleep(time.Millisecond * 1)
 			select {
 			case <-ctx.Done():
 				// TODO(:tauraamui) Investigate why this case is reached more than once anyway

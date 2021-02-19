@@ -127,7 +127,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 	go func(ctx context.Context, stopping chan struct{}) {
 		for {
 			// throttle CPU usage
-			time.Sleep(time.Millisecond * 10)
+			time.Sleep(time.Millisecond * 1)
 			select {
 			case <-ctx.Done():
 				// TODO(:tauraamui) Investigate why this case is reached more than once anyway
