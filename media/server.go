@@ -81,12 +81,14 @@ func (s *Server) Run() {
 		<-ctx.Done()
 
 		cancelSaving()
+		logging.Info("Waiting for persist process to finish...")
 		// wait for saving streams to stop
 		<-stoppedSaving
 
 		// stopping the streaming process should be done last
 		// stop all streaming
 		cancelStreaming()
+		logging.Info("Waiting for streams to close...")
 		// wait for all streams to stop
 		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
 		for _, stoppedStreamSig := range stoppedStreaming {

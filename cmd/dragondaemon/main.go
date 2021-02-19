@@ -75,20 +75,19 @@ func (service *Service) Manage() (string, error) {
 		)
 	}
 
-	// mediaServer.BeginStreaming()
-	// mediaServer.RemoveOldClips(cfg.MaxClipAgeInDays)
-	// go mediaServer.SaveStreams(&wg)
-
+	logging.Info("Running media server...")
 	mediaServer.Run()
 
+	// wait for application terminate signal from OS
 	killSignal := <-interrupt
 	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
 
 	// trigger server shutdown and wait
+	logging.Info("Shutting down media server...")
 	<-mediaServer.Shutdown()
 
-	logging.Info("Closing connections, flushing buffers...")
+	logging.Info("Closing camera connections...")
 	err = mediaServer.Close()
 	if err != nil {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
