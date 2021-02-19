@@ -139,8 +139,8 @@ func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
 }
 
 func (s *Server) Shutdown() chan struct{} {
-	s.ctxCancel()
 	atomic.StoreInt32(&s.inShutdown, 1)
+	s.ctxCancel()
 	return s.stoppedAll
 }
 
