@@ -76,7 +76,9 @@ func (service *Service) Manage() (string, error) {
 	}
 
 	logging.Info("Running media server...")
-	mediaServer.Run()
+	mediaServer.Run(media.Options{
+		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
+	})
 
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt

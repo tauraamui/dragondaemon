@@ -28,6 +28,10 @@ type Server struct {
 	connections          map[*Connection]struct{}
 }
 
+type Options struct {
+	MaxClipAgeInDays int
+}
+
 // NewServer returns a pointer to media server instance
 func NewServer() *Server {
 	return &Server{}
@@ -65,25 +69,27 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
-func (s *Server) Run() {
+func (s *Server) Run(opts Options) {
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	s.stoppedAll = make(chan struct{})
 
 	go func(ctx context.Context, stopped chan struct{}) {
 		streamingCtx, cancelStreaming := context.WithCancel(context.Background())
-		savingCtx, cancelSaving := context.WithCancel(context.Background())
+		savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
+		removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
 
 		// streaming connections is core and is the dependancy to all subsequent processes
 		stoppedStreaming := s.beginStreaming(streamingCtx)
-		stoppedSaving := s.saveStreams(savingCtx)
+		stoppedSavingClips := s.saveStreams(savingClipsCtx)
+		stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
 
 		// wait for shutdown signal
 		<-ctx.Done()
 
-		cancelSaving()
+		cancelSavingClips()
 		logging.Info("Waiting for persist process to finish...")
 		// wait for saving streams to stop
-		<-stoppedSaving
+		<-stoppedSavingClips
 
 		// stopping the streaming process should be done last
 		// stop all streaming
@@ -95,18 +101,23 @@ func (s *Server) Run() {
 			<-stoppedStreamSig
 		}
 
+		cancelRemovingClips()
+		logging.Info("Waiting for removing clips process to finish...")
+		<-stoppedRemovingClips
+
 		// send signal saying shutdown process has finished
 		close(stopped)
 	}(s.ctx, s.stoppedAll)
 }
 
-func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
-	if s.stopRemovingClips == nil {
-		s.stopRemovingClips = make(chan struct{})
-	}
+func (s *Server) Shutdown() chan struct{} {
+	atomic.StoreInt32(&s.inShutdown, 1)
+	s.ctxCancel()
+	return s.stoppedAll
+}
 
-	s.stoppedRemovingClips = s.removeOldClips(maxClipAgeInDays, s.stopRemovingClips)
-
+func (s *Server) Close() error {
+	return s.closeConnectionsLocked()
 }
 
 func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
@@ -133,7 +144,6 @@ func (s *Server) saveStreams(ctx context.Context) chan struct{} {
 					close(stopping)
 					break
 				}
-				break
 			default:
 				start := make(chan struct{})
 				wg := sync.WaitGroup{}
@@ -157,41 +167,12 @@ func (s *Server) saveStreams(ctx context.Context) chan struct{} {
 	return stopping
 }
 
-func (s *Server) Shutdown() chan struct{} {
-	atomic.StoreInt32(&s.inShutdown, 1)
-	s.ctxCancel()
-	return s.stoppedAll
-}
-
-func (s *Server) Close() error {
-	return s.closeConnectionsLocked()
-}
-
-func (s *Server) trackConnection(conn *Connection, add bool) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.connections == nil {
-		s.connections = make(map[*Connection]struct{})
-	}
-
-	if add {
-		if s.shuttingDown() {
-			return false
-		}
-		s.connections[conn] = struct{}{}
-	} else {
-		delete(s.connections, conn)
-	}
-	return true
-}
-
-func (s *Server) removeOldClips(maxClipAgeInDays int, stop chan struct{}) chan struct{} {
+func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan struct{} {
 	stopping := make(chan struct{})
 
 	ticker := time.NewTicker(5 * time.Second)
 
-	go func(stop chan struct{}) {
+	go func(ctx context.Context, stopping chan struct{}) {
 		var currentConnection int
 		for {
 			time.Sleep(time.Millisecond * 10)
@@ -228,17 +209,34 @@ func (s *Server) removeOldClips(maxClipAgeInDays int, stop chan struct{}) chan s
 				}
 
 				currentConnection++
-			case _, notStopped := <-stop:
-				if !notStopped {
-					ticker.Stop()
-					close(s.stoppedRemovingClips)
-					return
-				}
+			case <-ctx.Done():
+				ticker.Stop()
+				close(stopping)
+				return
 			}
 		}
-	}(stop)
+	}(ctx, stopping)
 
 	return stopping
+}
+
+func (s *Server) trackConnection(conn *Connection, add bool) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.connections == nil {
+		s.connections = make(map[*Connection]struct{})
+	}
+
+	if add {
+		if s.shuttingDown() {
+			return false
+		}
+		s.connections[conn] = struct{}{}
+	} else {
+		delete(s.connections, conn)
+	}
+	return true
 }
 
 func (s *Server) activeConnections() []*Connection {
