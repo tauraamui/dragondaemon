@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -116,19 +117,22 @@ func (c *Connection) persistToDisk() {
 	}
 }
 
-func (c *Connection) stream(stop chan struct{}) chan struct{} {
+func (c *Connection) stream(ctx context.Context) chan struct{} {
 	logging.Debug("Opening root image mat")
 	img := gocv.NewMat()
 
 	stopping := make(chan struct{})
 
-	go func(stop, stopping chan struct{}) {
+	reachedShutdownCase := false
+	go func(ctx context.Context, stopping chan struct{}) {
 		for {
 			// throttle CPU usage
-			time.Sleep(time.Millisecond * 10)
+			time.Sleep(time.Millisecond * 1)
 			select {
-			case _, notStopped := <-stop:
-				if !notStopped {
+			case <-ctx.Done():
+				// TODO(:tauraamui) Investigate why this case is reached more than once anyway
+				if reachedShutdownCase == false {
+					reachedShutdownCase = true
 					logging.Debug("Stopped stream goroutine")
 					logging.Debug("Closing root image mat")
 					img.Close()
@@ -172,7 +176,7 @@ func (c *Connection) stream(stop chan struct{}) chan struct{} {
 				}
 			}
 		}
-	}(stop, stopping)
+	}(ctx, stopping)
 
 	return stopping
 }

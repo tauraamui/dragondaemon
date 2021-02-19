@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,11 +18,18 @@ import (
 type Server struct {
 	inShutdown           int32
 	mu                   sync.Mutex
+	ctx                  context.Context
+	ctxCancel            context.CancelFunc
+	stoppedAll           chan struct{}
 	stopStreaming        chan struct{}
 	stoppedStreaming     []chan struct{}
 	stopRemovingClips    chan struct{}
 	stoppedRemovingClips chan struct{}
 	connections          map[*Connection]struct{}
+}
+
+type Options struct {
+	MaxClipAgeInDays int
 }
 
 // NewServer returns a pointer to media server instance
@@ -61,90 +69,105 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
-func (s *Server) BeginStreaming() {
-	s.stopStreaming = make(chan struct{})
-	for _, conn := range s.activeConnections() {
-		logging.Info("Reading stream from connection [%s]", conn.title)
-		s.stoppedStreaming = append(s.stoppedStreaming, conn.stream(s.stopStreaming))
-	}
-}
+func (s *Server) Run(opts Options) {
+	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
+	s.stoppedAll = make(chan struct{})
 
-func (s *Server) RemoveOldClips(maxClipAgeInDays int) {
-	if s.stopRemovingClips == nil {
-		s.stopRemovingClips = make(chan struct{})
-	}
+	go func(ctx context.Context, stopped chan struct{}) {
+		streamingCtx, cancelStreaming := context.WithCancel(context.Background())
+		savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
+		removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
 
-	s.stoppedRemovingClips = s.removeOldClips(maxClipAgeInDays, s.stopRemovingClips)
+		// streaming connections is core and is the dependancy to all subsequent processes
+		stoppedStreaming := s.beginStreaming(streamingCtx)
+		stoppedSavingClips := s.saveStreams(savingClipsCtx)
+		stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
 
-}
+		// wait for shutdown signal
+		<-ctx.Done()
 
-func (s *Server) SaveStreams(rwg *sync.WaitGroup) {
-	if rwg != nil {
-		rwg.Add(1)
-	}
-	defer func() {
-		if rwg != nil {
-			rwg.Done()
+		cancelSavingClips()
+		logging.Info("Waiting for persist process to finish...")
+		// wait for saving streams to stop
+		<-stoppedSavingClips
+
+		// stopping the streaming process should be done last
+		// stop all streaming
+		cancelStreaming()
+		logging.Info("Waiting for streams to terminate...")
+		// wait for all streams to stop
+		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
+		for _, stoppedStreamSig := range stoppedStreaming {
+			<-stoppedStreamSig
 		}
-	}()
-	wg := sync.WaitGroup{}
-	for s.IsRunning() {
-		start := make(chan struct{})
-		for _, conn := range s.activeConnections() {
-			wg.Add(1)
-			go func(conn *Connection) {
-				// immediately pause thread
-				<-start
-				// save 1-3 seconds worth of footage to clip file
-				conn.persistToDisk()
-				wg.Done()
-			}(conn)
-		}
-		// unpause all threads at the same time
-		close(start)
-		wg.Wait()
-	}
+
+		cancelRemovingClips()
+		logging.Info("Waiting for removing clips process to finish...")
+		<-stoppedRemovingClips
+
+		// send signal saying shutdown process has finished
+		close(stopped)
+	}(s.ctx, s.stoppedAll)
 }
 
-func (s *Server) Shutdown() {
+func (s *Server) Shutdown() chan struct{} {
 	atomic.StoreInt32(&s.inShutdown, 1)
+	s.ctxCancel()
+	return s.stoppedAll
 }
 
 func (s *Server) Close() error {
-	close(s.stopStreaming)
-	close(s.stopRemovingClips)
-	for _, stoppedStreaming := range s.stoppedStreaming {
-		<-stoppedStreaming
-	}
-	<-s.stoppedRemovingClips
 	return s.closeConnectionsLocked()
 }
 
-func (s *Server) trackConnection(conn *Connection, add bool) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.connections == nil {
-		s.connections = make(map[*Connection]struct{})
+func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
+	var stoppedStreaming []chan struct{}
+	for _, conn := range s.activeConnections() {
+		logging.Info("Reading stream from connection [%s]", conn.title)
+		stoppedStreaming = append(stoppedStreaming, conn.stream(ctx))
 	}
-
-	if add {
-		if s.shuttingDown() {
-			return false
-		}
-		s.connections[conn] = struct{}{}
-	} else {
-		delete(s.connections, conn)
-	}
-	return true
+	return stoppedStreaming
 }
 
-func (s *Server) removeOldClips(maxClipAgeInDays int, stop chan struct{}) chan struct{} {
+func (s *Server) saveStreams(ctx context.Context) chan struct{} {
+	stopping := make(chan struct{})
+
+	go func(ctx context.Context, stopping chan struct{}) {
+		for {
+			time.Sleep(time.Millisecond * 1)
+			select {
+			case <-ctx.Done():
+				close(stopping)
+				return
+			default:
+				start := make(chan struct{})
+				wg := sync.WaitGroup{}
+				for _, conn := range s.activeConnections() {
+					wg.Add(1)
+					go func(conn *Connection) {
+						// immediately pause thread
+						<-start
+						// save 1-3 seconds worth of footage to clip file
+						conn.persistToDisk()
+						wg.Done()
+					}(conn)
+				}
+				// unpause all threads at the same time
+				close(start)
+				wg.Wait()
+			}
+		}
+	}(ctx, stopping)
+
+	return stopping
+}
+
+func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan struct{} {
 	stopping := make(chan struct{})
 
 	ticker := time.NewTicker(5 * time.Second)
 
-	go func(stop chan struct{}) {
+	go func(ctx context.Context, stopping chan struct{}) {
 		var currentConnection int
 		for {
 			time.Sleep(time.Millisecond * 10)
@@ -181,17 +204,34 @@ func (s *Server) removeOldClips(maxClipAgeInDays int, stop chan struct{}) chan s
 				}
 
 				currentConnection++
-			case _, notStopped := <-stop:
-				if !notStopped {
-					ticker.Stop()
-					close(s.stoppedRemovingClips)
-					return
-				}
+			case <-ctx.Done():
+				ticker.Stop()
+				close(stopping)
+				return
 			}
 		}
-	}(stop)
+	}(ctx, stopping)
 
 	return stopping
+}
+
+func (s *Server) trackConnection(conn *Connection, add bool) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.connections == nil {
+		s.connections = make(map[*Connection]struct{})
+	}
+
+	if add {
+		if s.shuttingDown() {
+			return false
+		}
+		s.connections[conn] = struct{}{}
+	} else {
+		delete(s.connections, conn)
+	}
+	return true
 }
 
 func (s *Server) activeConnections() []*Connection {
