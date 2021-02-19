@@ -132,18 +132,13 @@ func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
 func (s *Server) saveStreams(ctx context.Context) chan struct{} {
 	stopping := make(chan struct{})
 
-	reachedShutdownCase := false
 	go func(ctx context.Context, stopping chan struct{}) {
 		for {
 			time.Sleep(time.Millisecond * 1)
 			select {
 			case <-ctx.Done():
-				// TODO(:tauraamui) Investigate why this case is reached more than once anyway
-				if reachedShutdownCase == false {
-					reachedShutdownCase = true
-					close(stopping)
-					break
-				}
+				close(stopping)
+				return
 			default:
 				start := make(chan struct{})
 				wg := sync.WaitGroup{}
