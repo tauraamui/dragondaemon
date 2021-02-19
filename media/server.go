@@ -88,7 +88,7 @@ func (s *Server) Run() {
 		// stopping the streaming process should be done last
 		// stop all streaming
 		cancelStreaming()
-		logging.Info("Waiting for streams to close...")
+		logging.Info("Waiting for streams to terminate...")
 		// wait for all streams to stop
 		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
 		for _, stoppedStreamSig := range stoppedStreaming {
