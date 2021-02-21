@@ -83,7 +83,7 @@ func (service *Service) Manage() (string, error) {
 	})
 
 	for _, conn := range apiInst.ActiveConnections() {
-		logging.Debug("RECEIVED ACTIVE CONNECTION: %s FROM API", conn)
+		logging.Debug("RECEIVED ACTIVE CONNECTION [%s] %s", conn.UUID(), conn.Title())
 	}
 
 	// wait for application terminate signal from OS
