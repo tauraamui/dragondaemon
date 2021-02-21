@@ -17,25 +17,6 @@ func New(server *media.Server) *Instance {
 	return &Instance{s: server}
 }
 
-type Connection interface {
-	UUID() string
-	Title() string
-}
-
-type connectionData struct {
-	uuid, title string
-}
-
-func (c connectionData) UUID() string  { return c.uuid }
-func (c connectionData) Title() string { return c.title }
-
-func (i *Instance) ActiveConnections() []Connection {
-	connections := []Connection{}
-	for _, conn := range i.s.APIFetchActiveConnections() {
-		connections = append(connections, connectionData{
-			uuid:  conn.UUID(),
-			title: conn.Title(),
-		})
-	}
-	return connections
+func (i *Instance) ActiveConnections() []media.ConnectionData {
+	return i.s.APIFetchActiveConnections()
 }
