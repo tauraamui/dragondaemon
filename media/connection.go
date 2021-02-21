@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gocv.io/x/gocv"
@@ -17,6 +18,7 @@ import (
 type Connection struct {
 	inShutdown         int32
 	attemptToReconnect chan bool
+	uuid               string
 	title              string
 	persistLocation    string
 	fps                int
@@ -40,6 +42,7 @@ func NewConnection(
 ) *Connection {
 	return &Connection{
 		attemptToReconnect: make(chan bool, 1),
+		uuid:               uuid.NewString(),
 		title:              title,
 		persistLocation:    persistLocation,
 		fps:                fps,
@@ -71,6 +74,10 @@ func (c *Connection) ShowInWindow(winTitle string) {
 		c.window.IMShow(img)
 		c.window.WaitKey(1)
 	}
+}
+
+func (c *Connection) UUID() string {
+	return c.uuid
 }
 
 func (c *Connection) Title() string {

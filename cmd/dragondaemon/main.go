@@ -10,6 +10,7 @@ import (
 
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
+	"github.com/tauraamui/dragondaemon/api"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
 )
@@ -50,6 +51,7 @@ func (service *Service) Manage() (string, error) {
 	logging.Info("Starting dragon daemon...")
 
 	mediaServer := media.NewServer()
+	apiInst := api.New(mediaServer)
 
 	cfg := config.New()
 	logging.Info("Loading configuration")
@@ -79,6 +81,10 @@ func (service *Service) Manage() (string, error) {
 	mediaServer.Run(media.Options{
 		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
 	})
+
+	for _, conn := range apiInst.ActiveConnections() {
+		logging.Debug("RECEIVED ACTIVE CONNECTION [%s] %s", conn.UUID(), conn.Title())
+	}
 
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt
