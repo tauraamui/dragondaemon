@@ -24,7 +24,7 @@ type Connection struct {
 	fps                int
 	secondsPerClip     int
 	schedule           schedule.Schedule
-	mu                 *sync.Mutex
+	mu                 sync.Mutex
 	vc                 *gocv.VideoCapture
 	rtspStream         string
 	buffer             chan gocv.Mat
@@ -48,7 +48,6 @@ func NewConnection(
 		fps:                fps,
 		secondsPerClip:     secondsPerClip,
 		schedule:           schedule,
-		mu:                 new(sync.Mutex),
 		vc:                 vc,
 		rtspStream:         rtspStream,
 		buffer:             make(chan gocv.Mat, 6),
