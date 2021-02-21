@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/tauraamui/dragondaemon/common"
 	"github.com/tauraamui/dragondaemon/media"
 )
 
@@ -9,14 +10,18 @@ type Options struct {
 	RPCListenPort int
 }
 
-type Instance struct {
+type MediaServer struct {
 	s *media.Server
 }
 
-func New(server *media.Server) *Instance {
-	return &Instance{s: server}
+func New(server *media.Server) *MediaServer {
+	return &MediaServer{s: server}
 }
 
-func (i *Instance) ActiveConnections() []media.ConnectionData {
-	return i.s.APIFetchActiveConnections()
+func (i *MediaServer) ActiveConnections(args string, resp *[]common.ConnectionData) error {
+	conns := i.s.APIFetchActiveConnections()
+	*resp = conns
+
+	return nil
+	// return i.s.APIFetchActiveConnections()
 }
