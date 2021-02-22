@@ -14,6 +14,7 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
+	"github.com/tauraamui/dragondaemon/common"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/media"
 )
@@ -103,22 +104,22 @@ func (service *Service) Manage() (string, error) {
 		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
 	})
 
-	// go func() {
-	// 	testClient, err := rpc.DialHTTP("tcp", ":3110")
-	// 	if err != nil {
-	// 		logging.Error("UNABLE TO DIAL/CONNECT: %v", err)
-	// 		return
-	// 	}
+	go func() {
+		testClient, err := rpc.DialHTTP("tcp", ":3110")
+		if err != nil {
+			logging.Error("UNABLE TO DIAL/CONNECT: %v", err)
+			return
+		}
 
-	// 	logging.Info("USING TEST RPC CLIENT")
-	// 	conns := []media.ConnectionData{}
-	// 	err = testClient.Call("MediaServer.ActiveConnections", "", &conns)
-	// 	if err != nil {
-	// 		logging.Error("UNABLE TO GET CONNS: %v", err)
-	// 		return
-	// 	}
-	// 	logging.Info("RPC RECEIVED CONNS: %v", conns)
-	// }()
+		logging.Info("USING TEST RPC CLIENT")
+		conns := []common.ConnectionData{}
+		err = testClient.Call("MediaServer.ActiveConnections", "", &conns)
+		if err != nil {
+			logging.Error("UNABLE TO GET CONNS: %v", err)
+			return
+		}
+		logging.Info("RPC RECEIVED CONNS: %v", conns)
+	}()
 
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt
