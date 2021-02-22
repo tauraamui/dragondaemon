@@ -1,6 +1,9 @@
 package api
 
 import (
+	"fmt"
+	"net"
+	"net/http"
 	"net/rpc"
 
 	"github.com/tauraamui/dragondaemon/common"
@@ -26,14 +29,44 @@ func (s Session) GetToken(args string, resp *string) error {
 }
 
 type MediaServer struct {
-	s *media.Server
+	s             *media.Server
+	rpcListenPort int
 }
 
-func New(server *media.Server) *MediaServer {
-	return &MediaServer{s: server}
+func New(server *media.Server, opts Options) *MediaServer {
+	return &MediaServer{s: server, rpcListenPort: opts.RPCListenPort}
 }
 
-func (i *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
-	*resp = i.s.APIFetchActiveConnections()
+func StartRPC(m *MediaServer) error {
+	err := rpc.Register(m)
+	if err != nil {
+		return err
+	}
+	rpc.HandleHTTP()
+
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", m.rpcListenPort))
+	if err != nil {
+		return err
+	}
+
+	errs := make(chan error)
+	go func() {
+		httpErr := http.Serve(l, nil)
+		if httpErr != nil {
+			errs <- httpErr
+		}
+		errs <- nil
+	}()
+
+	select {
+	case err := <-errs:
+		return err
+	default:
+		return nil
+	}
+}
+
+func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
+	*resp = m.s.APIFetchActiveConnections()
 	return nil
 }

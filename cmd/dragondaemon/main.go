@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"net/http"
-	"net/rpc"
 	"os"
 	"os/signal"
 	"runtime"
@@ -80,23 +77,11 @@ func (service *Service) Manage() (string, error) {
 	}
 
 	logging.Info("Running API server...")
-	mediaServerAPI := api.New(mediaServer)
-	err = rpc.Register(mediaServerAPI)
+	mediaServerAPI := api.New(mediaServer, api.Options{RPCListenPort: 3110})
+	err = api.StartRPC(mediaServerAPI)
 	if err != nil {
-		logging.Fatal("Unable to register RPC API: %v", err)
+		logging.Error("Unable to start API RPC server: %v...", err)
 	}
-	rpc.HandleHTTP()
-
-	l, err := net.Listen("tcp", ":3110")
-	if err != nil {
-		logging.Fatal("RPC API network listen error: %v", err)
-	}
-
-	go func() {
-		if err := http.Serve(l, nil); err != nil {
-			logging.Fatal("Unable to serve RPC API: %v", err)
-		}
-	}()
 
 	logging.Info("Running media server...")
 	mediaServer.Run(media.Options{
