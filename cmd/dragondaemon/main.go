@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"net/rpc"
 	"os"
 	"os/signal"
 	"runtime"
@@ -51,7 +54,6 @@ func (service *Service) Manage() (string, error) {
 	logging.Info("Starting dragon daemon...")
 
 	mediaServer := media.NewServer()
-	apiInst := api.New(mediaServer)
 
 	cfg := config.New()
 	logging.Info("Loading configuration")
@@ -77,10 +79,46 @@ func (service *Service) Manage() (string, error) {
 		)
 	}
 
+	logging.Info("Running API server...")
+	mediaServerAPI := api.New(mediaServer)
+	err = rpc.Register(mediaServerAPI)
+	if err != nil {
+		logging.Fatal("Unable to register RPC API: %v", err)
+	}
+	rpc.HandleHTTP()
+
+	l, err := net.Listen("tcp", ":3110")
+	if err != nil {
+		logging.Fatal("RPC API network listen error: %v", err)
+	}
+
+	go func() {
+		if err := http.Serve(l, nil); err != nil {
+			logging.Fatal("Unable to serve RPC API: %v", err)
+		}
+	}()
+
 	logging.Info("Running media server...")
 	mediaServer.Run(media.Options{
 		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
 	})
+
+	// go func() {
+	// 	testClient, err := rpc.DialHTTP("tcp", ":3110")
+	// 	if err != nil {
+	// 		logging.Error("UNABLE TO DIAL/CONNECT: %v", err)
+	// 		return
+	// 	}
+
+	// 	logging.Info("USING TEST RPC CLIENT")
+	// 	conns := []media.ConnectionData{}
+	// 	err = testClient.Call("MediaServer.ActiveConnections", "", &conns)
+	// 	if err != nil {
+	// 		logging.Error("UNABLE TO GET CONNS: %v", err)
+	// 		return
+	// 	}
+	// 	logging.Info("RPC RECEIVED CONNS: %v", conns)
+	// }()
 
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt

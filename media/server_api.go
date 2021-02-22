@@ -1,27 +1,33 @@
 package media
 
-import "github.com/tauraamui/dragondaemon/common"
+import "net/rpc"
 
-type connectionData struct {
-	uuid, title string
+func init() {
+	rpc.Register(ConnectionData{})
 }
 
-func (c connectionData) UUID() string {
-	return c.uuid
+type ConnectionData struct {
+	UUID, Title string
 }
 
-func (c connectionData) Title() string {
-	return c.title
+func (c ConnectionData) GetUUID(args string, dst *string) error {
+	*dst = c.UUID
+	return nil
+}
+
+func (c ConnectionData) GetTitle(args string, dst *string) error {
+	*dst = c.Title
+	return nil
 }
 
 // APIFetchActiveConnections returns list of current active connection titles
-func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
-	connections := []common.ConnectionData{}
+func (s *Server) APIFetchActiveConnections() []ConnectionData {
+	connections := []ConnectionData{}
 	for _, connPtr := range s.activeConnections() {
 		if connPtr != nil {
-			connections = append(connections, connectionData{
-				uuid:  connPtr.uuid,
-				title: connPtr.title,
+			connections = append(connections, ConnectionData{
+				connPtr.uuid,
+				connPtr.title,
 			})
 		}
 	}

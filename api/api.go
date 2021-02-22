@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/tauraamui/dragondaemon/common"
 	"github.com/tauraamui/dragondaemon/media"
 )
 
@@ -18,10 +17,7 @@ func New(server *media.Server) *MediaServer {
 	return &MediaServer{s: server}
 }
 
-func (i *MediaServer) ActiveConnections(args string, resp *[]common.ConnectionData) error {
-	conns := i.s.APIFetchActiveConnections()
-	*resp = conns
-
+func (i *MediaServer) ActiveConnections(args string, resp *[]media.ConnectionData) error {
+	*resp = i.s.APIFetchActiveConnections()
 	return nil
-	// return i.s.APIFetchActiveConnections()
 }
