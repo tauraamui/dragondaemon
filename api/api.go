@@ -16,10 +16,6 @@ type Options struct {
 	RPCListenPort int
 }
 
-type MediaServer struct {
-	s *media.Server
-}
-
 type Session struct {
 	Token string
 }
@@ -27,6 +23,10 @@ type Session struct {
 func (s Session) GetToken(args string, resp *string) error {
 	*resp = s.Token
 	return nil
+}
+
+type MediaServer struct {
+	s *media.Server
 }
 
 func New(server *media.Server) *MediaServer {
