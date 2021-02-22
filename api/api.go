@@ -30,6 +30,7 @@ func (s Session) GetToken(args string, resp *string) error {
 
 type MediaServer struct {
 	s             *media.Server
+	httpServer    *http.Server
 	rpcListenPort int
 }
 
@@ -51,7 +52,8 @@ func StartRPC(m *MediaServer) error {
 
 	errs := make(chan error)
 	go func() {
-		httpErr := http.Serve(l, nil)
+		m.httpServer = &http.Server{}
+		httpErr := m.httpServer.Serve(l)
 		if httpErr != nil {
 			errs <- httpErr
 		}
@@ -64,6 +66,10 @@ func StartRPC(m *MediaServer) error {
 	default:
 		return nil
 	}
+}
+
+func ShutdownRPC(m *MediaServer) error {
+	return m.httpServer.Close()
 }
 
 func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {

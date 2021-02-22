@@ -110,6 +110,12 @@ func (service *Service) Manage() (string, error) {
 	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
 
+	logging.Info("Shutting down API server...")
+	err = api.ShutdownRPC(mediaServerAPI)
+	if err != nil {
+		logging.Error("Unable to shutdown API server: %v...", err)
+	}
+
 	// trigger server shutdown and wait
 	logging.Info("Shutting down media server...")
 	<-mediaServer.Shutdown()
