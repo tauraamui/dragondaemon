@@ -35,7 +35,7 @@ type MediaServer struct {
 }
 
 func New(server *media.Server, opts Options) *MediaServer {
-	return &MediaServer{s: server, rpcListenPort: opts.RPCListenPort}
+	return &MediaServer{s: server, httpServer: &http.Server{}, rpcListenPort: opts.RPCListenPort}
 }
 
 func StartRPC(m *MediaServer) error {
@@ -52,7 +52,6 @@ func StartRPC(m *MediaServer) error {
 
 	errs := make(chan error)
 	go func() {
-		m.httpServer = &http.Server{}
 		httpErr := m.httpServer.Serve(l)
 		if httpErr != nil {
 			errs <- httpErr
