@@ -112,7 +112,7 @@ func (service *Service) Manage() (string, error) {
 
 	// 	logging.Info("USING TEST RPC CLIENT")
 	// 	conns := []common.ConnectionData{}
-	// 	err = testClient.Call("MediaServer.ActiveConnections", "", &conns)
+	// 	err = testClient.Call("MediaServer.ActiveConnections", &api.Session{}, &conns)
 	// 	if err != nil {
 	// 		logging.Error("UNABLE TO GET CONNS: %v", err)
 	// 		return
