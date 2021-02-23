@@ -76,8 +76,12 @@ func (service *Service) Manage() (string, error) {
 		)
 	}
 
-	logging.Info("Running API server...")
-	mediaServerAPI := api.New(mediaServer, api.Options{RPCListenPort: 3121})
+	rpcListenPort := os.Getenv("DRAGON_RPC_PORT")
+	if len(rpcListenPort) == 0 || !strings.Contains(rpcListenPort, ":") {
+		rpcListenPort = ":3121"
+	}
+	logging.Info("Running API server on port %s...", rpcListenPort)
+	mediaServerAPI := api.New(mediaServer, api.Options{RPCListenPort: rpcListenPort})
 	err = api.StartRPC(mediaServerAPI)
 	if err != nil {
 		logging.Error("Unable to start API RPC server: %v...", err)
@@ -145,7 +149,6 @@ func init() {
 	default:
 		logging.CurrentLoggingLevel = logging.InfoLevel
 	}
-
 }
 
 func main() {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -16,7 +15,7 @@ func init() {
 
 // TODO(:tauraamui) declare this ahead of time to indicate intention on how to pass these
 type Options struct {
-	RPCListenPort int
+	RPCListenPort string
 }
 
 type Session struct {
@@ -31,7 +30,7 @@ func (s Session) GetToken(args string, resp *string) error {
 type MediaServer struct {
 	s             *media.Server
 	httpServer    *http.Server
-	rpcListenPort int
+	rpcListenPort string
 }
 
 func New(server *media.Server, opts Options) *MediaServer {
@@ -45,7 +44,7 @@ func StartRPC(m *MediaServer) error {
 	}
 	rpc.HandleHTTP()
 
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", m.rpcListenPort))
+	l, err := net.Listen("tcp", m.rpcListenPort)
 	if err != nil {
 		return err
 	}
