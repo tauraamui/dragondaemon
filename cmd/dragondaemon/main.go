@@ -77,7 +77,7 @@ func (service *Service) Manage() (string, error) {
 	}
 
 	logging.Info("Running API server...")
-	mediaServerAPI := api.New(mediaServer, api.Options{RPCListenPort: 3110})
+	mediaServerAPI := api.New(mediaServer, api.Options{RPCListenPort: 3121})
 	err = api.StartRPC(mediaServerAPI)
 	if err != nil {
 		logging.Error("Unable to start API RPC server: %v...", err)
@@ -89,7 +89,7 @@ func (service *Service) Manage() (string, error) {
 	})
 
 	// go func() {
-	// 	testClient, err := rpc.DialHTTP("tcp", ":3110")
+	// 	testClient, err := rpc.DialHTTP("tcp", ":3121")
 	// 	if err != nil {
 	// 		logging.Error("UNABLE TO DIAL/CONNECT: %v", err)
 	// 		return
