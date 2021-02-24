@@ -51,7 +51,6 @@ func (service *Service) Manage() (string, error) {
 	logging.Info("Starting dragon daemon...")
 
 	mediaServer := media.NewServer()
-	apiInst := api.New(mediaServer)
 
 	cfg := config.New()
 	logging.Info("Loading configuration")
@@ -77,19 +76,36 @@ func (service *Service) Manage() (string, error) {
 		)
 	}
 
+	rpcListenPort := os.Getenv("DRAGON_RPC_PORT")
+	if len(rpcListenPort) == 0 || !strings.Contains(rpcListenPort, ":") {
+		rpcListenPort = ":3121"
+	}
+	logging.Info("Running API server on port %s...", rpcListenPort)
+	mediaServerAPI := api.New(
+		interrupt,
+		mediaServer,
+		api.Options{RPCListenPort: rpcListenPort},
+	)
+	err = api.StartRPC(mediaServerAPI)
+	if err != nil {
+		logging.Error("Unable to start API RPC server: %v...", err)
+	}
+
 	logging.Info("Running media server...")
 	mediaServer.Run(media.Options{
 		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
 	})
 
-	for _, conn := range apiInst.ActiveConnections() {
-		logging.Debug("RECEIVED ACTIVE CONNECTION [%s] %s", conn.UUID(), conn.Title())
-	}
-
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt
 	fmt.Print("\r")
 	logging.Error("Received signal: %s", killSignal)
+
+	logging.Info("Shutting down API server...")
+	err = api.ShutdownRPC(mediaServerAPI)
+	if err != nil {
+		logging.Error("Unable to shutdown API server: %v...", err)
+	}
 
 	// trigger server shutdown and wait
 	logging.Info("Shutting down media server...")
@@ -120,7 +136,6 @@ func init() {
 	default:
 		logging.CurrentLoggingLevel = logging.InfoLevel
 	}
-
 }
 
 func main() {

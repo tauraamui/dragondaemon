@@ -1,25 +1,15 @@
 package media
 
-type ConnectionData struct {
-	uuid, title string
-}
-
-func (c ConnectionData) UUID() string {
-	return c.uuid
-}
-
-func (c ConnectionData) Title() string {
-	return c.title
-}
+import "github.com/tauraamui/dragondaemon/common"
 
 // APIFetchActiveConnections returns list of current active connection titles
-func (s *Server) APIFetchActiveConnections() []ConnectionData {
-	connections := []ConnectionData{}
+func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
+	connections := []common.ConnectionData{}
 	for _, connPtr := range s.activeConnections() {
 		if connPtr != nil {
-			connections = append(connections, ConnectionData{
-				uuid:  connPtr.uuid,
-				title: connPtr.title,
+			connections = append(connections, common.ConnectionData{
+				UUID:  connPtr.uuid,
+				Title: connPtr.title,
 			})
 		}
 	}
