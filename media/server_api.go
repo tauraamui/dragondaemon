@@ -1,6 +1,8 @@
 package media
 
 import (
+	"errors"
+
 	"github.com/tauraamui/dragondaemon/common"
 )
 
@@ -28,5 +30,5 @@ func (s *Server) APIRestartConnection(cameraUUID string) error {
 		}
 	}
 
-	return nil
+	return errors.New("unable to find Reolink contoller for any connection")
 }
