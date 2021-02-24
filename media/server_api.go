@@ -20,7 +20,7 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 	return connections
 }
 
-func (s *Server) APIRestartConnection(cameraUUID string) error {
+func (s *Server) APIRebootConnection(cameraUUID string) error {
 	for _, connPtr := range s.activeConnections() {
 		if connPtr != nil && connPtr.reolinkControl != nil {
 			if connPtr.uuid == cameraUUID {

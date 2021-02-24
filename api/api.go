@@ -96,9 +96,10 @@ func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.Connection
 	return nil
 }
 
-func (m *MediaServer) RestartConnection(sess *Session, resp *bool) error {
+func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
 	if sess != nil {
-		err := m.s.APIRestartConnection(sess.CameraUUID)
+		logging.Warn("Received remote reboot connection request...")
+		err := m.s.APIRebootConnection(sess.CameraUUID)
 		if err != nil {
 			*resp = false
 			return err
@@ -111,7 +112,7 @@ func (m *MediaServer) RestartConnection(sess *Session, resp *bool) error {
 
 func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
 	*resp = true
-	logging.Warn("Recieved remote shutdown request...")
+	logging.Warn("Received remote shutdown request...")
 	defer func() {
 		time.Sleep(time.Second * 1)
 		m.interrupt <- SIGREMOTE
