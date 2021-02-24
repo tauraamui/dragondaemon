@@ -32,7 +32,8 @@ type Options struct {
 }
 
 type Session struct {
-	Token string
+	Token      string
+	CameraUUID string
 }
 
 func (s Session) GetToken(args string, resp *string) error {
@@ -92,6 +93,19 @@ func ShutdownRPC(m *MediaServer) error {
 // Exposed API
 func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
 	*resp = m.s.APIFetchActiveConnections()
+	return nil
+}
+
+func (m *MediaServer) RestartConnection(sess *Session, resp *bool) error {
+	if sess != nil {
+		err := m.s.APIRestartConnection(sess.CameraUUID)
+		if err != nil {
+			*resp = false
+			return err
+		}
+	}
+
+	*resp = true
 	return nil
 }
 

@@ -9,8 +9,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/google/uuid"
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gocv.io/x/gocv"
 )
@@ -24,6 +26,7 @@ type Connection struct {
 	fps                int
 	secondsPerClip     int
 	schedule           schedule.Schedule
+	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
 	vc                 *gocv.VideoCapture
 	rtspStream         string
@@ -37,9 +40,20 @@ func NewConnection(
 	fps int,
 	secondsPerClip int,
 	schedule schedule.Schedule,
+	reolink config.ReolinkAdvanced,
 	vc *gocv.VideoCapture,
 	rtspStream string,
 ) *Connection {
+	var reolinkConn *reolinkapi.Camera
+	if reolink.Enabled {
+		conn, err := reolinkapi.NewCamera(reolink.Username, reolink.Password, reolink.APIAddress)
+		if err != nil {
+			logging.Error("Unable to get control connection for camera...")
+		}
+
+		reolinkConn = conn
+	}
+
 	return &Connection{
 		attemptToReconnect: make(chan bool, 1),
 		uuid:               uuid.NewString(),
@@ -48,6 +62,7 @@ func NewConnection(
 		fps:                fps,
 		secondsPerClip:     secondsPerClip,
 		schedule:           schedule,
+		reolinkControl:     reolinkConn,
 		vc:                 vc,
 		rtspStream:         rtspStream,
 		buffer:             make(chan gocv.Mat, 6),

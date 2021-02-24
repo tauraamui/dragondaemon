@@ -1,6 +1,8 @@
 package media
 
-import "github.com/tauraamui/dragondaemon/common"
+import (
+	"github.com/tauraamui/dragondaemon/common"
+)
 
 // APIFetchActiveConnections returns list of current active connection titles
 func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
@@ -14,4 +16,17 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 		}
 	}
 	return connections
+}
+
+func (s *Server) APIRestartConnection(cameraUUID string) error {
+	for _, connPtr := range s.activeConnections() {
+		if connPtr != nil && connPtr.reolinkControl != nil {
+			if connPtr.uuid == cameraUUID {
+				_, err := connPtr.reolinkControl.RebootCamera()(connPtr.reolinkControl.RestHandler)
+				return err
+			}
+		}
+	}
+
+	return nil
 }

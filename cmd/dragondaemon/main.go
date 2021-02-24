@@ -73,6 +73,7 @@ func (service *Service) Manage() (string, error) {
 			c.FPS,
 			c.SecondsPerClip,
 			c.Schedule,
+			c.ReolinkAdvanced,
 		)
 	}
 

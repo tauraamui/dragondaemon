@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gocv.io/x/gocv"
 )
@@ -48,6 +49,7 @@ func (s *Server) Connect(
 	fps int,
 	secondsPerClip int,
 	schedule schedule.Schedule,
+	reolink config.ReolinkAdvanced,
 ) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
@@ -63,6 +65,7 @@ func (s *Server) Connect(
 		fps,
 		secondsPerClip,
 		schedule,
+		reolink,
 		vc,
 		rtspStream,
 	)

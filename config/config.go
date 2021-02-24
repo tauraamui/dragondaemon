@@ -13,13 +13,21 @@ import (
 
 // Camera configuration
 type Camera struct {
-	Title          string            `json:"title" validate:"empty=false"`
-	Address        string            `json:"address"`
-	PersistLoc     string            `json:"persist_location"`
-	FPS            int               `json:"fps" validate:"gte=1 & lte=30"`
-	SecondsPerClip int               `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
-	Disabled       bool              `json:"disabled"`
-	Schedule       schedule.Schedule `json:"schedule"`
+	Title           string            `json:"title" validate:"empty=false"`
+	Address         string            `json:"address"`
+	PersistLoc      string            `json:"persist_location"`
+	FPS             int               `json:"fps" validate:"gte=1 & lte=30"`
+	SecondsPerClip  int               `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
+	Disabled        bool              `json:"disabled"`
+	Schedule        schedule.Schedule `json:"schedule"`
+	ReolinkAdvanced ReolinkAdvanced   `json:"reolink_advanced"`
+}
+
+type ReolinkAdvanced struct {
+	Enabled    bool   `json:"enabled"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	APIAddress string `json:"api_address"`
 }
 
 // Config to keep track of each loaded camera's configuration
