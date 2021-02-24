@@ -4,6 +4,8 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
+	"os"
+	"time"
 
 	"github.com/tauraamui/dragondaemon/common"
 	"github.com/tauraamui/dragondaemon/media"
@@ -28,13 +30,19 @@ func (s Session) GetToken(args string, resp *string) error {
 }
 
 type MediaServer struct {
+	interrupt     chan os.Signal
 	s             *media.Server
 	httpServer    *http.Server
 	rpcListenPort string
 }
 
-func New(server *media.Server, opts Options) *MediaServer {
-	return &MediaServer{s: server, httpServer: &http.Server{}, rpcListenPort: opts.RPCListenPort}
+func New(interrupt chan os.Signal, server *media.Server, opts Options) *MediaServer {
+	return &MediaServer{
+		interrupt:     interrupt,
+		s:             server,
+		httpServer:    &http.Server{},
+		rpcListenPort: opts.RPCListenPort,
+	}
 }
 
 func StartRPC(m *MediaServer) error {
@@ -70,7 +78,17 @@ func ShutdownRPC(m *MediaServer) error {
 	return m.httpServer.Close()
 }
 
+// Exposed API
 func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
 	*resp = m.s.APIFetchActiveConnections()
+	return nil
+}
+
+func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
+	*resp = true
+	defer func() {
+		time.Sleep(time.Second * 1)
+		m.interrupt <- os.Interrupt
+	}()
 	return nil
 }
