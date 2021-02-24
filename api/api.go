@@ -7,12 +7,23 @@ import (
 	"os"
 	"time"
 
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/common"
 	"github.com/tauraamui/dragondaemon/media"
 )
 
 func init() {
 	rpc.Register(Session{})
+}
+
+const SIGREMOTE = Signal(0x1)
+
+type Signal int
+
+func (s Signal) Signal() {}
+
+func (s Signal) String() string {
+	return "remote-shutdown"
 }
 
 // TODO(:tauraamui) declare this ahead of time to indicate intention on how to pass these
@@ -86,9 +97,10 @@ func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.Connection
 
 func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
 	*resp = true
+	logging.Warn("Recieved remote shutdown request...")
 	defer func() {
 		time.Sleep(time.Second * 1)
-		m.interrupt <- os.Interrupt
+		m.interrupt <- SIGREMOTE
 	}()
 	return nil
 }
