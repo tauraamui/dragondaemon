@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -92,18 +93,25 @@ func ShutdownRPC(m *MediaServer) error {
 
 // Exposed API
 func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
+	err := validateSession(*sess)
+	if err != nil {
+		return err
+	}
 	*resp = m.s.APIFetchActiveConnections()
 	return nil
 }
 
 func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
-	if sess != nil {
-		logging.Warn("Received remote reboot connection request...")
-		err := m.s.APIRebootConnection(sess.CameraUUID)
-		if err != nil {
-			*resp = false
-			return err
-		}
+	err := validateSession(*sess)
+	if err != nil {
+		return err
+	}
+
+	logging.Warn("Received remote reboot connection request...")
+	err = m.s.APIRebootConnection(sess.CameraUUID)
+	if err != nil {
+		*resp = false
+		return err
 	}
 
 	*resp = true
@@ -111,11 +119,24 @@ func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
 }
 
 func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
+	err := validateSession(*sess)
+	if err != nil {
+		return err
+	}
+
 	*resp = true
 	logging.Warn("Received remote shutdown request...")
 	defer func() {
 		time.Sleep(time.Second * 1)
 		m.interrupt <- SIGREMOTE
 	}()
+	return nil
+}
+
+func validateSession(sess Session) error {
+	// NOTE(tauraamui): obviously a placeholder for ensuring token signed correctly
+	if sess.Token != "validtoken" {
+		return errors.New("user must be authenticated")
+	}
 	return nil
 }
