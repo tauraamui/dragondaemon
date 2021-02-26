@@ -102,12 +102,22 @@ func (c *Connection) Title() string {
 }
 
 func (c *Connection) SizeOnDisk() (int64, string, error) {
+	var size int64
+	var unit string
+
 	if c.sizeOnDisk > 0 {
-		return c.sizeOnDisk, sizeUnit(c.sizeOnDisk), nil
+		size = c.sizeOnDisk
+	}
+
+	if len(c.sizeOnDiskUnit) > 0 {
+		unit = c.sizeOnDiskUnit
+	}
+
+	if size > 0 && len(unit) > 0 {
+		return size, unit, nil
 	}
 
 	var total int64
-
 	// TODO(tauraamui):
 	// this is very inefficient, especially as a lot of the time there'll be 10s of thousands
 	readSize := func(path string, info os.FileInfo, err error) error {
@@ -126,13 +136,12 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		return total, "", err
 	}
 
-	c.sizeOnDisk = total
-	c.sizeOnDiskUnit = sizeUnit(total)
+	c.sizeOnDisk, c.sizeOnDiskUnit = unitizeSize(total)
 
-	return total, sizeUnit(total), nil
+	return c.sizeOnDisk, c.sizeOnDiskUnit, nil
 }
 
-func sizeUnit(total int64) string {
+func unitizeSize(total int64) (int64, string) {
 	unit := "Kb"
 	total /= 1024
 	if total > 1024 {
@@ -144,7 +153,7 @@ func sizeUnit(total int64) string {
 		}
 	}
 
-	return unit
+	return total, unit
 }
 
 func (c *Connection) Close() error {
