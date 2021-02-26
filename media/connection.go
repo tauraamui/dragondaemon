@@ -99,6 +99,28 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
+func (c Connection) SizeOnDisk() (int64, error) {
+	var total int64
+
+	readSize := func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			total += info.Size()
+		}
+		return nil
+	}
+
+	err := filepath.Walk(
+		fmt.Sprintf("%s/%s", c.persistLocation, c.title),
+		readSize,
+	)
+
+	if err != nil {
+		return total, err
+	}
+
+	return total / 1024 / 1024, nil
+}
+
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
 	if c.window != nil {

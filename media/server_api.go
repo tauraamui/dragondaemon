@@ -2,6 +2,7 @@ package media
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/tauraamui/dragondaemon/common"
 )
@@ -14,6 +15,13 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 			connections = append(connections, common.ConnectionData{
 				UUID:  connPtr.uuid,
 				Title: connPtr.title,
+				Size: func(c *Connection) string {
+					s, err := c.SizeOnDisk()
+					if err != nil {
+						return "N/A"
+					}
+					return strconv.FormatInt(s, 10)
+				}(connPtr),
 			})
 		}
 	}

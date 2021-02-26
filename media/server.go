@@ -69,6 +69,16 @@ func (s *Server) Connect(
 		vc,
 		rtspStream,
 	)
+
+	func() {
+		size, err := conn.SizeOnDisk()
+		if err != nil {
+			logging.Error("UNABLE TO FETCH SIZE ON DISK: %v", err)
+			return
+		}
+		logging.Debug("SIZE ON DISK CONN %s: %dMb", conn.title, size)
+	}()
+
 	s.trackConnection(conn, true)
 }
 
