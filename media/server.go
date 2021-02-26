@@ -72,12 +72,12 @@ func (s *Server) Connect(
 	)
 
 	connSize := func() {
-		size, err := conn.SizeOnDisk()
+		size, unit, err := conn.SizeOnDisk()
 		if err != nil {
 			logging.Error("UNABLE TO FETCH SIZE ON DISK: %v", err)
 			return
 		}
-		logging.Debug("SIZE ON DISK CONN %s: %dMb", conn.title, size)
+		logging.Debug("SIZE ON DISK CONN %s: %d%s", conn.title, size, unit)
 	}
 
 	if s.debugMode {
