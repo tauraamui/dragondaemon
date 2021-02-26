@@ -99,7 +99,7 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c Connection) SizeOnDisk() (int64, error) {
+func (c *Connection) SizeOnDisk() (int64, error) {
 	var total int64
 
 	// TODO(tauraamui):
