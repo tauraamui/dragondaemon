@@ -50,7 +50,7 @@ func (service *Service) Manage() (string, error) {
 
 	logging.Info("Starting dragon daemon...")
 
-	mediaServer := media.NewServer()
+	mediaServer := media.NewServer(debugMode)
 
 	cfg := config.New()
 	logging.Info("Loading configuration")
@@ -122,17 +122,21 @@ func (service *Service) Manage() (string, error) {
 	return "Shutdown successful... BYE! 👋", nil
 }
 
+var debugMode bool
+
 func init() {
 	// logging.CallbackLabel = true
 	logging.CallbackLabelLevel = 4
 	logging.ColorLogLevelLabelOnly = true
 	loggingLevel := os.Getenv("DRAGON_LOGGING_LEVEL")
+
 	switch strings.ToLower(loggingLevel) {
 	case "info":
 		logging.CurrentLoggingLevel = logging.InfoLevel
 	case "warn":
 		logging.CurrentLoggingLevel = logging.WarnLevel
 	case "debug":
+		debugMode = true
 		logging.CurrentLoggingLevel = logging.DebugLevel
 	default:
 		logging.CurrentLoggingLevel = logging.InfoLevel

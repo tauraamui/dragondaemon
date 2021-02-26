@@ -17,6 +17,7 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
+	debugMode            bool
 	inShutdown           int32
 	mu                   sync.Mutex
 	ctx                  context.Context
@@ -34,8 +35,8 @@ type Options struct {
 }
 
 // NewServer returns a pointer to media server instance
-func NewServer() *Server {
-	return &Server{}
+func NewServer(debugMode bool) *Server {
+	return &Server{debugMode: debugMode}
 }
 
 func (s *Server) IsRunning() bool {
@@ -70,14 +71,18 @@ func (s *Server) Connect(
 		rtspStream,
 	)
 
-	func() {
+	connSize := func() {
 		size, err := conn.SizeOnDisk()
 		if err != nil {
 			logging.Error("UNABLE TO FETCH SIZE ON DISK: %v", err)
 			return
 		}
 		logging.Debug("SIZE ON DISK CONN %s: %dMb", conn.title, size)
-	}()
+	}
+
+	if s.debugMode {
+		connSize()
+	}
 
 	s.trackConnection(conn, true)
 }
