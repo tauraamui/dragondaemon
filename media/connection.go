@@ -26,6 +26,7 @@ type Connection struct {
 	fps                int
 	secondsPerClip     int
 	sizeOnDisk         int64
+	sizeOnDiskUnit     string
 	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
@@ -102,7 +103,7 @@ func (c *Connection) Title() string {
 
 func (c *Connection) SizeOnDisk() (int64, string, error) {
 	if c.sizeOnDisk > 0 {
-		return c.sizeOnDisk, "", nil
+		return c.sizeOnDisk, sizeUnit(c.sizeOnDisk), nil
 	}
 
 	var total int64
@@ -125,6 +126,13 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		return total, "", err
 	}
 
+	c.sizeOnDisk = total
+	c.sizeOnDiskUnit = sizeUnit(total)
+
+	return total, sizeUnit(total), nil
+}
+
+func sizeUnit(total int64) string {
 	unit := "Kb"
 	total /= 1024
 	if total > 1024 {
@@ -136,9 +144,7 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		}
 	}
 
-	c.sizeOnDisk = total
-
-	return total, unit, nil
+	return unit
 }
 
 func (c *Connection) Close() error {
