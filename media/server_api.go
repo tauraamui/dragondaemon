@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/common"
 )
 
@@ -21,6 +22,7 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 					if err != nil {
 						return "N/A"
 					}
+					logging.Debug("SIZE -> CONN: %s, SIZE: %d%s", connPtr.uuid, size, unit)
 					return fmt.Sprintf("%s%s", strconv.FormatInt(size, 10), unit)
 				}(connPtr),
 			})
