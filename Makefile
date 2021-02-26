@@ -13,7 +13,7 @@ build:
 
 .PHONY: build-install-start
 build-install-start: build
-	./builds/dragond stop && ./builds/dragond remove && ./builds/dragond install && ./builds/dragond start
+	sudo ./builds/dragond stop && sudo ./builds/dragond remove && sudo ./builds/dragond install && sudo ./builds/dragond start
 
 .PHONY: run-build
 run-build: build
