@@ -102,6 +102,8 @@ func (c *Connection) Title() string {
 func (c Connection) SizeOnDisk() (int64, error) {
 	var total int64
 
+	// TODO(tauraamui):
+	// this is very inefficient, especially as a lot of the time there'll be 10s of thousands
 	readSize := func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			total += info.Size()
