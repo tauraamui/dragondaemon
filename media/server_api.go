@@ -17,11 +17,11 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 				UUID:  connPtr.uuid,
 				Title: connPtr.title,
 				Size: func(c *Connection) string {
-					s, err := c.SizeOnDisk()
+					size, unit, err := c.SizeOnDisk()
 					if err != nil {
 						return "N/A"
 					}
-					return fmt.Sprintf("%sMb", strconv.FormatInt(s, 10))
+					return fmt.Sprintf("%s%s", strconv.FormatInt(size, 10), unit)
 				}(connPtr),
 			})
 		}

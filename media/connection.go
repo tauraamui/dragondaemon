@@ -99,7 +99,7 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c *Connection) SizeOnDisk() (int64, error) {
+func (c *Connection) SizeOnDisk() (int64, string, error) {
 	var total int64
 
 	// TODO(tauraamui):
@@ -117,10 +117,21 @@ func (c *Connection) SizeOnDisk() (int64, error) {
 	)
 
 	if err != nil {
-		return total, err
+		return total, "", err
 	}
 
-	return total / 1024 / 1024, nil
+	unit := "Kb"
+	total /= 1024
+	if total > 1024 {
+		total /= 1024
+		unit = "Mb"
+		if total > 1024 {
+			total /= 1024
+			unit = "Gb"
+		}
+	}
+
+	return total, unit, nil
 }
 
 func (c *Connection) Close() error {
