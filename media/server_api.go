@@ -2,6 +2,7 @@ package media
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/tauraamui/dragondaemon/common"
@@ -20,7 +21,7 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 					if err != nil {
 						return "N/A"
 					}
-					return strconv.FormatInt(s, 10)
+					return fmt.Sprintf("%sMb", strconv.FormatInt(s, 10))
 				}(connPtr),
 			})
 		}
