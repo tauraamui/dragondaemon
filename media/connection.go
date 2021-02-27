@@ -141,6 +141,16 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	return c.sizeOnDisk, c.sizeOnDiskUnit, nil
 }
 
+func getDirSize(path string) (int64, error) {
+	var total int64
+	fp, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
 func unitizeSize(total int64) (int64, string) {
 	unit := "Kb"
 	total /= 1024
