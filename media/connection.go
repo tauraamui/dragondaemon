@@ -3,6 +3,7 @@ package media
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -25,6 +26,8 @@ type Connection struct {
 	persistLocation    string
 	fps                int
 	secondsPerClip     int
+	sizeOnDisk         int64
+	sizeOnDiskUnit     string
 	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
@@ -100,26 +103,79 @@ func (c *Connection) Title() string {
 }
 
 func (c *Connection) SizeOnDisk() (int64, string, error) {
-	var total int64
+	var size int64
+	var unit string
 
-	// TODO(tauraamui):
-	// this is very inefficient, especially as a lot of the time there'll be 10s of thousands
-	readSize := func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			total += info.Size()
-		}
-		return nil
+	// TODO(tauraamui): will come up with some way to dirty the cache, maybe a timeout?
+	if c.sizeOnDisk > 0 {
+		size = c.sizeOnDisk
 	}
 
-	err := filepath.Walk(
-		fmt.Sprintf("%s/%s", c.persistLocation, c.title),
-		readSize,
-	)
+	if len(c.sizeOnDiskUnit) > 0 {
+		unit = c.sizeOnDiskUnit
+	}
+
+	if size > 0 && len(unit) > 0 {
+		return size, unit, nil
+	}
+
+	startTime := time.Now()
+	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
+	endTime := time.Now()
+
+	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
 
 	if err != nil {
 		return total, "", err
 	}
 
+	c.sizeOnDisk, c.sizeOnDiskUnit = unitizeSize(total)
+
+	return c.sizeOnDisk, c.sizeOnDiskUnit, nil
+}
+
+// will either get empty string and pointer or filled string with nil pointer
+// depending on whether it needs to just count the files still remaining in
+// this given dir or whether it needs to start counting again in a found sub dir
+func getDirSize(path string, filePtr *os.File) (int64, error) {
+	var total int64
+
+	var fp *os.File
+	fp = filePtr
+	if fp == nil {
+		filePtr, err := os.Open(path)
+		if err != nil {
+			return 0, err
+		}
+		fp = filePtr
+	}
+
+	files, err := fp.Readdir(100)
+	if len(files) == 0 {
+		return total, err
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			t, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
+			if err == nil {
+				total += t
+			}
+		}
+		total += f.Size()
+	}
+
+	if err != io.EOF {
+		t, err := getDirSize("", fp)
+		if err == nil {
+			total += t
+		}
+	}
+
+	return total, nil
+}
+
+func unitizeSize(total int64) (int64, string) {
 	unit := "Kb"
 	total /= 1024
 	if total > 1024 {
@@ -131,7 +187,7 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		}
 	}
 
-	return total, unit, nil
+	return total, unit
 }
 
 func (c *Connection) Close() error {

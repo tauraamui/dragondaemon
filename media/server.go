@@ -71,18 +71,15 @@ func (s *Server) Connect(
 		rtspStream,
 	)
 
-	connSize := func() {
-		size, unit, err := conn.SizeOnDisk()
+	go func(c *Connection) {
+		logging.Info("Fetching connection size on disk...")
+		size, unit, err := c.SizeOnDisk()
 		if err != nil {
-			logging.Error("UNABLE TO FETCH SIZE ON DISK: %v", err)
+			logging.Error("Unable to fetch size on disk: %v", err)
 			return
 		}
-		logging.Debug("SIZE ON DISK CONN %s: %d%s", conn.title, size, unit)
-	}
-
-	if s.debugMode {
-		connSize()
-	}
+		logging.Info("Connection [%s] size on disk: %d%s", conn.title, size, unit)
+	}(conn)
 
 	s.trackConnection(conn, true)
 }
