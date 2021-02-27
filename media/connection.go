@@ -134,6 +134,9 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	return c.sizeOnDisk, c.sizeOnDiskUnit, nil
 }
 
+// will either get empty string and pointer or filled string with nil pointer
+// depending on whether it needs to just count the files still remaining in
+// this given dir or whether it needs to start counting again in a found sub dir
 func getDirSize(path string, filePtr *os.File) (int64, error) {
 	var total int64
 
