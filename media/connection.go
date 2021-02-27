@@ -118,9 +118,9 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		return size, unit, nil
 	}
 
-	var total int64
 	// TODO(tauraamui):
 	// this is very inefficient, especially as a lot of the time there'll be 10s of thousands
+	var total int64
 	readSize := func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			total += info.Size()
@@ -132,6 +132,9 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		fmt.Sprintf("%s/%s", c.persistLocation, c.title),
 		readSize,
 	)
+
+	// TODO(tauraamui): replace current impl with this next line
+	// total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
 
 	if err != nil {
 		return total, "", err
@@ -162,11 +165,10 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 
 	for _, f := range files {
 		if f.IsDir() {
-			t, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()))
+			t, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
 			if err == nil {
 				total += t
 			}
-			continue
 		}
 		total += f.Size()
 	}
