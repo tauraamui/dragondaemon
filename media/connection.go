@@ -118,23 +118,11 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		return size, unit, nil
 	}
 
-	// TODO(tauraamui):
-	// this is very inefficient, especially as a lot of the time there'll be 10s of thousands
-	var total int64
-	readSize := func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			total += info.Size()
-		}
-		return nil
-	}
+	startTime := time.Now()
+	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
+	endTime := time.Now()
 
-	err := filepath.Walk(
-		fmt.Sprintf("%s/%s", c.persistLocation, c.title),
-		readSize,
-	)
-
-	// TODO(tauraamui): replace current impl with this next line
-	// total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
+	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
 
 	if err != nil {
 		return total, "", err
@@ -158,7 +146,7 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		fp = filePtr
 	}
 
-	files, err := fp.Readdir(1000)
+	files, err := fp.Readdir(100)
 	if len(files) == 0 {
 		return total, err
 	}
