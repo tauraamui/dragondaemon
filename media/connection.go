@@ -3,6 +3,7 @@ package media
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -141,11 +142,40 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	return c.sizeOnDisk, c.sizeOnDiskUnit, nil
 }
 
-func getDirSize(path string) (int64, error) {
+func getDirSize(path string, filePtr *os.File) (int64, error) {
 	var total int64
-	fp, err := os.Open(path)
-	if err != nil {
-		return 0, err
+
+	var fp *os.File
+	fp = filePtr
+	if fp == nil {
+		filePtr, err := os.Open(path)
+		if err != nil {
+			return 0, err
+		}
+		fp = filePtr
+	}
+
+	files, err := fp.Readdir(1000)
+	if len(files) == 0 {
+		return total, err
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			t, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()))
+			if err == nil {
+				total += t
+			}
+			continue
+		}
+		total += f.Size()
+	}
+
+	if err != io.EOF {
+		t, err := getDirSize("", fp)
+		if err == nil {
+			total += t
+		}
 	}
 
 	return total, nil
