@@ -120,20 +120,7 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	}
 
 	startTime := time.Now()
-
-	done := make(chan interface{})
-
-	var total int64
-	var err error
-	go func(t *int64, e error, done chan interface{}) {
-		total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
-		*t = total
-		e = err
-		close(done)
-	}(&total, err, done)
-
-	<-done
-	// total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
+	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
 	endTime := time.Now()
 
 	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
@@ -153,7 +140,6 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 func getDirSize(path string, filePtr *os.File) (int64, error) {
 	var total int64
 
-	// logging.Debug("RESOLVING FILE POINTER FOR: %s", path)
 	fp, err := resolveFilePointer(path, filePtr)
 	if err != nil {
 		return total, err
@@ -179,6 +165,7 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		}
 	}
 
+	logging.Debug("DIR %s size is %d", path, total)
 	return total, nil
 }
 
@@ -189,7 +176,9 @@ func countFileSizes(files []os.FileInfo, onDirFile func(os.FileInfo) int64) int6
 			total += onDirFile(f)
 			continue
 		}
-		total += f.Size()
+		if f.Mode().IsRegular() {
+			total += f.Size()
+		}
 	}
 	return total
 }
