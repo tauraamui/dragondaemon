@@ -140,14 +140,9 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 func getDirSize(path string, filePtr *os.File) (int64, error) {
 	var total int64
 
-	var fp *os.File
-	fp = filePtr
-	if fp == nil {
-		filePtr, err := os.Open(path)
-		if err != nil {
-			return 0, err
-		}
-		fp = filePtr
+	fp, err := resolveFilePointer(path, filePtr)
+	if err != nil {
+		return total, err
 	}
 
 	files, err := fp.Readdir(100)
@@ -173,6 +168,19 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 	}
 
 	return total, nil
+}
+
+func resolveFilePointer(path string, file *os.File) (*os.File, error) {
+	var fp *os.File
+	fp = file
+	if fp == nil {
+		filePtr, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		fp = filePtr
+	}
+	return fp, nil
 }
 
 func unitizeSize(total int64) (int64, string) {
