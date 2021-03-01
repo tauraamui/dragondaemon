@@ -140,14 +140,9 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 func getDirSize(path string, filePtr *os.File) (int64, error) {
 	var total int64
 
-	var fp *os.File
-	fp = filePtr
-	if fp == nil {
-		filePtr, err := os.Open(path)
-		if err != nil {
-			return 0, err
-		}
-		fp = filePtr
+	fp, err := resolveFilePointer(path, filePtr)
+	if err != nil {
+		return total, err
 	}
 
 	files, err := fp.Readdir(100)
@@ -155,15 +150,26 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		return total, err
 	}
 
-	for _, f := range files {
-		if f.IsDir() {
-			t, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
-			if err == nil {
-				total += t
+	total += countFileSizes(files, func(f os.FileInfo) int64 {
+		done := make(chan interface{})
+
+		var total int64
+		go func(d chan interface{}, t *int64) {
+			s, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
+			if err != nil {
+				logging.Error("Unable to get dirs full size: %v...", err)
 			}
-		}
-		total += f.Size()
-	}
+			*t += s
+			close(done)
+		}(done, &total)
+
+		<-done
+		// t, err :=
+		// if err != nil {
+		// 	return t
+		// }
+		return total
+	})
 
 	if err != io.EOF {
 		t, err := getDirSize("", fp)
@@ -172,7 +178,35 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		}
 	}
 
+	// logging.Debug("DIR %s size is %d", path, total)
 	return total, nil
+}
+
+func countFileSizes(files []os.FileInfo, onDirFile func(os.FileInfo) int64) int64 {
+	var total int64
+	for _, f := range files {
+		if f.IsDir() {
+			total += onDirFile(f)
+			continue
+		}
+		if f.Mode().IsRegular() {
+			total += f.Size()
+		}
+	}
+	return total
+}
+
+func resolveFilePointer(path string, file *os.File) (*os.File, error) {
+	var fp *os.File
+	fp = file
+	if fp == nil {
+		filePtr, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		fp = filePtr
+	}
+	return fp, nil
 }
 
 func unitizeSize(total int64) (int64, string) {
