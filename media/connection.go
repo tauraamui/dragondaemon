@@ -151,11 +151,24 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 	}
 
 	total += countFileSizes(files, func(f os.FileInfo) int64 {
-		t, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
-		if err != nil {
-			return t
-		}
-		return t
+		done := make(chan interface{})
+
+		var total int64
+		go func(d chan interface{}, t *int64) {
+			s, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
+			if err != nil {
+				logging.Error("Unable to get dirs full size: %v...", err)
+			}
+			*t += s
+			close(done)
+		}(done, &total)
+
+		<-done
+		// t, err :=
+		// if err != nil {
+		// 	return t
+		// }
+		return total
 	})
 
 	if err != io.EOF {
@@ -165,7 +178,7 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		}
 	}
 
-	logging.Debug("DIR %s size is %d", path, total)
+	// logging.Debug("DIR %s size is %d", path, total)
 	return total, nil
 }
 
