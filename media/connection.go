@@ -164,10 +164,6 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		}(done, &total)
 
 		<-done
-		// t, err :=
-		// if err != nil {
-		// 	return t
-		// }
 		return total
 	})
 
@@ -178,7 +174,6 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 		}
 	}
 
-	// logging.Debug("DIR %s size is %d", path, total)
 	return total, nil
 }
 
