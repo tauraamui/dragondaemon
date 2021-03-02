@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
+	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config"
@@ -19,6 +20,7 @@ import (
 )
 
 type Connection struct {
+	cache              *ristretto.Cache
 	inShutdown         int32
 	attemptToReconnect chan bool
 	uuid               string
@@ -57,7 +59,13 @@ func NewConnection(
 		reolinkConn = conn
 	}
 
+	cache, err := ristretto.NewCache(nil)
+	if err != nil {
+		logging.Error("Unable to intialise in-memory cache: %v...", err)
+	}
+
 	return &Connection{
+		cache:              cache,
 		attemptToReconnect: make(chan bool, 1),
 		uuid:               uuid.NewString(),
 		title:              title,
@@ -225,6 +233,7 @@ func (c *Connection) Close() error {
 		c.window.Close()
 	}
 	close(c.buffer)
+	c.cache.Close()
 	return c.vc.Close()
 }
 
