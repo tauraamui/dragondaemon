@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
+	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config"
@@ -18,7 +19,10 @@ import (
 	"gocv.io/x/gocv"
 )
 
+const sizeOnDisk string = "sod"
+
 type Connection struct {
+	cache              *ristretto.Cache
 	inShutdown         int32
 	attemptToReconnect chan bool
 	uuid               string
@@ -26,15 +30,16 @@ type Connection struct {
 	persistLocation    string
 	fps                int
 	secondsPerClip     int
-	sizeOnDisk         int64
-	sizeOnDiskUnit     string
-	schedule           schedule.Schedule
-	reolinkControl     *reolinkapi.Camera
-	mu                 sync.Mutex
-	vc                 *gocv.VideoCapture
-	rtspStream         string
-	buffer             chan gocv.Mat
-	window             *gocv.Window
+	// TODO(tauraamui): these two next vars to be moved into cache
+	sizeOnDisk     int64
+	sizeOnDiskUnit string
+	schedule       schedule.Schedule
+	reolinkControl *reolinkapi.Camera
+	mu             sync.Mutex
+	vc             *gocv.VideoCapture
+	rtspStream     string
+	buffer         chan gocv.Mat
+	window         *gocv.Window
 }
 
 func NewConnection(
@@ -57,7 +62,17 @@ func NewConnection(
 		reolinkConn = conn
 	}
 
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 100,
+		MaxCost:     2,
+		BufferItems: 64,
+	})
+	if err != nil {
+		logging.Error("Unable to intialise in-memory cache: %v...", err)
+	}
+
 	return &Connection{
+		cache:              cache,
 		attemptToReconnect: make(chan bool, 1),
 		uuid:               uuid.NewString(),
 		title:              title,
@@ -107,16 +122,15 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	var unit string
 
 	// TODO(tauraamui): will come up with some way to dirty the cache, maybe a timeout?
-	if c.sizeOnDisk > 0 {
-		size = c.sizeOnDisk
-	}
-
-	if len(c.sizeOnDiskUnit) > 0 {
-		unit = c.sizeOnDiskUnit
-	}
-
-	if size > 0 && len(unit) > 0 {
-		return size, unit, nil
+	e, ok := c.cache.Get(sizeOnDisk)
+	if ok {
+		logging.Debug("FOUND SIZE IN CACHE")
+		sizeVal, ok := e.(int64)
+		if ok {
+			logging.Debug("SIZE VALUE OF TYPE INT64")
+			size, unit = unitizeSize(sizeVal)
+			return size, unit, nil
+		}
 	}
 
 	startTime := time.Now()
@@ -129,9 +143,13 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 		return total, "", err
 	}
 
-	c.sizeOnDisk, c.sizeOnDiskUnit = unitizeSize(total)
+	size, unit = unitizeSize(total)
 
-	return c.sizeOnDisk, c.sizeOnDiskUnit, nil
+	if ok := c.cache.SetWithTTL(sizeOnDisk, size, 1, time.Minute*5); ok {
+		logging.Debug("SAVED DISK SIZE TO CACHE")
+	}
+
+	return size, unit, nil
 }
 
 // will either get empty string and pointer or filled string with nil pointer
@@ -225,6 +243,7 @@ func (c *Connection) Close() error {
 		c.window.Close()
 	}
 	close(c.buffer)
+	c.cache.Close()
 	return c.vc.Close()
 }
 
