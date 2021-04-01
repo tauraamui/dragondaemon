@@ -34,6 +34,26 @@ type Options struct {
 	MaxClipAgeInDays int
 }
 
+type VideoCapture struct {
+	p *gocv.VideoCapture
+}
+
+func (vc *VideoCapture) SetP(c *gocv.VideoCapture) {
+	vc.p = c
+}
+
+func (vc *VideoCapture) IsOpened() bool {
+	return vc.p.IsOpened()
+}
+
+func (vc *VideoCapture) Read(m *gocv.Mat) bool {
+	return vc.p.Read(m)
+}
+
+func (vc *VideoCapture) Close() error {
+	return vc.p.Close()
+}
+
 // NewServer returns a pointer to media server instance
 func NewServer(debugMode bool) *Server {
 	return &Server{debugMode: debugMode}
@@ -67,7 +87,7 @@ func (s *Server) Connect(
 		secondsPerClip,
 		schedule,
 		reolink,
-		vc,
+		&VideoCapture{p: vc},
 		rtspStream,
 	)
 

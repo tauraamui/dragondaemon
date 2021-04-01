@@ -21,6 +21,13 @@ import (
 
 const sizeOnDisk string = "sod"
 
+type VideoCapturable interface {
+	SetP(*gocv.VideoCapture)
+	IsOpened() bool
+	Read(*gocv.Mat) bool
+	Close() error
+}
+
 type Connection struct {
 	cache              *ristretto.Cache
 	inShutdown         int32
@@ -33,11 +40,10 @@ type Connection struct {
 	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
-	// vc                 *gocv.VideoCapture
-	vcw        videoCapture
-	rtspStream string
-	buffer     chan gocv.Mat
-	window     *gocv.Window
+	vc                 VideoCapturable
+	rtspStream         string
+	buffer             chan gocv.Mat
+	window             *gocv.Window
 }
 
 func NewConnection(
@@ -47,7 +53,7 @@ func NewConnection(
 	secondsPerClip int,
 	schedule schedule.Schedule,
 	reolink config.ReolinkAdvanced,
-	vc *gocv.VideoCapture,
+	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
 	var reolinkConn *reolinkapi.Camera
@@ -80,7 +86,7 @@ func NewConnection(
 		schedule:           schedule,
 		reolinkControl:     reolinkConn,
 		// vc:                 vc,
-		vcw:        videoCapture{vc},
+		vc:         vc,
 		rtspStream: rtspStream,
 		buffer:     make(chan gocv.Mat, 6),
 	}
@@ -99,7 +105,7 @@ func (c *Connection) ShowInWindow(winTitle string) {
 	defer img.Close()
 
 	for atomic.LoadInt32(&c.inShutdown) == 0 {
-		c.vcw.Read(&img)
+		c.vc.Read(&img)
 		if img.Empty() {
 			continue
 		}
@@ -243,7 +249,7 @@ func (c *Connection) Close() error {
 	}
 	close(c.buffer)
 	c.cache.Close()
-	return c.vcw.Close()
+	return c.vc.Close()
 }
 
 func (c *Connection) persistToDisk() {
@@ -316,8 +322,8 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 					continue
 				}
 			default:
-				if c.vcw.IsOpened() {
-					if ok := c.vcw.Read(&img); !ok {
+				if c.vc.IsOpened() {
+					if ok := c.vc.Read(&img); !ok {
 						logging.Warn("Connection for stream at [%s] closed", c.title)
 						c.attemptToReconnect <- true
 						continue
@@ -344,7 +350,7 @@ func (c *Connection) reconnect() error {
 	defer c.mu.Unlock()
 
 	var err error
-	if err = c.vcw.Close(); err != nil {
+	if err = c.vc.Close(); err != nil {
 		logging.Error("Failed to close connection... ERROR: %v", err)
 	}
 
@@ -353,25 +359,9 @@ func (c *Connection) reconnect() error {
 		return err
 	}
 
-	c.vcw.p = vc
+	c.vc.SetP(vc)
 
 	return nil
-}
-
-type videoCapture struct {
-	p *gocv.VideoCapture
-}
-
-func (vc *videoCapture) IsOpened() bool {
-	return vc.p.IsOpened()
-}
-
-func (vc *videoCapture) Read(m *gocv.Mat) bool {
-	return vc.p.Read(m)
-}
-
-func (vc *videoCapture) Close() error {
-	return vc.p.Close()
 }
 
 func fetchClipFilePath(rootDir string, clipsDir string) string {
