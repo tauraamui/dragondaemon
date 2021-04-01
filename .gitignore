@@ -19,6 +19,7 @@
 dragondaemon
 proofofconcept.go2
 clips/*
+*.mp4
 *.avi
 dd.config
 .dd.config.swp
