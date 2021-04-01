@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"io/ioutil"
+	"math"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -58,34 +59,56 @@ func (vc *videoCapture) Close() error {
 }
 
 type mockVideoCapture struct {
-	stream gocv.Mat
-	open   bool
+	stream      gocv.Mat
+	initialised bool
 }
 
 func (mvc *mockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
 func (mvc *mockVideoCapture) IsOpened() bool {
-	return mvc.open
+	return true
 }
 
 func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
-	if !mvc.open {
-		img := image.NewRGBA(image.Rect(0, 0, 100, 50))
-		img.Set(50, 25, color.RGBA{255, 0, 0, 255})
+	logging.Debug("Reading video from mock")
+	if !mvc.initialised {
+		var w, h int = 280, 240
+		var hw, hh float64 = float64(w / 2), float64(h / 2)
+		r := 40.0
+		θ := 2 * math.Pi / 3
+		cr := &circle{hw - r*math.Sin(0), hh - r*math.Cos(0), 60}
+		cg := &circle{hw - r*math.Sin(θ), hh - r*math.Cos(θ), 60}
+		cb := &circle{hw - r*math.Sin(-θ), hh - r*math.Cos(-θ), 60}
+
+		img := image.NewRGBA(image.Rect(0, 0, w, h))
+		for x := 0; x < w; x++ {
+			for y := 0; y < h; y++ {
+				c := color.RGBA{
+					cr.Brightness(float64(x), float64(y)),
+					cg.Brightness(float64(x), float64(y)),
+					cb.Brightness(float64(x), float64(y)),
+					255,
+				}
+				img.Set(x, y, c)
+			}
+		}
+
+		logging.Debug("Loading mock data into video stream")
 		mat, err := gocv.ImageToMatRGB(img)
 		if err != nil {
-			mvc.stream = mat
-			mvc.open = true
+			logging.Fatal("Unable to convert Go image into OpenCV mat")
 		}
+		mvc.stream = mat
+		mvc.initialised = true
 	}
 
 	mvc.stream.CopyTo(m)
 
-	return mvc.open
+	return mvc.initialised
 }
 
 func (mvc *mockVideoCapture) Close() error {
-	mvc.open = false
+	mvc.initialised = false
 	mvc.stream.Close()
 	return nil
 }
@@ -333,8 +356,8 @@ func (s *Server) shuttingDown() bool {
 }
 
 func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
-	_, mockVideoStream := os.LookupEnv("MOCK_VIDEO_STREAM")
-	if mockVideoStream {
+	mockVidStream, foundEnv := os.LookupEnv("MOCK_VIDEO_STREAM")
+	if foundEnv && mockVidStream == "1" {
 		return &mockVideoCapture{}, nil
 	}
 
@@ -342,6 +365,21 @@ func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
 	return &videoCapture{vc}, err
+}
+
+type circle struct {
+	X, Y, R float64
+}
+
+func (c *circle) Brightness(x, y float64) uint8 {
+	var dx, dy float64 = c.X - x, c.Y - y
+	d := math.Sqrt(dx*dx+dy*dy) / c.R
+	if d > 1 {
+		return 0
+	} else {
+		return 255
+	}
 }
