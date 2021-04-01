@@ -33,10 +33,11 @@ type Connection struct {
 	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
-	vc                 *gocv.VideoCapture
-	rtspStream         string
-	buffer             chan gocv.Mat
-	window             *gocv.Window
+	// vc                 *gocv.VideoCapture
+	vcw        videoCapture
+	rtspStream string
+	buffer     chan gocv.Mat
+	window     *gocv.Window
 }
 
 func NewConnection(
@@ -78,9 +79,10 @@ func NewConnection(
 		secondsPerClip:     secondsPerClip,
 		schedule:           schedule,
 		reolinkControl:     reolinkConn,
-		vc:                 vc,
-		rtspStream:         rtspStream,
-		buffer:             make(chan gocv.Mat, 6),
+		// vc:                 vc,
+		vcw:        videoCapture{vc},
+		rtspStream: rtspStream,
+		buffer:     make(chan gocv.Mat, 6),
 	}
 }
 
@@ -97,7 +99,7 @@ func (c *Connection) ShowInWindow(winTitle string) {
 	defer img.Close()
 
 	for atomic.LoadInt32(&c.inShutdown) == 0 {
-		c.vc.Read(&img)
+		c.vcw.Read(&img)
 		if img.Empty() {
 			continue
 		}
@@ -241,7 +243,7 @@ func (c *Connection) Close() error {
 	}
 	close(c.buffer)
 	c.cache.Close()
-	return c.vc.Close()
+	return c.vcw.Close()
 }
 
 func (c *Connection) persistToDisk() {
@@ -314,8 +316,8 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 					continue
 				}
 			default:
-				if c.vc.IsOpened() {
-					if ok := c.vc.Read(&img); !ok {
+				if c.vcw.IsOpened() {
+					if ok := c.vcw.Read(&img); !ok {
 						logging.Warn("Connection for stream at [%s] closed", c.title)
 						c.attemptToReconnect <- true
 						continue
@@ -342,16 +344,34 @@ func (c *Connection) reconnect() error {
 	defer c.mu.Unlock()
 
 	var err error
-	if err = c.vc.Close(); err != nil {
+	if err = c.vcw.Close(); err != nil {
 		logging.Error("Failed to close connection... ERROR: %v", err)
 	}
 
-	c.vc, err = gocv.OpenVideoCapture(c.rtspStream)
+	vc, err := gocv.OpenVideoCapture(c.rtspStream)
 	if err != nil {
 		return err
 	}
 
+	c.vcw.p = vc
+
 	return nil
+}
+
+type videoCapture struct {
+	p *gocv.VideoCapture
+}
+
+func (vc *videoCapture) IsOpened() bool {
+	return vc.p.IsOpened()
+}
+
+func (vc *videoCapture) Read(m *gocv.Mat) bool {
+	return vc.p.Read(m)
+}
+
+func (vc *videoCapture) Close() error {
+	return vc.p.Close()
 }
 
 func fetchClipFilePath(rootDir string, clipsDir string) string {
