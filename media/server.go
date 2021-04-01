@@ -70,7 +70,6 @@ func (mvc *mockVideoCapture) IsOpened() bool {
 }
 
 func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
-	logging.Debug("Reading video from mock")
 	if !mvc.initialised {
 		var w, h int = 280, 240
 		var hw, hh float64 = float64(w / 2), float64(h / 2)
@@ -93,7 +92,6 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 			}
 		}
 
-		logging.Debug("Loading mock data into video stream")
 		mat, err := gocv.ImageToMatRGB(img)
 		if err != nil {
 			logging.Fatal("Unable to convert Go image into OpenCV mat")
@@ -102,6 +100,7 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 		mvc.initialised = true
 	}
 
+	time.Sleep(time.Millisecond * 100)
 	mvc.stream.CopyTo(m)
 
 	return mvc.initialised
