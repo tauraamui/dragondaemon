@@ -3,11 +3,14 @@ package media
 import (
 	"context"
 	"fmt"
+	"image"
 	"io/ioutil"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"image/color"
 
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config"
@@ -34,24 +37,57 @@ type Options struct {
 	MaxClipAgeInDays int
 }
 
-type VideoCapture struct {
+type videoCapture struct {
 	p *gocv.VideoCapture
 }
 
-func (vc *VideoCapture) SetP(c *gocv.VideoCapture) {
+func (vc *videoCapture) SetP(c *gocv.VideoCapture) {
 	vc.p = c
 }
 
-func (vc *VideoCapture) IsOpened() bool {
+func (vc *videoCapture) IsOpened() bool {
 	return vc.p.IsOpened()
 }
 
-func (vc *VideoCapture) Read(m *gocv.Mat) bool {
+func (vc *videoCapture) Read(m *gocv.Mat) bool {
 	return vc.p.Read(m)
 }
 
-func (vc *VideoCapture) Close() error {
+func (vc *videoCapture) Close() error {
 	return vc.p.Close()
+}
+
+type mockVideoCapture struct {
+	stream gocv.Mat
+	open   bool
+}
+
+func (mvc *mockVideoCapture) SetP(_ *gocv.VideoCapture) {}
+
+func (mvc *mockVideoCapture) IsOpened() bool {
+	return mvc.open
+}
+
+func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
+	if !mvc.open {
+		img := image.NewRGBA(image.Rect(0, 0, 100, 50))
+		img.Set(50, 25, color.RGBA{255, 0, 0, 255})
+		mat, err := gocv.ImageToMatRGB(img)
+		if err != nil {
+			mvc.stream = mat
+			mvc.open = true
+		}
+	}
+
+	mvc.stream.CopyTo(m)
+
+	return mvc.open
+}
+
+func (mvc *mockVideoCapture) Close() error {
+	mvc.open = false
+	mvc.stream.Close()
+	return nil
 }
 
 // NewServer returns a pointer to media server instance
@@ -297,10 +333,15 @@ func (s *Server) shuttingDown() bool {
 }
 
 func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
+	_, mockVideoStream := os.LookupEnv("MOCK_VIDEO_STREAM")
+	if mockVideoStream {
+		return &mockVideoCapture{}, nil
+	}
+
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
 		return nil, err
 	}
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
-	return &VideoCapture{vc}, err
+	return &videoCapture{vc}, err
 }
