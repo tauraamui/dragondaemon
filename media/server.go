@@ -3,11 +3,15 @@ package media
 import (
 	"context"
 	"fmt"
+	"image"
 	"io/ioutil"
+	"math"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"image/color"
 
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config"
@@ -34,6 +38,80 @@ type Options struct {
 	MaxClipAgeInDays int
 }
 
+type videoCapture struct {
+	p *gocv.VideoCapture
+}
+
+func (vc *videoCapture) SetP(c *gocv.VideoCapture) {
+	vc.p = c
+}
+
+func (vc *videoCapture) IsOpened() bool {
+	return vc.p.IsOpened()
+}
+
+func (vc *videoCapture) Read(m *gocv.Mat) bool {
+	return vc.p.Read(m)
+}
+
+func (vc *videoCapture) Close() error {
+	return vc.p.Close()
+}
+
+type mockVideoCapture struct {
+	stream      gocv.Mat
+	initialised bool
+}
+
+func (mvc *mockVideoCapture) SetP(_ *gocv.VideoCapture) {}
+
+func (mvc *mockVideoCapture) IsOpened() bool {
+	return true
+}
+
+func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
+	if !mvc.initialised {
+		var w, h int = 280, 240
+		var hw, hh float64 = float64(w / 2), float64(h / 2)
+		r := 40.0
+		θ := 2 * math.Pi / 3
+		cr := &circle{hw - r*math.Sin(0), hh - r*math.Cos(0), 60}
+		cg := &circle{hw - r*math.Sin(θ), hh - r*math.Cos(θ), 60}
+		cb := &circle{hw - r*math.Sin(-θ), hh - r*math.Cos(-θ), 60}
+
+		img := image.NewRGBA(image.Rect(0, 0, w, h))
+		for x := 0; x < w; x++ {
+			for y := 0; y < h; y++ {
+				c := color.RGBA{
+					cr.Brightness(float64(x), float64(y)),
+					cg.Brightness(float64(x), float64(y)),
+					cb.Brightness(float64(x), float64(y)),
+					255,
+				}
+				img.Set(x, y, c)
+			}
+		}
+
+		mat, err := gocv.ImageToMatRGB(img)
+		if err != nil {
+			logging.Fatal("Unable to convert Go image into OpenCV mat")
+		}
+		mvc.stream = mat
+		mvc.initialised = true
+	}
+
+	time.Sleep(time.Millisecond * 100)
+	mvc.stream.CopyTo(m)
+
+	return mvc.initialised
+}
+
+func (mvc *mockVideoCapture) Close() error {
+	mvc.initialised = false
+	mvc.stream.Close()
+	return nil
+}
+
 // NewServer returns a pointer to media server instance
 func NewServer(debugMode bool) *Server {
 	return &Server{debugMode: debugMode}
@@ -52,8 +130,7 @@ func (s *Server) Connect(
 	schedule schedule.Schedule,
 	reolink config.ReolinkAdvanced,
 ) {
-	vc, err := gocv.OpenVideoCapture(rtspStream)
-	vc.Set(gocv.VideoCaptureFPS, float64(fps))
+	vc, err := openVideoCapture(rtspStream, fps)
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
@@ -275,4 +352,33 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
+}
+
+func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
+	mockVidStream, foundEnv := os.LookupEnv("MOCK_VIDEO_STREAM")
+	if foundEnv && mockVidStream == "1" {
+		return &mockVideoCapture{}, nil
+	}
+
+	vc, err := gocv.OpenVideoCapture(rtspStream)
+	if err != nil {
+		return nil, err
+	}
+
+	vc.Set(gocv.VideoCaptureFPS, float64(fps))
+	return &videoCapture{vc}, err
+}
+
+type circle struct {
+	X, Y, R float64
+}
+
+func (c *circle) Brightness(x, y float64) uint8 {
+	var dx, dy float64 = c.X - x, c.Y - y
+	d := math.Sqrt(dx*dx+dy*dy) / c.R
+	if d > 1 {
+		return 0
+	} else {
+		return 255
+	}
 }

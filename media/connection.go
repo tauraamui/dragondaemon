@@ -21,6 +21,13 @@ import (
 
 const sizeOnDisk string = "sod"
 
+type VideoCapturable interface {
+	SetP(*gocv.VideoCapture)
+	IsOpened() bool
+	Read(*gocv.Mat) bool
+	Close() error
+}
+
 type Connection struct {
 	cache              *ristretto.Cache
 	inShutdown         int32
@@ -33,7 +40,7 @@ type Connection struct {
 	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
-	vc                 *gocv.VideoCapture
+	vc                 VideoCapturable
 	rtspStream         string
 	buffer             chan gocv.Mat
 	window             *gocv.Window
@@ -46,7 +53,7 @@ func NewConnection(
 	secondsPerClip int,
 	schedule schedule.Schedule,
 	reolink config.ReolinkAdvanced,
-	vc *gocv.VideoCapture,
+	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
 	var reolinkConn *reolinkapi.Camera
@@ -346,10 +353,12 @@ func (c *Connection) reconnect() error {
 		logging.Error("Failed to close connection... ERROR: %v", err)
 	}
 
-	c.vc, err = gocv.OpenVideoCapture(c.rtspStream)
+	vc, err := gocv.OpenVideoCapture(c.rtspStream)
 	if err != nil {
 		return err
 	}
+
+	c.vc.SetP(vc)
 
 	return nil
 }
