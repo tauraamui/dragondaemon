@@ -12,6 +12,11 @@ import (
 	"time"
 
 	"image/color"
+	"image/draw"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config"
@@ -61,6 +66,7 @@ func (vc *videoCapture) Close() error {
 type mockVideoCapture struct {
 	stream      gocv.Mat
 	initialised bool
+	baseImage   image.Image
 }
 
 func (mvc *mockVideoCapture) SetP(_ *gocv.VideoCapture) {}
@@ -92,18 +98,43 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 			}
 		}
 
-		mat, err := gocv.ImageToMatRGB(img)
-		if err != nil {
-			logging.Fatal("Unable to convert Go image into OpenCV mat")
-		}
-		mvc.stream = mat
+		mvc.baseImage = img
+
 		mvc.initialised = true
 	}
 
+	baseClone := cloneImage(mvc.baseImage)
+	addLabel(baseClone, 40, 50, time.Now().Format("2006-01-02 15:04:05.999999999"))
+
+	mat, err := gocv.ImageToMatRGB(baseClone)
+	if err != nil {
+		logging.Fatal("Unable to convert Go image into OpenCV mat")
+	}
+
 	time.Sleep(time.Millisecond * 100)
-	mvc.stream.CopyTo(m)
+	mat.CopyTo(m)
 
 	return mvc.initialised
+}
+
+func cloneImage(src image.Image) *image.RGBA {
+	b := src.Bounds()
+	dst := image.NewRGBA(b)
+	draw.Draw(dst, b, src, b.Min, draw.Src)
+	return dst
+}
+
+func addLabel(img *image.RGBA, x, y int, label string) {
+	col := color.RGBA{255, 255, 255, 255}
+	point := fixed.Point26_6{X: fixed.Int26_6(x * 64), Y: fixed.Int26_6(y * 64)}
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  point,
+	}
+	d.DrawString(label)
 }
 
 func (mvc *mockVideoCapture) Close() error {
