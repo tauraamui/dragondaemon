@@ -125,7 +125,6 @@ func (service *Service) Manage() (string, error) {
 var debugMode bool
 
 func init() {
-	// logging.CallbackLabel = true
 	logging.CallbackLabelLevel = 4
 	logging.ColorLogLevelLabelOnly = true
 	loggingLevel := os.Getenv("DRAGON_LOGGING_LEVEL")
@@ -138,6 +137,7 @@ func init() {
 	case "debug":
 		debugMode = true
 		logging.CurrentLoggingLevel = logging.DebugLevel
+		logging.CallbackLabel = true
 	default:
 		logging.CurrentLoggingLevel = logging.InfoLevel
 	}
