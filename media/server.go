@@ -86,7 +86,7 @@ func (s *Server) Connect(
 		secondsPerClip,
 		schedule,
 		reolink,
-		&VideoCapture{p: vc},
+		vc,
 		rtspStream,
 	)
 
@@ -296,11 +296,11 @@ func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
 
-func openVideoCapture(rtspStream string, fps int) (*gocv.VideoCapture, error) {
+func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
 	vc, err := gocv.OpenVideoCapture(rtspStream)
 	if err != nil {
 		return nil, err
 	}
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
-	return vc, err
+	return &VideoCapture{vc}, err
 }
