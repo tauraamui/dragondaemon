@@ -104,6 +104,7 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	}
 
 	baseClone := cloneImage(mvc.baseImage)
+	addLabel(baseClone, 40, 30, "DD_OFFLINE_STREAM")
 	addLabel(baseClone, 40, 50, time.Now().Format("2006-01-02 15:04:05.999999999"))
 
 	mat, err := gocv.ImageToMatRGB(baseClone)
