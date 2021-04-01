@@ -289,7 +289,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 			select {
 			case <-ctx.Done():
 				// TODO(:tauraamui) Investigate why this case is reached more than once anyway
-				if reachedShutdownCase == false {
+				if !reachedShutdownCase {
 					reachedShutdownCase = true
 					logging.Debug("Stopped stream goroutine")
 					logging.Debug("Closing root image mat")
@@ -300,7 +300,6 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 						e.Close()
 					}
 					close(stopping)
-					break
 				}
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
@@ -323,7 +322,6 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 					}
 
 					imgClone := img.Clone()
-					defer imgClone.Close()
 					select {
 					case c.buffer <- imgClone:
 						logging.Debug("Sending read from to buffer...")
