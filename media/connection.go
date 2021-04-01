@@ -30,16 +30,13 @@ type Connection struct {
 	persistLocation    string
 	fps                int
 	secondsPerClip     int
-	// TODO(tauraamui): these two next vars to be moved into cache
-	sizeOnDisk     int64
-	sizeOnDiskUnit string
-	schedule       schedule.Schedule
-	reolinkControl *reolinkapi.Camera
-	mu             sync.Mutex
-	vc             *gocv.VideoCapture
-	rtspStream     string
-	buffer         chan gocv.Mat
-	window         *gocv.Window
+	schedule           schedule.Schedule
+	reolinkControl     *reolinkapi.Camera
+	mu                 sync.Mutex
+	vc                 *gocv.VideoCapture
+	rtspStream         string
+	buffer             chan gocv.Mat
+	window             *gocv.Window
 }
 
 func NewConnection(
