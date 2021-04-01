@@ -72,8 +72,7 @@ func (s *Server) Connect(
 	schedule schedule.Schedule,
 	reolink config.ReolinkAdvanced,
 ) {
-	vc, err := gocv.OpenVideoCapture(rtspStream)
-	vc.Set(gocv.VideoCaptureFPS, float64(fps))
+	vc, err := openVideoCapture(rtspStream, fps)
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
@@ -295,4 +294,13 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
+}
+
+func openVideoCapture(rtspStream string, fps int) (*gocv.VideoCapture, error) {
+	vc, err := gocv.OpenVideoCapture(rtspStream)
+	if err != nil {
+		return nil, err
+	}
+	vc.Set(gocv.VideoCaptureFPS, float64(fps))
+	return vc, err
 }

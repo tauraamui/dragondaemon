@@ -85,10 +85,9 @@ func NewConnection(
 		secondsPerClip:     secondsPerClip,
 		schedule:           schedule,
 		reolinkControl:     reolinkConn,
-		// vc:                 vc,
-		vc:         vc,
-		rtspStream: rtspStream,
-		buffer:     make(chan gocv.Mat, 6),
+		vc:                 vc,
+		rtspStream:         rtspStream,
+		buffer:             make(chan gocv.Mat, 6),
 	}
 }
 
