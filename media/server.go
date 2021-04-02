@@ -65,6 +65,7 @@ func (vc *videoCapture) Close() error {
 }
 
 type mockVideoCapture struct {
+	title       string
 	stream      gocv.Mat
 	initialised bool
 	baseImage   image.Image
@@ -106,7 +107,8 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 
 	baseClone := cloneImage(mvc.baseImage)
 	drawText(baseClone, 5, 50, "DD_OFFLINE_STREAM")
-	drawText(baseClone, 5, 180, time.Now().Format("2006-01-02 15:04:05.999999999"))
+	drawText(baseClone, 5, 180, mvc.title)
+	drawText(baseClone, 5, 310, time.Now().Format("2006-01-02 15:04:05.999999999"))
 
 	mat, err := gocv.ImageToMatRGB(baseClone)
 	if err != nil {
@@ -181,7 +183,7 @@ func (s *Server) Connect(
 	schedule schedule.Schedule,
 	reolink config.ReolinkAdvanced,
 ) {
-	vc, err := openVideoCapture(rtspStream, fps)
+	vc, err := openVideoCapture(rtspStream, title, fps)
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
@@ -405,10 +407,10 @@ func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
 
-func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
+func openVideoCapture(rtspStream string, title string, fps int) (VideoCapturable, error) {
 	mockVidStream, foundEnv := os.LookupEnv("MOCK_VIDEO_STREAM")
 	if foundEnv && mockVidStream == "1" {
-		return &mockVideoCapture{}, nil
+		return &mockVideoCapture{title: title}, nil
 	}
 
 	vc, err := gocv.OpenVideoCapture(rtspStream)
@@ -417,7 +419,7 @@ func openVideoCapture(rtspStream string, fps int) (VideoCapturable, error) {
 	}
 
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
-	return &videoCapture{vc}, err
+	return &videoCapture{p: vc}, err
 }
 
 type circle struct {
