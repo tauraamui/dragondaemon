@@ -27,17 +27,13 @@ import (
 
 // Server manages receiving RTSP streams and persisting clips to disk
 type Server struct {
-	debugMode            bool
-	inShutdown           int32
-	mu                   sync.Mutex
-	ctx                  context.Context
-	ctxCancel            context.CancelFunc
-	stoppedAll           chan struct{}
-	stopStreaming        chan struct{}
-	stoppedStreaming     []chan struct{}
-	stopRemovingClips    chan struct{}
-	stoppedRemovingClips chan struct{}
-	connections          map[*Connection]struct{}
+	debugMode   bool
+	inShutdown  int32
+	mu          sync.Mutex
+	ctx         context.Context
+	ctxCancel   context.CancelFunc
+	stoppedAll  chan struct{}
+	connections map[*Connection]struct{}
 }
 
 type Options struct {
