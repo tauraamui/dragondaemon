@@ -140,11 +140,10 @@ func drawText(canvas *image.RGBA, x, y int, text string) error {
 		}),
 	}
 	textBounds, _ := fontDrawer.BoundString(text)
-	xPosition := fixed.I(x)
 	textHeight := textBounds.Max.Y - textBounds.Min.Y
 	yPosition := fixed.I((y)-textHeight.Ceil())/2 + fixed.I(textHeight.Ceil())
 	fontDrawer.Dot = fixed.Point26_6{
-		X: xPosition,
+		X: fixed.I(x),
 		Y: yPosition,
 	}
 	fontDrawer.DrawString(text)
