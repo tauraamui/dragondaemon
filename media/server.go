@@ -95,9 +95,7 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 				img.Set(x, y, c)
 			}
 		}
-
 		mvc.baseImage = img
-
 		mvc.initialised = true
 	}
 
@@ -113,9 +111,7 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 
 	time.Sleep(time.Millisecond * 100)
 	mat.CopyTo(m)
-
 	mvc.stream = mat
-
 	return mvc.initialised
 }
 
