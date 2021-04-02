@@ -14,14 +14,15 @@ import (
 	"image/color"
 	"image/draw"
 
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
-
+	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gocv.io/x/gocv"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/math/fixed"
 )
 
 // Server manages receiving RTSP streams and persisting clips to disk
@@ -77,13 +78,13 @@ func (mvc *mockVideoCapture) IsOpened() bool {
 
 func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	if !mvc.initialised {
-		var w, h int = 280, 240
+		var w, h int = 1400, 1200
 		var hw, hh float64 = float64(w / 2), float64(h / 2)
-		r := 40.0
+		r := 200.0
 		θ := 2 * math.Pi / 3
-		cr := &circle{hw - r*math.Sin(0), hh - r*math.Cos(0), 60}
-		cg := &circle{hw - r*math.Sin(θ), hh - r*math.Cos(θ), 60}
-		cb := &circle{hw - r*math.Sin(-θ), hh - r*math.Cos(-θ), 60}
+		cr := &circle{hw - r*math.Sin(0), hh - r*math.Cos(0), 300}
+		cg := &circle{hw - r*math.Sin(θ), hh - r*math.Cos(θ), 300}
+		cb := &circle{hw - r*math.Sin(-θ), hh - r*math.Cos(-θ), 300}
 
 		img := image.NewRGBA(image.Rect(0, 0, w, h))
 		for x := 0; x < w; x++ {
@@ -104,8 +105,8 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	}
 
 	baseClone := cloneImage(mvc.baseImage)
-	addLabel(baseClone, 40, 30, "DD_OFFLINE_STREAM")
-	addLabel(baseClone, 40, 50, time.Now().Format("2006-01-02 15:04:05.999999999"))
+	drawText(baseClone, 5, 50, "DD_OFFLINE_STREAM")
+	drawText(baseClone, 5, 180, time.Now().Format("2006-01-02 15:04:05.999999999"))
 
 	mat, err := gocv.ImageToMatRGB(baseClone)
 	if err != nil {
@@ -127,18 +128,49 @@ func cloneImage(src image.Image) *image.RGBA {
 	return dst
 }
 
-func addLabel(img *image.RGBA, x, y int, label string) {
-	col := color.RGBA{255, 255, 255, 255}
-	point := fixed.Point26_6{X: fixed.Int26_6(x * 64), Y: fixed.Int26_6(y * 64)}
-
-	d := &font.Drawer{
-		Dst:  img,
-		Src:  image.NewUniform(col),
-		Face: basicfont.Face7x13,
-		Dot:  point,
+func drawText(canvas *image.RGBA, x, y int, text string) error {
+	var (
+		fgColor  image.Image
+		fontFace *truetype.Font
+		err      error
+		fontSize = 64.0
+	)
+	fgColor = image.White
+	fontFace, err = freetype.ParseFont(goregular.TTF)
+	fontDrawer := &font.Drawer{
+		Dst: canvas,
+		Src: fgColor,
+		Face: truetype.NewFace(fontFace, &truetype.Options{
+			Size:    fontSize,
+			Hinting: font.HintingFull,
+		}),
 	}
-	d.DrawString(label)
+	textBounds, _ := fontDrawer.BoundString(text)
+	xPosition := fixed.I(x)
+	// xPosition := (fixed.I(canvas.Rect.Max.X) - fontDrawer.MeasureString(text)) / 2
+	textHeight := textBounds.Max.Y - textBounds.Min.Y
+	yPosition := fixed.I((y)-textHeight.Ceil())/2 + fixed.I(textHeight.Ceil())
+	// yPosition := fixed.I((canvas.Rect.Max.Y)-textHeight.Ceil())/2 + fixed.I(textHeight.Ceil())
+	fontDrawer.Dot = fixed.Point26_6{
+		X: xPosition,
+		Y: yPosition,
+	}
+	fontDrawer.DrawString(text)
+	return err
 }
+
+// func addLabel(img *image.RGBA, x, y int, label string) {
+// 	col := color.RGBA{255, 255, 255, 255}
+// 	point := fixed.Point26_6{X: fixed.Int26_6(x * 64), Y: fixed.Int26_6(y * 64)}
+
+// 	d := &font.Drawer{
+// 		Dst:  img,
+// 		Src:  image.NewUniform(col),
+// 		Face: basicfont.Face7x13,
+// 		Dot:  point,
+// 	}
+// 	d.DrawString(label)
+// }
 
 func (mvc *mockVideoCapture) Close() error {
 	mvc.initialised = false
