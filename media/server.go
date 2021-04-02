@@ -147,10 +147,8 @@ func drawText(canvas *image.RGBA, x, y int, text string) error {
 	}
 	textBounds, _ := fontDrawer.BoundString(text)
 	xPosition := fixed.I(x)
-	// xPosition := (fixed.I(canvas.Rect.Max.X) - fontDrawer.MeasureString(text)) / 2
 	textHeight := textBounds.Max.Y - textBounds.Min.Y
 	yPosition := fixed.I((y)-textHeight.Ceil())/2 + fixed.I(textHeight.Ceil())
-	// yPosition := fixed.I((canvas.Rect.Max.Y)-textHeight.Ceil())/2 + fixed.I(textHeight.Ceil())
 	fontDrawer.Dot = fixed.Point26_6{
 		X: xPosition,
 		Y: yPosition,
@@ -158,19 +156,6 @@ func drawText(canvas *image.RGBA, x, y int, text string) error {
 	fontDrawer.DrawString(text)
 	return err
 }
-
-// func addLabel(img *image.RGBA, x, y int, label string) {
-// 	col := color.RGBA{255, 255, 255, 255}
-// 	point := fixed.Point26_6{X: fixed.Int26_6(x * 64), Y: fixed.Int26_6(y * 64)}
-
-// 	d := &font.Drawer{
-// 		Dst:  img,
-// 		Src:  image.NewUniform(col),
-// 		Face: basicfont.Face7x13,
-// 		Dot:  point,
-// 	}
-// 	d.DrawString(label)
-// }
 
 func (mvc *mockVideoCapture) Close() error {
 	mvc.initialised = false
