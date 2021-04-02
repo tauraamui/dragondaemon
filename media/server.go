@@ -315,10 +315,13 @@ func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan 
 				}
 
 				if conn := activeConnections[currentConnection]; conn != nil {
+					if conn.persistLocation == "" {
+						conn.persistLocation = "."
+					}
 					fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
 					files, err := ioutil.ReadDir(fullPersistLocation)
 					if err != nil {
-						logging.Error("Unable to read contents of connection persist location %s", fullPersistLocation)
+						logging.Error("Unable to read contents of connection persist location %s: %v", fullPersistLocation, err)
 					}
 
 					for _, file := range files {
