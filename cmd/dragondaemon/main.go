@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,31 +13,68 @@ import (
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
 	"github.com/tauraamui/dragondaemon/config"
+	db "github.com/tauraamui/dragondaemon/data"
 	"github.com/tauraamui/dragondaemon/media"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
 	name        = "dragon_daemon"
 	description = "Dragon service daemon which saves RTSP media streams to disk"
+	success     = "\t\t\t\t\t[  \033[32mOK\033[0m  ]" // Show colored "OK"
+	failed      = "\t\t\t\t\t[\033[31mFAILED\033[0m]" // Show colored "FAILED"
 )
 
 type Service struct {
 	daemon.Daemon
 }
 
-// Init will setup local DB and ask for root admin credentials
-func (service *Service) Init() (string, error) {
-	return "", nil
+// Setup will setup local DB and ask for root admin credentials
+func (service *Service) Setup() (string, error) {
+	logging.Info("Setting up dragondaemon service...")
+	err := db.Create()
+	if err != nil {
+		return "", err
+	}
+
+	stdinReader := bufio.NewReader(os.Stdin)
+	fmt.Printf("Enter username: ")
+	username, _ := stdinReader.ReadString('\n')
+
+	fmt.Printf("Enter password: ")
+	passwordBytes, err := terminal.ReadPassword(0)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println()
+	err = db.CreateRootUser(username, string(passwordBytes))
+	if err != nil {
+		return "", err
+	}
+	return "Setup successful...", nil
+}
+
+func (service *Service) RemoveSetup() (string, error) {
+	logging.Info("Removing setup for dragondaemon service...")
+	err := db.Destroy()
+	if err != nil {
+		return "", err
+	}
+
+	return "Removing setup successful...", nil
 }
 
 func (service *Service) Manage() (string, error) {
-	usage := "Usage: dragond install | remove | start | stop | status"
+	usage := "Usage: dragond setup | remove-setup | install | remove | start | stop | status"
 
 	if len(os.Args) > 1 {
 		command := os.Args[1]
 		switch command {
-		case "init":
-			return service.Init()
+		case "setup":
+			return service.Setup()
+		case "remove-setup":
+			return service.RemoveSetup()
 		case "install":
 			return service.Install()
 		case "remove":
