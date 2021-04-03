@@ -24,12 +24,19 @@ type Service struct {
 	daemon.Daemon
 }
 
+// Init will setup local DB and ask for root admin credentials
+func (service *Service) Init() (string, error) {
+	return "", nil
+}
+
 func (service *Service) Manage() (string, error) {
 	usage := "Usage: dragond install | remove | start | stop | status"
 
 	if len(os.Args) > 1 {
 		command := os.Args[1]
 		switch command {
+		case "init":
+			return service.Init()
 		case "install":
 			return service.Install()
 		case "remove":
