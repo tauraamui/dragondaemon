@@ -91,6 +91,11 @@ func ShutdownRPC(m *MediaServer) error {
 	return m.httpServer.Close()
 }
 
+func (m *MediaServer) Authenticate(usernameAndPassword string, resp *string) error {
+	*resp = "validtoken"
+	return nil
+}
+
 // Exposed API
 func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
 	err := validateSession(*sess)
