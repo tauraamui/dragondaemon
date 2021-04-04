@@ -47,29 +47,20 @@ func Setup() error {
 	}
 
 	fmt.Println("Please enter root admin credentials...")
-	rootUsername, err := promptForValue("username", false)
+	rootUsername, err := askForUsername()
 	if err != nil {
-		return fmt.Errorf("unable to prompt for root username: %w", err)
+		return fmt.Errorf("failed to prompt for root username: %w", err)
 	}
 
-	rootPassword, err := promptForValue("password", true)
+	rootPassword, err := askForPassword(0)
 	if err != nil {
-		return fmt.Errorf("unable to prompt for root password : %w", err)
+		return fmt.Errorf("failed to prompt for root password: %w", err)
 	}
-
-	fmt.Println("Please repeat root admin password...")
-	rootPassword2, err := promptForValue("password", true)
-	if err != nil {
-		return fmt.Errorf("unable to prompt for root password : %w", err)
-	}
-
-	if strings.Compare(rootPassword, rootPassword2) != 0 {
-		return errors.New("entered root admin passwords do not match")
-	}
-
 	if err := createRootUser(db, rootUsername, rootPassword); err != nil {
 		return fmt.Errorf("unable to create root user entry: %w", err)
 	}
+
+	logging.Info("Created root admin user")
 
 	return nil
 }
@@ -137,16 +128,35 @@ func createFile() error {
 	return ErrDBAlreadyExists
 }
 
-func promptForValue(valueName string, hidden bool) (string, error) {
-	fmt.Printf("Enter %s: ", valueName)
-	if hidden {
-		valueBytes, err := term.ReadPassword(0)
-		if err != nil {
-			return "", err
-		}
-		fmt.Println("")
-		return string(valueBytes), nil
+func askForUsername() (string, error) {
+	return promptForValue("Root admin username")
+}
+
+func askForPassword(attempts int) (string, error) {
+	password, err := promptForValueEchoOff("Root user password")
+	if err != nil {
+		return "", fmt.Errorf("unable to prompt for root password : %w", err)
 	}
+
+	repeatedPassword, err := promptForValueEchoOff("Repeat root user password")
+	if err != nil {
+		return "", fmt.Errorf("unable to prompt for root password : %w", err)
+	}
+
+	if strings.Compare(password, repeatedPassword) != 0 {
+		fmt.Println("Entered passwords do not match... Try again...")
+		attempts++
+		if attempts >= 3 {
+			return "", errors.New("tried entering new password more than 3 times")
+		}
+		return askForPassword(attempts)
+	}
+
+	return password, nil
+}
+
+func promptForValue(promptText string) (string, error) {
+	fmt.Printf("%s: ", promptText)
 	stdinReader := bufio.NewReader(os.Stdin)
 	value, err := stdinReader.ReadString('\n')
 	if err != nil {
@@ -154,4 +164,14 @@ func promptForValue(valueName string, hidden bool) (string, error) {
 	}
 
 	return value, nil
+}
+
+func promptForValueEchoOff(promptText string) (string, error) {
+	fmt.Printf("%s: ", promptText)
+	valueBytes, err := term.ReadPassword(0)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("")
+	return string(valueBytes), nil
 }
