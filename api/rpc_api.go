@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -55,7 +56,7 @@ type MediaServer struct {
 func New(interrupt chan os.Signal, server *media.Server, opts Options) (*MediaServer, error) {
 	db, err := db.Connect()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to connect to DB, try running the setup: %w", err)
 	}
 	return &MediaServer{
 		interrupt:     interrupt,
@@ -96,7 +97,10 @@ func StartRPC(m *MediaServer) error {
 }
 
 func ShutdownRPC(m *MediaServer) error {
-	return m.httpServer.Close()
+	if m != nil && m.httpServer != nil {
+		return m.httpServer.Close()
+	}
+	return errors.New("API server not running")
 }
 
 func (m *MediaServer) Authenticate(usernameAndPassword string, resp *string) error {
