@@ -107,15 +107,20 @@ func (service *Service) Manage() (string, error) {
 	if len(rpcListenPort) == 0 || !strings.Contains(rpcListenPort, ":") {
 		rpcListenPort = ":3121"
 	}
+
 	logging.Info("Running API server on port %s...", rpcListenPort)
-	mediaServerAPI := api.New(
+	mediaServerAPI, err := api.New(
 		interrupt,
 		mediaServer,
 		api.Options{RPCListenPort: rpcListenPort},
 	)
-	err = api.StartRPC(mediaServerAPI)
 	if err != nil {
-		logging.Error("Unable to start API RPC server: %v...", err)
+		logging.Error("unable to start API server: %v", err)
+	} else {
+		err := api.StartRPC(mediaServerAPI)
+		if err != nil {
+			logging.Error("Unable to start API RPC server: %v...", err)
+		}
 	}
 
 	logging.Info("Running media server...")

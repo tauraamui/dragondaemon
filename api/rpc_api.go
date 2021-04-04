@@ -10,7 +10,9 @@ import (
 
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/common"
+	db "github.com/tauraamui/dragondaemon/database"
 	"github.com/tauraamui/dragondaemon/media"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -47,15 +49,21 @@ type MediaServer struct {
 	s             *media.Server
 	httpServer    *http.Server
 	rpcListenPort string
+	db            *gorm.DB
 }
 
-func New(interrupt chan os.Signal, server *media.Server, opts Options) *MediaServer {
+func New(interrupt chan os.Signal, server *media.Server, opts Options) (*MediaServer, error) {
+	db, err := db.Connect()
+	if err != nil {
+		return nil, err
+	}
 	return &MediaServer{
 		interrupt:     interrupt,
 		s:             server,
 		httpServer:    &http.Server{},
 		rpcListenPort: opts.RPCListenPort,
-	}
+		db:            db,
+	}, nil
 }
 
 func StartRPC(m *MediaServer) error {
