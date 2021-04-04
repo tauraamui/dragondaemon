@@ -147,7 +147,7 @@ func askForPassword(attempts int) (string, error) {
 		fmt.Println("Entered passwords do not match... Try again...")
 		attempts++
 		if attempts >= 3 {
-			return "", errors.New("tried entering new password more than 3 times")
+			return "", errors.New("tried entering new password at least 3 times")
 		}
 		return askForPassword(attempts)
 	}
