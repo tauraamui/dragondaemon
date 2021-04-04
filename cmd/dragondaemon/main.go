@@ -13,16 +13,14 @@ import (
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
 	"github.com/tauraamui/dragondaemon/config"
-	db "github.com/tauraamui/dragondaemon/data"
+	db "github.com/tauraamui/dragondaemon/database"
 	"github.com/tauraamui/dragondaemon/media"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const (
 	name        = "dragon_daemon"
 	description = "Dragon service daemon which saves RTSP media streams to disk"
-	success     = "\t\t\t\t\t[  \033[32mOK\033[0m  ]" // Show colored "OK"
-	failed      = "\t\t\t\t\t[\033[31mFAILED\033[0m]" // Show colored "FAILED"
 )
 
 type Service struct {
@@ -31,18 +29,20 @@ type Service struct {
 
 // Setup will setup local DB and ask for root admin credentials
 func (service *Service) Setup() (string, error) {
-	logging.Info("Setting up dragondaemon service...")
+	logging.Info("setting up dragondaemon service...")
+	logging.Info("creating database file...")
 	err := db.Create()
 	if err != nil {
 		return "", err
 	}
 
+	logging.Info("Created database file... Please enter root admin credentials...")
 	stdinReader := bufio.NewReader(os.Stdin)
 	fmt.Printf("Enter username: ")
 	username, _ := stdinReader.ReadString('\n')
 
 	fmt.Printf("Enter password: ")
-	passwordBytes, err := terminal.ReadPassword(0)
+	passwordBytes, err := term.ReadPassword(0)
 	if err != nil {
 		return "", err
 	}
