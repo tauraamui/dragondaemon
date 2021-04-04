@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/common"
 	db "github.com/tauraamui/dragondaemon/database"
+	"github.com/tauraamui/dragondaemon/database/repos"
 	"github.com/tauraamui/dragondaemon/media"
 	"gorm.io/gorm"
 )
@@ -103,7 +105,20 @@ func ShutdownRPC(m *MediaServer) error {
 	return errors.New("API server not running")
 }
 
-func (m *MediaServer) Authenticate(usernameAndPassword string, resp *string) error {
+func (m *MediaServer) Authenticate(auth string, resp *string) error {
+	usernameAndPassword, err := validateAuth(auth)
+	if err != nil {
+		return err
+	}
+
+	username := usernameAndPassword[0]
+	password := usernameAndPassword[1]
+
+	userRepo := repos.UserRepository{DB: m.db}
+	if err := userRepo.Authenticate(username, password); err != nil {
+		return err
+	}
+
 	*resp = "validtoken"
 	return nil
 }
@@ -156,4 +171,17 @@ func validateSession(sess Session) error {
 		return errors.New("user must be authenticated")
 	}
 	return nil
+}
+
+func validateAuth(auth string) ([]string, error) {
+	if len(auth) == 0 {
+		return nil, errors.New("cannot retrieve username and password from blank input")
+	}
+
+	split := strings.Split(auth, "|")
+	if len(split) <= 1 {
+		return nil, errors.New("unable to correctly retrieve username and password from malformed input")
+	}
+
+	return split, nil
 }

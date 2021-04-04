@@ -26,6 +26,10 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+func (u *User) ComparePassword(password string) error {
+	return cmp(u.AuthHash, password)
+}
+
 func enc(p string) string {
 	h, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
@@ -36,13 +40,12 @@ func enc(p string) string {
 	return string(h)
 }
 
-func cmp(h, p string) bool {
+func cmp(h, p string) error {
 	hb, pb := []byte(h), []byte(p)
 	err := bcrypt.CompareHashAndPassword(hb, pb)
 	if err != nil {
-		logging.Error(fmt.Errorf("comparing hashed password to plain password failed: %w", err).Error())
-		return false
+		return fmt.Errorf("password does not match hash: %w", err)
 	}
 
-	return true
+	return nil
 }

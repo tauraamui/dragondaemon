@@ -76,6 +76,7 @@ func Destroy() error {
 
 func Connect() (*gorm.DB, error) {
 	dbPath, err := resolveDBPath()
+	logging.Debug("Connecting to DB: %s", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open db connection: %w", err)
 	}
@@ -163,7 +164,7 @@ func promptForValue(promptText string) (string, error) {
 		return "", err
 	}
 
-	return value, nil
+	return strings.TrimSpace(value), nil
 }
 
 func promptForValueEchoOff(promptText string) (string, error) {
@@ -173,5 +174,5 @@ func promptForValueEchoOff(promptText string) (string, error) {
 		return "", err
 	}
 	fmt.Println("")
-	return string(valueBytes), nil
+	return strings.TrimSpace(string(valueBytes)), nil
 }
