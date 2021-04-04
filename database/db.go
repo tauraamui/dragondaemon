@@ -8,8 +8,11 @@ import (
 
 	"github.com/shibukawa/configdir"
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/database/models"
 	"golang.org/x/term"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const (
@@ -37,7 +40,10 @@ func Setup() error {
 		return err
 	}
 
-	// TODO(tauraamui): Create DB connection pointer here
+	db, err := Connect()
+	if err != nil {
+		return err
+	}
 
 	fmt.Println("Please enter root admin credentials...")
 	rootUsername, err := promptForValue("username", false)
@@ -50,7 +56,7 @@ func Setup() error {
 		return fmt.Errorf("unable to prompt for root password : %w", err)
 	}
 
-	if err := createRootUser(nil, rootUsername, rootPassword); err != nil {
+	if err := createRootUser(db, rootUsername, rootPassword); err != nil {
 		return fmt.Errorf("unable to create root user entry: %w", err)
 	}
 
@@ -67,7 +73,35 @@ func Destroy() error {
 }
 
 func Connect() (*gorm.DB, error) {
-	return nil, nil
+	dbPath, err := resolveDBPath()
+	if err != nil {
+		return nil, fmt.Errorf("unable to open db connection: %w", err)
+	}
+
+	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
+	if err != nil {
+		return nil, err
+	}
+
+	err = models.AutoMigrate(db)
+	if err != nil {
+		return nil, fmt.Errorf("unable to run automigrations: %w", err)
+	}
+
+	return db, nil
+}
+
+func createRootUser(db *gorm.DB, username, password string) error {
+	rootUser := models.User{
+		Name:     username,
+		AuthHash: password,
+	}
+
+	if err := db.Create(&rootUser).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func resolveDBPath() (string, error) {
@@ -76,10 +110,6 @@ func resolveDBPath() (string, error) {
 		return "", fmt.Errorf("unable to find %s in config location", databaseFileName)
 	}
 	return fmt.Sprintf("%s%c%s", dbParentDir.Path, os.PathSeparator, databaseFileName), nil
-}
-
-func createRootUser(db *gorm.DB, username, password string) error {
-	return nil
 }
 
 func createFile() error {

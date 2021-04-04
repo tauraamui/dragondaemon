@@ -20,5 +20,6 @@ require (
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/dealancer/validate.v2 v2.1.0
+	gorm.io/driver/sqlite v1.1.4 // indirect
 	gorm.io/gorm v1.21.6
 )
