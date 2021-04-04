@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,7 +14,6 @@ import (
 	"github.com/tauraamui/dragondaemon/config"
 	db "github.com/tauraamui/dragondaemon/database"
 	"github.com/tauraamui/dragondaemon/media"
-	"golang.org/x/term"
 )
 
 const (
@@ -30,28 +28,11 @@ type Service struct {
 // Setup will setup local DB and ask for root admin credentials
 func (service *Service) Setup() (string, error) {
 	logging.Info("Setting up dragondaemon service...")
-	logging.Info("Creating database file...")
-	err := db.Create()
+	err := db.Setup()
 	if err != nil {
 		return "", err
 	}
 
-	logging.Info("Created database file... Please enter root admin credentials...")
-	stdinReader := bufio.NewReader(os.Stdin)
-	fmt.Printf("Enter username: ")
-	username, _ := stdinReader.ReadString('\n')
-
-	fmt.Printf("Enter password: ")
-	passwordBytes, err := term.ReadPassword(0)
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Println()
-	err = db.CreateRootUser(username, string(passwordBytes))
-	if err != nil {
-		return "", err
-	}
 	return "Setup successful...", nil
 }
 
