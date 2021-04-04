@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ErrCreateDB = errors.New("unable to create dragondaemon database")
+	ErrCreateDBFile    = errors.New("unable to create database file")
+	ErrDBAlreadyExists = errors.New("database file already exists")
 )
 
 func Create() error {
@@ -20,12 +21,12 @@ func Create() error {
 		folders := configDirs.QueryFolders(configdir.Global)
 		_, err := folders[0].Create("dd.db")
 		if err != nil {
-			return fmt.Errorf("create db file: %w", err)
+			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
 		}
 		return nil
 	}
 
-	return nil
+	return ErrDBAlreadyExists
 }
 
 func CreateRootUser(username, password string) error {
