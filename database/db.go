@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/shibukawa/configdir"
-	"github.com/tacusci/logging/v2"
 )
 
 var (
@@ -30,7 +29,6 @@ func Create() error {
 }
 
 func CreateRootUser(username, password string) error {
-	logging.Info("Creating root user of name %s with password %s", username, password)
 	return nil
 }
 
@@ -44,5 +42,5 @@ func Destroy() error {
 		}
 		return nil
 	}
-	return errors.New("Unable to find app resource dir to remove")
+	return errors.New("unable to find app resource dir to remove")
 }
