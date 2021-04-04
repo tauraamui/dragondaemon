@@ -4,8 +4,10 @@ import "gorm.io/gorm"
 
 type Model interface{}
 
-var models = []Model{
-	&User{},
+var models = []Model{}
+
+func addToCollection(m Model) {
+	models = append(models, m)
 }
 
 func AutoMigrate(db *gorm.DB) error {
