@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	configDirType    = configdir.Global
+	configDirType    = configdir.System
 	vendorName       = "tacusci"
 	appName          = "dragondaemon"
 	databaseFileName = "dd.db"
