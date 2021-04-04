@@ -12,10 +12,23 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	configDirType    = configdir.Global
+	vendorName       = "tacusci"
+	appName          = "dragondaemon"
+	databaseFileName = "dd.db"
+)
+
 var (
 	ErrCreateDBFile    = errors.New("unable to create database file")
 	ErrDBAlreadyExists = errors.New("database file already exists")
+
+	configDir configdir.ConfigDir
 )
+
+func init() {
+	configDir = configdir.New(vendorName, appName)
+}
 
 func Setup() error {
 	logging.Info("Creating database file...")
@@ -24,7 +37,9 @@ func Setup() error {
 		return err
 	}
 
-	logging.Info("Created database file... Please enter root admin credentials...")
+	// TODO(tauraamui): Create DB connection pointer here
+
+	fmt.Println("Please enter root admin credentials...")
 	rootUsername, err := promptForValue("username", false)
 	if err != nil {
 		return fmt.Errorf("unable to prompt for root username: %w", err)
@@ -43,16 +58,24 @@ func Setup() error {
 }
 
 func Destroy() error {
-	configDirs := configdir.New("tacusci", "dragondaemon")
-	folder := configDirs.QueryFolderContainsFile("dd.db")
-	if folder != nil {
-		err := os.RemoveAll(folder.Path)
-		if err != nil {
-			return fmt.Errorf("unable to remove app resource dir: %w", err)
-		}
-		return nil
+	dbFilePath, err := resolveDBPath()
+	if err != nil {
+		return fmt.Errorf("unable to delete database file: %w", err)
 	}
-	return errors.New("unable to find app resource dir to remove")
+
+	return os.Remove(dbFilePath)
+}
+
+func Connect() (*gorm.DB, error) {
+	return nil, nil
+}
+
+func resolveDBPath() (string, error) {
+	dbParentDir := configDir.QueryFolderContainsFile(databaseFileName)
+	if dbParentDir == nil {
+		return "", fmt.Errorf("unable to find %s in config location", databaseFileName)
+	}
+	return fmt.Sprintf("%s%c%s", dbParentDir.Path, os.PathSeparator, databaseFileName), nil
 }
 
 func createRootUser(db *gorm.DB, username, password string) error {
@@ -60,11 +83,10 @@ func createRootUser(db *gorm.DB, username, password string) error {
 }
 
 func createFile() error {
-	configDirs := configdir.New("tacusci", "dragondaemon")
-	folder := configDirs.QueryFolderContainsFile("dd.db")
+	folder := configDir.QueryFolderContainsFile(databaseFileName)
 	if folder == nil {
-		folders := configDirs.QueryFolders(configdir.Global)
-		_, err := folders[0].Create("dd.db")
+		folders := configDir.QueryFolders(configDirType)
+		_, err := folders[0].Create(databaseFileName)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
 		}
