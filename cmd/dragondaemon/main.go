@@ -12,6 +12,7 @@ import (
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
 	"github.com/tauraamui/dragondaemon/config"
+	db "github.com/tauraamui/dragondaemon/database"
 	"github.com/tauraamui/dragondaemon/media"
 )
 
@@ -24,12 +25,37 @@ type Service struct {
 	daemon.Daemon
 }
 
+// Setup will setup local DB and ask for root admin credentials
+func (service *Service) Setup() (string, error) {
+	logging.Info("Setting up dragondaemon service...")
+	err := db.Setup()
+	if err != nil {
+		return "", err
+	}
+
+	return "Setup successful...", nil
+}
+
+func (service *Service) RemoveSetup() (string, error) {
+	logging.Info("Removing setup for dragondaemon service...")
+	err := db.Destroy()
+	if err != nil {
+		return "", err
+	}
+
+	return "Removing setup successful...", nil
+}
+
 func (service *Service) Manage() (string, error) {
-	usage := "Usage: dragond install | remove | start | stop | status"
+	usage := "Usage: dragond setup | remove-setup | install | remove | start | stop | status"
 
 	if len(os.Args) > 1 {
 		command := os.Args[1]
 		switch command {
+		case "setup":
+			return service.Setup()
+		case "remove-setup":
+			return service.RemoveSetup()
 		case "install":
 			return service.Install()
 		case "remove":
@@ -81,15 +107,20 @@ func (service *Service) Manage() (string, error) {
 	if len(rpcListenPort) == 0 || !strings.Contains(rpcListenPort, ":") {
 		rpcListenPort = ":3121"
 	}
+
 	logging.Info("Running API server on port %s...", rpcListenPort)
-	mediaServerAPI := api.New(
+	mediaServerAPI, err := api.New(
 		interrupt,
 		mediaServer,
 		api.Options{RPCListenPort: rpcListenPort},
 	)
-	err = api.StartRPC(mediaServerAPI)
 	if err != nil {
-		logging.Error("Unable to start API RPC server: %v...", err)
+		logging.Error("unable to start API server: %v", err)
+	} else {
+		err := api.StartRPC(mediaServerAPI)
+		if err != nil {
+			logging.Error("Unable to start API RPC server: %v...", err)
+		}
 	}
 
 	logging.Info("Running media server...")

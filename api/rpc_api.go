@@ -2,15 +2,20 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/common"
+	db "github.com/tauraamui/dragondaemon/database"
+	"github.com/tauraamui/dragondaemon/database/repos"
 	"github.com/tauraamui/dragondaemon/media"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -47,15 +52,21 @@ type MediaServer struct {
 	s             *media.Server
 	httpServer    *http.Server
 	rpcListenPort string
+	db            *gorm.DB
 }
 
-func New(interrupt chan os.Signal, server *media.Server, opts Options) *MediaServer {
+func New(interrupt chan os.Signal, server *media.Server, opts Options) (*MediaServer, error) {
+	db, err := db.Connect()
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to DB, try running the setup: %w", err)
+	}
 	return &MediaServer{
 		interrupt:     interrupt,
 		s:             server,
 		httpServer:    &http.Server{},
 		rpcListenPort: opts.RPCListenPort,
-	}
+		db:            db,
+	}, nil
 }
 
 func StartRPC(m *MediaServer) error {
@@ -88,7 +99,28 @@ func StartRPC(m *MediaServer) error {
 }
 
 func ShutdownRPC(m *MediaServer) error {
-	return m.httpServer.Close()
+	if m != nil && m.httpServer != nil {
+		return m.httpServer.Close()
+	}
+	return errors.New("API server not running")
+}
+
+func (m *MediaServer) Authenticate(auth string, resp *string) error {
+	usernameAndPassword, err := validateAuth(auth)
+	if err != nil {
+		return err
+	}
+
+	username := usernameAndPassword[0]
+	password := usernameAndPassword[1]
+
+	userRepo := repos.UserRepository{DB: m.db}
+	if err := userRepo.Authenticate(username, password); err != nil {
+		return err
+	}
+
+	*resp = "validtoken"
+	return nil
 }
 
 // Exposed API
@@ -139,4 +171,17 @@ func validateSession(sess Session) error {
 		return errors.New("user must be authenticated")
 	}
 	return nil
+}
+
+func validateAuth(auth string) ([]string, error) {
+	if len(auth) == 0 {
+		return nil, errors.New("cannot retrieve username and password from blank input")
+	}
+
+	split := strings.Split(auth, "|")
+	if len(split) <= 1 {
+		return nil, errors.New("unable to correctly retrieve username and password from malformed input")
+	}
+
+	return split, nil
 }
