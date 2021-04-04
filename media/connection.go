@@ -125,7 +125,6 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	var size int64
 	var unit string
 
-	// TODO(tauraamui): will come up with some way to dirty the cache, maybe a timeout?
 	e, ok := c.cache.Get(sizeOnDisk)
 	if ok {
 		logging.Debug("FOUND SIZE IN CACHE")

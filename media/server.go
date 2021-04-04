@@ -181,6 +181,9 @@ func (s *Server) Connect(
 	}
 
 	logging.Info("Connected to stream [%s] at [%s]", title, rtspStream)
+	if len(persistLocation) == 0 {
+		persistLocation = "."
+	}
 	conn := NewConnection(
 		title,
 		persistLocation,
@@ -315,9 +318,6 @@ func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan 
 				}
 
 				if conn := activeConnections[currentConnection]; conn != nil {
-					if conn.persistLocation == "" {
-						conn.persistLocation = "."
-					}
 					fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
 					files, err := ioutil.ReadDir(fullPersistLocation)
 					if err != nil {
