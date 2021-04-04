@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/shibukawa/configdir"
 	"github.com/tacusci/logging/v2"
@@ -54,6 +55,16 @@ func Setup() error {
 	rootPassword, err := promptForValue("password", true)
 	if err != nil {
 		return fmt.Errorf("unable to prompt for root password : %w", err)
+	}
+
+	fmt.Println("Please repeat root admin password...")
+	rootPassword2, err := promptForValue("password", true)
+	if err != nil {
+		return fmt.Errorf("unable to prompt for root password : %w", err)
+	}
+
+	if strings.Compare(rootPassword, rootPassword2) != 0 {
+		return errors.New("entered root admin passwords do not match")
 	}
 
 	if err := createRootUser(db, rootUsername, rootPassword); err != nil {
