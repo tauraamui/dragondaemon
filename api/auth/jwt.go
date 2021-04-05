@@ -1,6 +1,10 @@
 package auth
 
-import "github.com/dgrijalva/jwt-go"
+import (
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+)
 
 type customClaims struct {
 	Username string `json:"username"`
@@ -10,6 +14,10 @@ type customClaims struct {
 func GenToken(secret, username string) (string, error) {
 	claims := customClaims{
 		Username: username,
+		StandardClaims: jwt.StandardClaims{
+			Audience:  "dragondaemon",
+			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
