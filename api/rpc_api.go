@@ -35,6 +35,7 @@ func (s Signal) String() string {
 // TODO(:tauraamui) declare this ahead of time to indicate intention on how to pass these
 type Options struct {
 	RPCListenPort string
+	SigningSecret string
 }
 
 type Session struct {
@@ -52,6 +53,7 @@ type MediaServer struct {
 	s             *media.Server
 	httpServer    *http.Server
 	rpcListenPort string
+	signingSecret string
 	db            *gorm.DB
 }
 
@@ -65,6 +67,7 @@ func New(interrupt chan os.Signal, server *media.Server, opts Options) (*MediaSe
 		s:             server,
 		httpServer:    &http.Server{},
 		rpcListenPort: opts.RPCListenPort,
+		signingSecret: opts.SigningSecret,
 		db:            db,
 	}, nil
 }

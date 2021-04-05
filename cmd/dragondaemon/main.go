@@ -112,7 +112,10 @@ func (service *Service) Manage() (string, error) {
 	mediaServerAPI, err := api.New(
 		interrupt,
 		mediaServer,
-		api.Options{RPCListenPort: rpcListenPort},
+		api.Options{
+			RPCListenPort: rpcListenPort,
+			SigningSecret: cfg.Secret,
+		},
 	)
 	if err != nil {
 		logging.Error("unable to start API server: %v", err)
