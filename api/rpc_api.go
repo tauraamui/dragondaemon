@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/api/auth"
 	"github.com/tauraamui/dragondaemon/common"
 	db "github.com/tauraamui/dragondaemon/database"
 	"github.com/tauraamui/dragondaemon/database/repos"
@@ -108,8 +109,8 @@ func ShutdownRPC(m *MediaServer) error {
 	return errors.New("API server not running")
 }
 
-func (m *MediaServer) Authenticate(auth string, resp *string) error {
-	usernameAndPassword, err := validateAuth(auth)
+func (m *MediaServer) Authenticate(authContents string, resp *string) error {
+	usernameAndPassword, err := validateAuth(authContents)
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,12 @@ func (m *MediaServer) Authenticate(auth string, resp *string) error {
 		return err
 	}
 
-	*resp = "validtoken"
+	token, err := auth.GenToken(m.signingSecret, username)
+	if err != nil {
+		return err
+	}
+
+	*resp = token
 	return nil
 }
 
