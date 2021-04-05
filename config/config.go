@@ -97,7 +97,7 @@ func resolveConfigPath() (string, error) {
 	if len(configPath) == 0 {
 		configParentDir := configDir.QueryFolderContainsFile(configFileName)
 		if configParentDir == nil {
-			return "", errors.New("unable to resolve dragondaemon.json config file location")
+			return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
 		}
 		return fmt.Sprintf("%s%c%s", configParentDir.Path, os.PathSeparator, configFileName), nil
 	}
