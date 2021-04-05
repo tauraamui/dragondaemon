@@ -43,7 +43,7 @@ func ValidateToken(secret, tokenString string) (string, error) {
 		return "", errors.New("unable to pass claims")
 	}
 
-	if claims.ExpiresAt > time.Now().UTC().Unix() {
+	if claims.ExpiresAt < time.Now().UTC().Unix() {
 		return "", errors.New("auth token has expired")
 	}
 	return claims.Username, nil
