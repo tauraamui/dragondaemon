@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	configDirType  = configdir.System
 	vendorName     = "tacusci"
 	appName        = "dragondaemon"
 	configFileName = "config.json"
