@@ -17,6 +17,7 @@ func TestConfig(t *testing.T) {
 
 		mockValidConfigContent := []byte(`{
 				"debug": true,
+				"secret": "test-secret",
 				"max_clip_age_in_days": 7,
 				"cameras": [
 					{
@@ -76,6 +77,7 @@ func TestConfig(t *testing.T) {
 			err := cfg.Load()
 			g.Assert(err).IsNil()
 			g.Assert(cfg.Debug).IsTrue()
+			g.Assert(cfg.Secret).Equal("test-secret")
 			g.Assert(cfg.MaxClipAgeInDays).Equal(7)
 			g.Assert(cfg.Cameras).Equal([]Camera{
 				{

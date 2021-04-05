@@ -53,6 +53,7 @@ type values struct {
 	um               func([]byte, interface{}) error
 	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
+	Secret           string   `json:"secret"`
 	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
 	Cameras          []Camera `json:"cameras"`
 }
