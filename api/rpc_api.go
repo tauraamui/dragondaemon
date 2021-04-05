@@ -134,7 +134,7 @@ func (m *MediaServer) Authenticate(authContents string, resp *string) error {
 
 // Exposed API
 func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.ConnectionData) error {
-	err := validateSession(*sess)
+	_, err := validateSession(m.signingSecret, *sess)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (m *MediaServer) ActiveConnections(sess *Session, resp *[]common.Connection
 }
 
 func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
-	err := validateSession(*sess)
+	_, err := validateSession(m.signingSecret, *sess)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
 }
 
 func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
-	err := validateSession(*sess)
+	_, err := validateSession(m.signingSecret, *sess)
 	if err != nil {
 		return err
 	}
@@ -174,12 +174,8 @@ func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
 	return nil
 }
 
-func validateSession(sess Session) error {
-	// NOTE(tauraamui): obviously a placeholder for ensuring token signed correctly
-	if sess.Token != "validtoken" {
-		return errors.New("user must be authenticated")
-	}
-	return nil
+func validateSession(signingSecret string, sess Session) (string, error) {
+	return auth.ValidateToken(signingSecret, sess.Token)
 }
 
 func validateAuth(auth string) ([]string, error) {
