@@ -6,10 +6,28 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/shibukawa/configdir"
+	"github.com/tacusci/logging/v2"
+
 	"github.com/pkg/errors"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
+
+const (
+	configDirType  = configdir.System
+	vendorName     = "tacusci"
+	appName        = "dragondaemon"
+	configFileName = "config.json"
+)
+
+var (
+	configDir configdir.ConfigDir
+)
+
+func init() {
+	configDir = configdir.New(vendorName, appName)
+}
 
 // Camera configuration
 type Camera struct {
@@ -49,10 +67,12 @@ func New() *values {
 }
 
 func (c *values) Load() error {
-	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
-	if configPath == "" {
-		configPath = "dd.config"
+	configPath, err := resolveConfigPath()
+	if err != nil {
+		return err
 	}
+
+	logging.Info("Resolved config file location: %s", configPath)
 
 	file, err := c.r(configPath)
 	if err != nil {
@@ -70,4 +90,16 @@ func (c *values) Load() error {
 	}
 
 	return nil
+}
+
+func resolveConfigPath() (string, error) {
+	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
+	if len(configPath) == 0 {
+		configParentDir := configDir.QueryFolderContainsFile(configFileName)
+		if configParentDir == nil {
+			return "", errors.New("unable to resolve dragondaemon.json config file location")
+		}
+		return fmt.Sprintf("%s%c%s", configParentDir.Path, os.PathSeparator, configFileName), nil
+	}
+	return configPath, nil
 }
