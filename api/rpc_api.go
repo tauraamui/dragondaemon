@@ -117,7 +117,7 @@ func (m *MediaServer) Authenticate(authContents []string, resp *string) error {
 	password := authContents[1]
 
 	userRepo := repos.UserRepository{DB: m.db}
-	user, err := userRepo.FindUserByName(username)
+	user, err := userRepo.FindByName(username)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func validateAuth(auth []string) error {
 		return errors.New("cannot retrieve username and password from blank input")
 	}
 
-	if len(auth[0]) == 0 || len(auth[1] == 0) {
+	if len(auth[0]) == 0 || len(auth[1]) == 0 {
 		return errors.New("unable to correctly retrieve username and password from malformed input")
 	}
 
