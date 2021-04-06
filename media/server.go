@@ -402,7 +402,7 @@ func (s *Server) shuttingDown() bool {
 }
 
 func openVideoCapture(rtspStream string, title string, fps int) (VideoCapturable, error) {
-	mockVidStream, foundEnv := os.LookupEnv("MOCK_VIDEO_STREAM")
+	mockVidStream, foundEnv := os.LookupEnv("DRAGON_MOCK_VIDEO_STREAM")
 	if foundEnv && mockVidStream == "1" {
 		return &mockVideoCapture{title: title}, nil
 	}
