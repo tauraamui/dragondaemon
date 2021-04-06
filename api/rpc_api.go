@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/tacusci/logging/v2"
@@ -109,21 +108,25 @@ func ShutdownRPC(m *MediaServer) error {
 	return errors.New("API server not running")
 }
 
-func (m *MediaServer) Authenticate(authContents string, resp *string) error {
-	usernameAndPassword, err := validateAuth(authContents)
+func (m *MediaServer) Authenticate(authContents []string, resp *string) error {
+	if err := validateAuth(authContents); err != nil {
+		return err
+	}
+
+	username := authContents[0]
+	password := authContents[1]
+
+	userRepo := repos.UserRepository{DB: m.db}
+	user, err := userRepo.FindUserByName(username)
 	if err != nil {
 		return err
 	}
 
-	username := usernameAndPassword[0]
-	password := usernameAndPassword[1]
-
-	userRepo := repos.UserRepository{DB: m.db}
-	if err := userRepo.Authenticate(username, password); err != nil {
+	if err := user.ComparePassword(password); err != nil {
 		return err
 	}
 
-	token, err := auth.GenToken(m.signingSecret, username)
+	token, err := auth.GenToken(m.signingSecret, user.UUID)
 	if err != nil {
 		return err
 	}
@@ -178,15 +181,14 @@ func validateSession(signingSecret string, sess Session) (string, error) {
 	return auth.ValidateToken(signingSecret, sess.Token)
 }
 
-func validateAuth(auth string) ([]string, error) {
+func validateAuth(auth []string) error {
 	if len(auth) == 0 {
-		return nil, errors.New("cannot retrieve username and password from blank input")
+		return errors.New("cannot retrieve username and password from blank input")
 	}
 
-	split := strings.Split(auth, "|")
-	if len(split) <= 1 {
-		return nil, errors.New("unable to correctly retrieve username and password from malformed input")
+	if len(auth[0]) == 0 || len(auth[1] == 0) {
+		return errors.New("unable to correctly retrieve username and password from malformed input")
 	}
 
-	return split, nil
+	return nil
 }

@@ -8,13 +8,13 @@ import (
 )
 
 type customClaims struct {
-	Username string `json:"username"`
+	UserUUID string `json:"useruuid"`
 	jwt.StandardClaims
 }
 
 func GenToken(secret, username string) (string, error) {
 	claims := customClaims{
-		Username: username,
+		UserUUID: username,
 		StandardClaims: jwt.StandardClaims{
 			Audience:  "dragondaemon",
 			ExpiresAt: time.Now().UTC().Add(time.Minute * 15).Unix(),
@@ -46,5 +46,5 @@ func ValidateToken(secret, tokenString string) (string, error) {
 	if claims.ExpiresAt < time.Now().UTC().Unix() {
 		return "", errors.New("auth token has expired")
 	}
-	return claims.Username, nil
+	return claims.UserUUID, nil
 }

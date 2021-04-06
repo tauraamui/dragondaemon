@@ -15,11 +15,11 @@ func (r *UserRepository) Create(user *models.User) error {
 	return r.DB.Create(user).Error
 }
 
-func (r *UserRepository) Authenticate(username, password string) error {
+func (r *UserRepository) FindUserByName(username string) (models.User, error) {
 	user := models.User{}
 	if err := r.DB.Where("name = ?", username).First(&user).Error; err != nil {
-		return fmt.Errorf("user of name %s not found", username)
+		return user, fmt.Errorf("user of name %s not found", username)
 	}
 
-	return user.ComparePassword(password)
+	return user, nil
 }
