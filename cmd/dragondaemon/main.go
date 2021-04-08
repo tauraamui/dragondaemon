@@ -98,6 +98,7 @@ func (service *Service) Manage() (string, error) {
 			c.PersistLoc,
 			c.FPS,
 			c.DateTimeLabel,
+			c.DateTimeFormat,
 			c.SecondsPerClip,
 			c.Schedule,
 			c.ReolinkAdvanced,

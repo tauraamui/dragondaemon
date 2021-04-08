@@ -41,8 +41,9 @@ type Options struct {
 }
 
 type videoCapture struct {
-	p                 *gocv.VideoCapture
-	drawDateTimeLabel bool
+	p                   *gocv.VideoCapture
+	drawDateTimeLabel   bool
+	dateTimeLabelFormat string
 }
 
 func (vc *videoCapture) SetP(c *gocv.VideoCapture) {
@@ -58,7 +59,7 @@ func (vc *videoCapture) Read(m *gocv.Mat) bool {
 	if read && vc.drawDateTimeLabel {
 		gocv.PutText(
 			m,
-			time.Now().Format("2006/01/02 15:04:05.999999999"),
+			time.Now().Format(vc.dateTimeLabelFormat),
 			image.Pt(15, 50),
 			gocv.FontHersheyPlain,
 			3,
@@ -184,11 +185,12 @@ func (s *Server) Connect(
 	persistLocation string,
 	fps int,
 	dateTimeLabel bool,
+	dateTimeFormat string,
 	secondsPerClip int,
 	schedule schedule.Schedule,
 	reolink config.ReolinkAdvanced,
 ) {
-	vc, err := openVideoCapture(rtspStream, title, fps, dateTimeLabel)
+	vc, err := openVideoCapture(rtspStream, title, fps, dateTimeLabel, dateTimeFormat)
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
@@ -415,7 +417,13 @@ func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
 
-func openVideoCapture(rtspStream string, title string, fps int, dateTimeLabel bool) (VideoCapturable, error) {
+func openVideoCapture(
+	rtspStream string,
+	title string,
+	fps int,
+	dateTimeLabel bool,
+	dateTimeFormat string,
+) (VideoCapturable, error) {
 	mockVidStream, foundEnv := os.LookupEnv("DRAGON_DAEMON_MOCK_VIDEO_STREAM")
 	if foundEnv && mockVidStream == "1" {
 		return &mockVideoCapture{title: title}, nil
@@ -427,7 +435,11 @@ func openVideoCapture(rtspStream string, title string, fps int, dateTimeLabel bo
 	}
 
 	vc.Set(gocv.VideoCaptureFPS, float64(fps))
-	return &videoCapture{p: vc, drawDateTimeLabel: dateTimeLabel}, err
+	return &videoCapture{
+		p:                   vc,
+		drawDateTimeLabel:   dateTimeLabel,
+		dateTimeLabelFormat: dateTimeFormat,
+	}, err
 }
 
 type circle struct {

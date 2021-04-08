@@ -20,8 +20,17 @@ const (
 	configFileName = "config.json"
 )
 
+type defaultSettingKey int
+
+const (
+	DATETIMEFORMAT defaultSettingKey = 0x1
+)
+
 var (
-	configDir configdir.ConfigDir
+	configDir       configdir.ConfigDir
+	defaultSettings = map[defaultSettingKey]string{
+		DATETIMEFORMAT: "2006/01/02 15:04:05.999999999",
+	}
 )
 
 func init() {
@@ -35,6 +44,7 @@ type Camera struct {
 	PersistLoc      string            `json:"persist_location"`
 	FPS             int               `json:"fps" validate:"gte=1 & lte=30"`
 	DateTimeLabel   bool              `json:"date_time_label"`
+	DateTimeFormat  string            `json:"date_time_format"`
 	SecondsPerClip  int               `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
 	Disabled        bool              `json:"disabled"`
 	Schedule        schedule.Schedule `json:"schedule"`
@@ -85,12 +95,23 @@ func (c *values) Load() error {
 		return errors.Wrap(err, "Parsing configuration file error")
 	}
 
+	c.loadDefaults()
+
 	err = c.v(c)
 	if err != nil {
 		return errors.Wrap(err, "Unable to validate configuration")
 	}
 
 	return nil
+}
+
+func (c *values) loadDefaults() {
+	for i := 0; i < len(c.Cameras); i++ {
+		camera := &c.Cameras[i]
+		if len(camera.DateTimeFormat) == 0 {
+			camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT]
+		}
+	}
 }
 
 func resolveConfigPath() (string, error) {
