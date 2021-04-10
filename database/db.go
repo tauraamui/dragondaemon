@@ -10,6 +10,7 @@ import (
 	"github.com/shibukawa/configdir"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/database/models"
+	"github.com/tauraamui/dragondaemon/database/repos"
 	"golang.org/x/term"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -96,15 +97,11 @@ func Connect() (*gorm.DB, error) {
 }
 
 func createRootUser(db *gorm.DB, username, password string) error {
-	rootUser := models.User{
+	userRepo := repos.UserRepository{DB: db}
+	return userRepo.Create(&models.User{
 		Name:     username,
 		AuthHash: password,
-	}
-
-	if err := db.Create(&rootUser).Error; err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func resolveDBPath() (string, error) {
