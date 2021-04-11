@@ -46,14 +46,18 @@ type videoCapture struct {
 	dateTimeLabelFormat string
 }
 
+// SetP updates the internal pointer to the video capture instance.
 func (vc *videoCapture) SetP(c *gocv.VideoCapture) {
 	vc.p = c
 }
 
+// IsOpened reports whether the video capture instance is open.
 func (vc *videoCapture) IsOpened() bool {
 	return vc.p.IsOpened()
 }
 
+// Read reads the next from the video capture to the Mat. It
+// returns false if the video capture cannot read the frame.
 func (vc *videoCapture) Read(m *gocv.Mat) bool {
 	read := vc.p.Read(m)
 	if read && vc.drawDateTimeLabel {
@@ -70,6 +74,7 @@ func (vc *videoCapture) Read(m *gocv.Mat) bool {
 	return read
 }
 
+// Close the video capture instance
 func (vc *videoCapture) Close() error {
 	return vc.p.Close()
 }
@@ -81,12 +86,16 @@ type mockVideoCapture struct {
 	baseImage   image.Image
 }
 
+// SetP doesn't do anything it exists to satisfy VideoCapturable interface
 func (mvc *mockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
+// IsOpened always returns true.
 func (mvc *mockVideoCapture) IsOpened() bool {
 	return true
 }
 
+// Read reads the next from the video capture to the Mat. It
+// returns false if the video capture cannot read the frame.
 func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	if !mvc.initialised {
 		var w, h int = 1400, 1200
@@ -164,21 +173,26 @@ func drawText(canvas *image.RGBA, x, y int, text string) error {
 	return err
 }
 
+// Close the video capture instance
 func (mvc *mockVideoCapture) Close() error {
 	mvc.initialised = false
 	mvc.stream.Close()
 	return nil
 }
 
-// NewServer returns a pointer to media server instance
+// NewServer allocates a new server struct.
 func NewServer(debugMode bool) *Server {
 	return &Server{debugMode: debugMode}
 }
 
+// IsRunning reports whether the server is running or not.
 func (s *Server) IsRunning() bool {
 	return !s.shuttingDown()
 }
 
+// Connect allocates a new connection struct which server tracks internally.
+// A new video stream connection is opened to the target stream location
+// which is saved within the connection struct allocation.
 func (s *Server) Connect(
 	title string,
 	rtspStream string,
@@ -224,6 +238,9 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
+// Run beings the server process using the provided options.
+// The server will save connection streams to disk, manages
+// the individual connection streams and removes old clips.
 func (s *Server) Run(opts Options) {
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	s.stoppedAll = make(chan struct{})
@@ -265,12 +282,15 @@ func (s *Server) Run(opts Options) {
 	}(s.ctx, s.stoppedAll)
 }
 
+// Shutdown kills the server process and begins terminating all of it's
+// child processes.
 func (s *Server) Shutdown() chan struct{} {
 	atomic.StoreInt32(&s.inShutdown, 1)
 	s.ctxCancel()
 	return s.stoppedAll
 }
 
+// Close closes all open/active video stream connections.
 func (s *Server) Close() error {
 	return s.closeConnectionsLocked()
 }
