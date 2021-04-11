@@ -25,17 +25,6 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Server manages receiving RTSP streams and persisting clips to disk
-type Server struct {
-	debugMode   bool
-	inShutdown  int32
-	mu          sync.Mutex
-	ctx         context.Context
-	ctxCancel   context.CancelFunc
-	stoppedAll  chan struct{}
-	connections map[*Connection]struct{}
-}
-
 type Options struct {
 	MaxClipAgeInDays int
 }
@@ -178,6 +167,17 @@ func (mvc *mockVideoCapture) Close() error {
 	mvc.initialised = false
 	mvc.stream.Close()
 	return nil
+}
+
+// Server manages receiving RTSP streams and persisting clips to disk
+type Server struct {
+	debugMode   bool
+	inShutdown  int32
+	mu          sync.Mutex
+	ctx         context.Context
+	ctxCancel   context.CancelFunc
+	stoppedAll  chan struct{}
+	connections map[*Connection]struct{}
 }
 
 // NewServer allocates a new server struct.
