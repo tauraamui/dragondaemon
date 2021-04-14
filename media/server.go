@@ -261,7 +261,9 @@ func (s *Server) Run(opts Options) {
 		cancelSavingClips()
 		logging.Info("Waiting for persist process to finish...")
 		// wait for saving streams to stop
-		<-stoppedSavingClips
+		for _, stoppedPersistSig := range stoppedSavingClips {
+			<-stoppedPersistSig
+		}
 
 		// stopping the streaming process should be done last
 		// stop all streaming
@@ -304,37 +306,12 @@ func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
 	return stoppedStreaming
 }
 
-func (s *Server) saveStreams(ctx context.Context) chan struct{} {
-	stopping := make(chan struct{})
-
-	go func(ctx context.Context, stopping chan struct{}) {
-		for {
-			time.Sleep(time.Millisecond * 1)
-			select {
-			case <-ctx.Done():
-				close(stopping)
-				return
-			default:
-				start := make(chan struct{})
-				wg := sync.WaitGroup{}
-				for _, conn := range s.activeConnections() {
-					wg.Add(1)
-					go func(conn *Connection) {
-						// immediately pause thread
-						<-start
-						// save 1-3 seconds worth of footage to clip file
-						conn.persistToDisk()
-						wg.Done()
-					}(conn)
-				}
-				// unpause all threads at the same time
-				close(start)
-				wg.Wait()
-			}
-		}
-	}(ctx, stopping)
-
-	return stopping
+func (s *Server) saveStreams(ctx context.Context) []chan interface{} {
+	var stoppedPersisting []chan interface{}
+	for _, conn := range s.activeConnections() {
+		stoppedPersisting = append(stoppedPersisting, conn.persistToDisk(ctx))
+	}
+	return stoppedPersisting
 }
 
 func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan struct{} {

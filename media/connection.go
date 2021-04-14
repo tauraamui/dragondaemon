@@ -250,35 +250,64 @@ func (c *Connection) Close() error {
 	return c.vc.Close()
 }
 
-func (c *Connection) persistToDisk() {
-	img := <-c.buffer
-	outputFile := fetchClipFilePath(c.persistLocation, c.title)
-	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
-	img.Close()
+func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
+	stopping := make(chan interface{})
+	reachedShutdownCase := false
 
-	if err != nil {
-		logging.Error("Opening video writer device: %v", err)
-	}
-	defer writer.Close()
-
-	logging.Info(fmt.Sprintf("Saving to clip file: %s", outputFile))
-
-	var framesWritten uint
-	for framesWritten = 0; framesWritten < uint(c.fps)*uint(c.secondsPerClip); framesWritten++ {
-		img = <-c.buffer
-
-		if img.Empty() {
-			img.Close()
-			return
-		}
-
-		if writer.IsOpened() {
-			if err := writer.Write(img); err != nil {
-				logging.Error("Unable to write frame to file: %v", err)
+	startTime := time.Now()
+	go func(ctx context.Context, stopping chan interface{}) {
+		for {
+			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-ctx.Done():
+				if !reachedShutdownCase {
+					reachedShutdownCase = true
+					logging.Debug("Stopped persist goroutine")
+					close(stopping)
+				}
+			default:
+				elapsed := time.Since(startTime)
+				if elapsed.Milliseconds() >= 2000 {
+					logging.Info("TWO SECONDS ELAPSED")
+					startTime = time.Now()
+				} else {
+					logging.Info("LESS THAN TWO SECONDS")
+				}
 			}
 		}
-		img.Close()
-	}
+	}(ctx, stopping)
+	// img := <-c.buffer
+	// outputFile := fetchClipFilePath(c.persistLocation, c.title)
+	// writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
+	// img.Close()
+
+	// if err != nil {
+	// 	logging.Error("Opening video writer device: %v", err)
+	// }
+	// defer writer.Close()
+
+	// logging.Info(fmt.Sprintf("Saving to clip file: %s", outputFile))
+
+	// framesForClip := make([]gocv.Mat, 0)
+
+	// var framesWritten uint
+	// for framesWritten = 0; framesWritten < uint(c.fps)*uint(c.secondsPerClip); framesWritten++ {
+	// 	img = <-c.buffer
+	// 	framesForClip = append(framesForClip, img)
+
+	// 	if img.Empty() {
+	// 		img.Close()
+	// 		continue
+	// 	}
+
+	// 	if writer.IsOpened() {
+	// 		if err := writer.Write(img); err != nil {
+	// 			logging.Error("Unable to write frame to file: %v", err)
+	// 		}
+	// 	}
+	// 	img.Close()
+	// }
+	return stopping
 }
 
 func (c *Connection) stream(ctx context.Context) chan struct{} {
