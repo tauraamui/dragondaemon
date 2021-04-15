@@ -28,6 +28,11 @@ type VideoCapturable interface {
 	Close() error
 }
 
+type videoClip struct {
+	fileName string
+	frames   []gocv.Mat
+}
+
 type Connection struct {
 	cache              *ristretto.Cache
 	inShutdown         int32
@@ -254,24 +259,35 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 	stopping := make(chan interface{})
 	reachedShutdownCase := false
 
-	startTime := time.Now()
 	go func(ctx context.Context, stopping chan interface{}) {
+		wg := sync.WaitGroup{}
+		startTime := time.Now()
 		for {
-			time.Sleep(time.Millisecond * 10)
 			select {
 			case <-ctx.Done():
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
+					logging.Debug("Waiting for persist process to finish")
+					wg.Wait()
 					logging.Debug("Stopped persist goroutine")
 					close(stopping)
 				}
 			default:
-				elapsed := time.Since(startTime)
-				if elapsed.Milliseconds() >= 2000 {
-					logging.Info("TWO SECONDS ELAPSED")
+				if time.Since(startTime).Milliseconds() >= int64(c.secondsPerClip*1000) {
 					startTime = time.Now()
-				} else {
-					logging.Info("LESS THAN TWO SECONDS")
+					wg.Add(1)
+					go func(ctx context.Context, wg *sync.WaitGroup) {
+						clip := videoClip{
+							fileName: fetchClipFilePath(c.persistLocation, c.title),
+							frames:   []gocv.Mat{},
+						}
+						var framesWritten uint
+						for framesWritten = 0; framesWritten < uint(c.fps*c.secondsPerClip); framesWritten++ {
+							clip.frames = append(clip.frames, <-c.buffer)
+						}
+						logging.Info("%v", clip)
+						wg.Done()
+					}(ctx, &wg)
 				}
 			}
 		}
