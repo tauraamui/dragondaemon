@@ -291,7 +291,6 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 	reachedShutdownCase := false
 	go func(ctx context.Context, stopping chan interface{}) {
 		wg := sync.WaitGroup{}
-	persistLoop:
 		for {
 			time.Sleep(time.Millisecond * 1)
 			select {
@@ -300,7 +299,6 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 					reachedShutdownCase = true
 					wg.Wait()
 					close(stopping)
-					break persistLoop
 				}
 			default:
 				clip := videoClip{
@@ -336,7 +334,6 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 
 	reachedShutdownCase := false
 	go func(ctx context.Context, stopping chan struct{}) {
-	streamLoop:
 		for {
 			// throttle CPU usage
 			time.Sleep(time.Millisecond * 1)
@@ -354,7 +351,6 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 						e.Close()
 					}
 					close(stopping)
-					break streamLoop
 				}
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
