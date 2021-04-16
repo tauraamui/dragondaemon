@@ -25,17 +25,6 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Server manages receiving RTSP streams and persisting clips to disk
-type Server struct {
-	debugMode   bool
-	inShutdown  int32
-	mu          sync.Mutex
-	ctx         context.Context
-	ctxCancel   context.CancelFunc
-	stoppedAll  chan struct{}
-	connections map[*Connection]struct{}
-}
-
 type Options struct {
 	MaxClipAgeInDays int
 }
@@ -46,14 +35,18 @@ type videoCapture struct {
 	dateTimeLabelFormat string
 }
 
+// SetP updates the internal pointer to the video capture instance.
 func (vc *videoCapture) SetP(c *gocv.VideoCapture) {
 	vc.p = c
 }
 
+// IsOpened reports whether the video capture instance is open.
 func (vc *videoCapture) IsOpened() bool {
 	return vc.p.IsOpened()
 }
 
+// Read reads the next from the video capture to the Mat. It
+// returns false if the video capture cannot read the frame.
 func (vc *videoCapture) Read(m *gocv.Mat) bool {
 	read := vc.p.Read(m)
 	if read && vc.drawDateTimeLabel {
@@ -70,6 +63,7 @@ func (vc *videoCapture) Read(m *gocv.Mat) bool {
 	return read
 }
 
+// Close the video capture instance
 func (vc *videoCapture) Close() error {
 	return vc.p.Close()
 }
@@ -81,12 +75,16 @@ type mockVideoCapture struct {
 	baseImage   image.Image
 }
 
+// SetP doesn't do anything it exists to satisfy VideoCapturable interface
 func (mvc *mockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
+// IsOpened always returns true.
 func (mvc *mockVideoCapture) IsOpened() bool {
 	return true
 }
 
+// Read reads the next from the video capture to the Mat. It
+// returns false if the video capture cannot read the frame.
 func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	if !mvc.initialised {
 		var w, h int = 1400, 1200
@@ -164,21 +162,37 @@ func drawText(canvas *image.RGBA, x, y int, text string) error {
 	return err
 }
 
+// Close the video capture instance
 func (mvc *mockVideoCapture) Close() error {
 	mvc.initialised = false
 	mvc.stream.Close()
 	return nil
 }
 
-// NewServer returns a pointer to media server instance
+// Server manages receiving RTSP streams and persisting clips to disk
+type Server struct {
+	debugMode   bool
+	inShutdown  int32
+	mu          sync.Mutex
+	ctx         context.Context
+	ctxCancel   context.CancelFunc
+	stoppedAll  chan struct{}
+	connections map[*Connection]struct{}
+}
+
+// NewServer allocates a new server struct.
 func NewServer(debugMode bool) *Server {
 	return &Server{debugMode: debugMode}
 }
 
+// IsRunning reports whether the server is running or not.
 func (s *Server) IsRunning() bool {
 	return !s.shuttingDown()
 }
 
+// Connect allocates a new connection struct which server tracks internally.
+// A new video stream connection is opened to the target stream location
+// which is saved within the connection struct allocation.
 func (s *Server) Connect(
 	title string,
 	rtspStream string,
@@ -224,6 +238,9 @@ func (s *Server) Connect(
 	s.trackConnection(conn, true)
 }
 
+// Run beings the server process using the provided options.
+// The server will save connection streams to disk, manages
+// the individual connection streams and removes old clips.
 func (s *Server) Run(opts Options) {
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	s.stoppedAll = make(chan struct{})
@@ -244,7 +261,9 @@ func (s *Server) Run(opts Options) {
 		cancelSavingClips()
 		logging.Info("Waiting for persist process to finish...")
 		// wait for saving streams to stop
-		<-stoppedSavingClips
+		for _, stoppedPersistSig := range stoppedSavingClips {
+			<-stoppedPersistSig
+		}
 
 		// stopping the streaming process should be done last
 		// stop all streaming
@@ -265,12 +284,15 @@ func (s *Server) Run(opts Options) {
 	}(s.ctx, s.stoppedAll)
 }
 
+// Shutdown kills the server process and begins terminating all of it's
+// child processes.
 func (s *Server) Shutdown() chan struct{} {
 	atomic.StoreInt32(&s.inShutdown, 1)
 	s.ctxCancel()
 	return s.stoppedAll
 }
 
+// Close closes all open/active video stream connections.
 func (s *Server) Close() error {
 	return s.closeConnectionsLocked()
 }
@@ -284,37 +306,12 @@ func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
 	return stoppedStreaming
 }
 
-func (s *Server) saveStreams(ctx context.Context) chan struct{} {
-	stopping := make(chan struct{})
-
-	go func(ctx context.Context, stopping chan struct{}) {
-		for {
-			time.Sleep(time.Millisecond * 1)
-			select {
-			case <-ctx.Done():
-				close(stopping)
-				return
-			default:
-				start := make(chan struct{})
-				wg := sync.WaitGroup{}
-				for _, conn := range s.activeConnections() {
-					wg.Add(1)
-					go func(conn *Connection) {
-						// immediately pause thread
-						<-start
-						// save 1-3 seconds worth of footage to clip file
-						conn.persistToDisk()
-						wg.Done()
-					}(conn)
-				}
-				// unpause all threads at the same time
-				close(start)
-				wg.Wait()
-			}
-		}
-	}(ctx, stopping)
-
-	return stopping
+func (s *Server) saveStreams(ctx context.Context) []chan interface{} {
+	var stoppedPersisting []chan interface{}
+	for _, conn := range s.activeConnections() {
+		stoppedPersisting = append(stoppedPersisting, conn.persistToDisk(ctx))
+	}
+	return stoppedPersisting
 }
 
 func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan struct{} {

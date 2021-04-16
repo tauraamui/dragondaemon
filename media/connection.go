@@ -28,6 +28,41 @@ type VideoCapturable interface {
 	Close() error
 }
 
+type videoClip struct {
+	fileName string
+	fps      int
+	frames   []gocv.Mat
+}
+
+func (v *videoClip) writeToDisk() error {
+	if len(v.frames) > 0 {
+		img := v.frames[0]
+		writer, err := gocv.VideoWriterFile(v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows(), true)
+		if err != nil {
+			return err
+		}
+
+		defer writer.Close()
+
+		logging.Info("Saving to clip file: %s", v.fileName)
+
+		for _, f := range v.frames {
+			if f.Empty() {
+				f.Close()
+				continue
+			}
+
+			if writer.IsOpened() {
+				if err := writer.Write(f); err != nil {
+					logging.Error("Unable to write frame to file: %v", err)
+				}
+			}
+			f.Close()
+		}
+	}
+	return nil
+}
+
 type Connection struct {
 	cache              *ristretto.Cache
 	inShutdown         int32
@@ -250,35 +285,47 @@ func (c *Connection) Close() error {
 	return c.vc.Close()
 }
 
-func (c *Connection) persistToDisk() {
-	img := <-c.buffer
-	outputFile := fetchClipFilePath(c.persistLocation, c.title)
-	writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
-	img.Close()
+func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
+	stopping := make(chan interface{})
 
-	if err != nil {
-		logging.Error("Opening video writer device: %v", err)
-	}
-	defer writer.Close()
+	reachedShutdownCase := false
+	go func(ctx context.Context, stopping chan interface{}) {
+		wg := sync.WaitGroup{}
+	persistLoop:
+		for {
+			time.Sleep(time.Millisecond * 1)
+			select {
+			case <-ctx.Done():
+				if !reachedShutdownCase {
+					reachedShutdownCase = true
+					wg.Wait()
+					close(stopping)
+					break persistLoop
+				}
+			default:
+				clip := videoClip{
+					fileName: fetchClipFilePath(c.persistLocation, c.title),
+					frames:   []gocv.Mat{},
+					fps:      c.fps,
+				}
+				// collect enough frames for clip
+				var framesRead uint
+				for framesRead = 0; framesRead < uint(c.fps*c.secondsPerClip); framesRead++ {
+					clip.frames = append(clip.frames, <-c.buffer)
+				}
 
-	logging.Info(fmt.Sprintf("Saving to clip file: %s", outputFile))
-
-	var framesWritten uint
-	for framesWritten = 0; framesWritten < uint(c.fps)*uint(c.secondsPerClip); framesWritten++ {
-		img = <-c.buffer
-
-		if img.Empty() {
-			img.Close()
-			return
-		}
-
-		if writer.IsOpened() {
-			if err := writer.Write(img); err != nil {
-				logging.Error("Unable to write frame to file: %v", err)
+				wg.Add(1)
+				go func(wg *sync.WaitGroup, clip videoClip) {
+					defer wg.Done()
+					if err := clip.writeToDisk(); err != nil {
+						logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
+					}
+				}(&wg, clip)
 			}
 		}
-		img.Close()
-	}
+	}(ctx, stopping)
+
+	return stopping
 }
 
 func (c *Connection) stream(ctx context.Context) chan struct{} {
@@ -289,6 +336,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 
 	reachedShutdownCase := false
 	go func(ctx context.Context, stopping chan struct{}) {
+	streamLoop:
 		for {
 			// throttle CPU usage
 			time.Sleep(time.Millisecond * 1)
@@ -306,6 +354,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 						e.Close()
 					}
 					close(stopping)
+					break streamLoop
 				}
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
