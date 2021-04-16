@@ -339,7 +339,6 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 			time.Sleep(time.Millisecond * 1)
 			select {
 			case <-ctx.Done():
-				// TODO(:tauraamui) Investigate why this case is reached more than once anyway
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
 					logging.Debug("Stopped stream goroutine")
