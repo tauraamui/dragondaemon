@@ -259,39 +259,39 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 	stopping := make(chan interface{})
 	reachedShutdownCase := false
 
-	go func(ctx context.Context, stopping chan interface{}) {
-		wg := sync.WaitGroup{}
-		startTime := time.Now()
+	go func(ctx context.Context) {
+		var startTime *time.Time
+		var clipFilePath string
 		for {
 			select {
 			case <-ctx.Done():
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
-					logging.Debug("Waiting for persist process to finish")
-					wg.Wait()
-					logging.Debug("Stopped persist goroutine")
 					close(stopping)
 				}
 			default:
-				if time.Since(startTime).Milliseconds() >= int64(c.secondsPerClip*1000) {
-					startTime = time.Now()
-					wg.Add(1)
-					go func(ctx context.Context, wg *sync.WaitGroup) {
-						clip := videoClip{
-							fileName: fetchClipFilePath(c.persistLocation, c.title),
-							frames:   []gocv.Mat{},
-						}
-						var framesWritten uint
-						for framesWritten = 0; framesWritten < uint(c.fps*c.secondsPerClip); framesWritten++ {
-							clip.frames = append(clip.frames, <-c.buffer)
-						}
-						logging.Info("%v", clip)
-						wg.Done()
-					}(ctx, &wg)
+				if startTime == nil {
+					*startTime = time.Now()
+					clipFilePath = fetchClipFilePath(c.persistLocation, c.title)
 				}
+				if time.Since(*startTime).Milliseconds() >= 2000 {
+					*startTime = time.Now()
+					clipFilePath = fetchClipFilePath(c.persistLocation, c.title)
+				}
+				clip := videoClip{
+					fileName: clipFilePath,
+					frames:   []gocv.Mat{},
+				}
+
+				var framesWritten uint
+				for framesWritten = 0; framesWritten < uint(c.fps*c.secondsPerClip); framesWritten++ {
+					clip.frames = append(clip.frames, <-c.buffer)
+				}
+				logging.Info("%v", clip)
 			}
 		}
-	}(ctx, stopping)
+	}(ctx)
+
 	// img := <-c.buffer
 	// outputFile := fetchClipFilePath(c.persistLocation, c.title)
 	// writer, err := gocv.VideoWriterFile(outputFile, "avc1.4d001e", float64(c.fps), img.Cols(), img.Rows(), true)
