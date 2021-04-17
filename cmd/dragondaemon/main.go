@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/signal"
@@ -14,6 +15,7 @@ import (
 	"github.com/tauraamui/dragondaemon/config"
 	db "github.com/tauraamui/dragondaemon/database"
 	"github.com/tauraamui/dragondaemon/media"
+	"gocv.io/x/gocv"
 )
 
 const (
@@ -167,6 +169,11 @@ func (service *Service) Manage() (string, error) {
 		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
 		os.Exit(1)
 	}
+
+	var b bytes.Buffer
+	gocv.MatProfile.Count()
+	gocv.MatProfile.WriteTo(&b, 1)
+	fmt.Print(b.String())
 
 	return "Shutdown successful... BYE! 👋", nil
 }
