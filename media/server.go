@@ -325,6 +325,9 @@ func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan 
 			select {
 			case <-ticker.C:
 				activeConnections := s.activeConnections()
+				if len(activeConnections) == 0 {
+					continue
+				}
 				if currentConnection >= len(activeConnections) {
 					currentConnection = 0
 				}
