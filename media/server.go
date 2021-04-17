@@ -120,10 +120,10 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	if err != nil {
 		logging.Fatal("Unable to convert Go image into OpenCV mat")
 	}
+	defer mat.Close()
 
 	time.Sleep(time.Millisecond * 100)
 	mat.CopyTo(m)
-	mvc.stream = mat
 	return mvc.initialised
 }
 
@@ -165,7 +165,6 @@ func drawText(canvas *image.RGBA, x, y int, text string) error {
 // Close the video capture instance
 func (mvc *mockVideoCapture) Close() error {
 	mvc.initialised = false
-	mvc.stream.Close()
 	return nil
 }
 
