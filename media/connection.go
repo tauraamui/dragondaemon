@@ -61,7 +61,6 @@ func (v *videoClip) writeToDisk() error {
 		}
 	}
 	v.frames = nil
-	logging.Debug("GOCV MATS POST CLIP SAVE: %d", gocv.MatProfile.Count())
 	return nil
 }
 
