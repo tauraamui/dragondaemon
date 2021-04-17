@@ -1,7 +1,9 @@
 package dragon
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -10,9 +12,19 @@ import (
 
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"gocv.io/x/gocv"
 )
 
 func (s *Server) SetupProcesses() {
+	s.initDebugProcs()
+	for _, cam := range s.cameras {
+		proc := process.NewCoreProcess(cam, s.videoBackend.NewWriter())
+		proc.Setup()
+		s.coreProcesses[cam.UUID()] = proc
+	}
+}
+
+func (s *Server) initDebugProcs() {
 	runtimeStatsEnv := strings.ToLower(os.Getenv("DRAGON_RUNTIME_STATS"))
 	if runtimeStatsEnv == "1" || runtimeStatsEnv == "true" || runtimeStatsEnv == "yes" {
 		s.runtimeStatsEnabled = true
@@ -22,10 +34,43 @@ func (s *Server) SetupProcesses() {
 		}
 		s.renderRuntimeStatsProc = process.New(outputRuntimeStatsProcess)
 	}
-	for _, cam := range s.cameras {
-		proc := process.NewCoreProcess(cam, s.videoBackend.NewWriter())
-		proc.Setup()
-		s.coreProcesses[cam.UUID()] = proc
+
+	openCVMatStatsEnv := strings.ToLower(os.Getenv("DRAGON_OPENCV_MAT_STATS"))
+	if openCVMatStatsEnv == "1" || openCVMatStatsEnv == "true" || openCVMatStatsEnv == "yes" {
+		s.openCVMatStatsEnabled = true
+		outputOpenCVStatsProcess := process.Settings{
+			WaitForShutdownMsg: "",
+			Process:            outputOpenCVMatStats(),
+		}
+		s.renderOpenCVMatStatsProc = process.New(outputOpenCVStatsProcess)
+	}
+}
+
+func outputOpenCVMatStats() func(context.Context, chan interface{}) []chan interface{} {
+	return func(cancel context.Context, s chan interface{}) []chan interface{} {
+		stopping := make(chan interface{})
+		started := false
+
+	procLoop:
+		for {
+			time.Sleep(5 * time.Second)
+			if !started {
+				close(s)
+				started = true
+			}
+			select {
+			case <-cancel.Done():
+				close(stopping)
+				break procLoop
+			default:
+				var b bytes.Buffer
+				gocv.MatProfile.Count()
+				gocv.MatProfile.WriteTo(&b, 1)
+				fmt.Print(b.String())
+			}
+		}
+
+		return []chan interface{}{stopping}
 	}
 }
 
@@ -89,6 +134,11 @@ func (s *Server) RunProcesses() {
 	if s.runtimeStatsEnabled && s.renderRuntimeStatsProc != nil {
 		s.renderRuntimeStatsProc.Start()
 	}
+
+	if s.openCVMatStatsEnabled && s.renderOpenCVMatStatsProc != nil {
+		s.renderOpenCVMatStatsProc.Start()
+	}
+
 	for _, proc := range s.coreProcesses {
 		proc.Start()
 	}
@@ -99,6 +149,12 @@ func (s *Server) shutdownProcesses() {
 		s.renderRuntimeStatsProc.Stop()
 		s.renderRuntimeStatsProc.Wait()
 	}
+
+	if s.openCVMatStatsEnabled && s.renderOpenCVMatStatsProc != nil {
+		s.renderRuntimeStatsProc.Stop()
+		s.renderRuntimeStatsProc.Wait()
+	}
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.coreProcesses))
 	for _, proc := range s.coreProcesses {

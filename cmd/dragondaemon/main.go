@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"gocv.io/x/gocv"
 )
 
 const (
@@ -107,6 +109,11 @@ func (service *Service) Manage() (string, error) {
 	cancelStartup()
 	log.Info("Shutting down server...")
 	<-server.Shutdown()
+
+	var b bytes.Buffer
+	gocv.MatProfile.Count()
+	gocv.MatProfile.WriteTo(&b, 1)
+	fmt.Print(b.String())
 
 	return "Shutdown successful... BYE! 👋", nil
 }

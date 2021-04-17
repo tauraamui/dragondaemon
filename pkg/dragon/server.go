@@ -37,14 +37,16 @@ func NewServer(cr config.Resolver, vb video.Backend) (*Server, error) {
 }
 
 type Server struct {
-	runtimeStatsEnabled    bool
-	renderRuntimeStatsProc process.Process
-	videoBackend           video.Backend
-	shutdownDone           chan interface{}
-	config                 configdef.Values
-	mu                     sync.Mutex
-	coreProcesses          map[string]process.Process
-	cameras                []camera.Connection
+	runtimeStatsEnabled      bool
+	openCVMatStatsEnabled    bool
+	renderOpenCVMatStatsProc process.Process
+	renderRuntimeStatsProc   process.Process
+	videoBackend             video.Backend
+	shutdownDone             chan interface{}
+	config                   configdef.Values
+	mu                       sync.Mutex
+	coreProcesses            map[string]process.Process
+	cameras                  []camera.Connection
 }
 
 func (s *Server) Connect() []error {
