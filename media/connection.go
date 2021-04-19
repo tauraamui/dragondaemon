@@ -234,48 +234,6 @@ func getDirSize(path string, filePtr *os.File) (int64, error) {
 	return total, nil
 }
 
-func countFileSizes(files []os.FileInfo, onDirFile func(os.FileInfo) int64) int64 {
-	var total int64
-	for _, f := range files {
-		if f.IsDir() {
-			total += onDirFile(f)
-			continue
-		}
-		if f.Mode().IsRegular() {
-			total += f.Size()
-		}
-	}
-	return total
-}
-
-func resolveFilePointer(path string, file *os.File) (*os.File, error) {
-	var fp *os.File
-	fp = file
-	if fp == nil {
-		filePtr, err := os.Open(path)
-		if err != nil {
-			return nil, err
-		}
-		fp = filePtr
-	}
-	return fp, nil
-}
-
-func unitizeSize(total int64) (int64, string) {
-	unit := "Kb"
-	total /= 1024
-	if total > 1024 {
-		total /= 1024
-		unit = "Mb"
-		if total > 1024 {
-			total /= 1024
-			unit = "Gb"
-		}
-	}
-
-	return total, unit
-}
-
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
 	if c.window != nil {
@@ -289,36 +247,12 @@ func (c *Connection) Close() error {
 func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 	stopping := make(chan interface{})
 
-	go func(ctx context.Context, stopping chan interface{}) {
-		clipsToSave := make(chan videoClip, 1)
+	wg := sync.WaitGroup{}
+	clipsToSave := make(chan videoClip, 3)
+	go writeClipsToDisk(ctx, &wg, clipsToSave)
+	go writeClipsToDisk(ctx, &wg, clipsToSave)
 
-		wg := func(ctx context.Context, clips chan videoClip) *sync.WaitGroup {
-			wg := sync.WaitGroup{}
-			wg.Add(1)
-			go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
-				defer wg.Done()
-				for {
-					time.Sleep(time.Millisecond * 1)
-					select {
-					case <-ctx.Done():
-						for len(clips) > 0 {
-							clip := <-clips
-							if err := clip.writeToDisk(); err != nil {
-								logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
-							}
-						}
-						return
-					default:
-						clip := <-clips
-						if err := clip.writeToDisk(); err != nil {
-							logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
-						}
-					}
-				}
-			}(ctx, &wg, clips)
-			return &wg
-		}(ctx, clipsToSave)
-
+	go func(ctx context.Context, wg *sync.WaitGroup, stopping chan interface{}) {
 		reachedShutdownCase := false
 		for {
 			time.Sleep(time.Millisecond * 1)
@@ -345,7 +279,7 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 				clipsToSave <- clip
 			}
 		}
-	}(ctx, stopping)
+	}(ctx, &wg, stopping)
 
 	return stopping
 }
@@ -459,6 +393,31 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
 }
 
+func writeClipsToDisk(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
+	readAndWrite := func(clips chan videoClip) {
+		clip := <-clips
+		if err := clip.writeToDisk(); err != nil {
+			logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
+		}
+	}
+	wg.Add(1)
+	go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
+		defer wg.Done()
+		for {
+			time.Sleep(time.Millisecond * 1)
+			select {
+			case <-ctx.Done():
+				for len(clips) > 0 {
+					readAndWrite(clips)
+				}
+				return
+			default:
+				readAndWrite(clips)
+			}
+		}
+	}(ctx, wg, clips)
+}
+
 func ensureDirectoryExists(path string) error {
 	err := os.Mkdir(path, os.ModePerm)
 
@@ -466,4 +425,46 @@ func ensureDirectoryExists(path string) error {
 		return nil
 	}
 	return err
+}
+
+func countFileSizes(files []os.FileInfo, onDirFile func(os.FileInfo) int64) int64 {
+	var total int64
+	for _, f := range files {
+		if f.IsDir() {
+			total += onDirFile(f)
+			continue
+		}
+		if f.Mode().IsRegular() {
+			total += f.Size()
+		}
+	}
+	return total
+}
+
+func resolveFilePointer(path string, file *os.File) (*os.File, error) {
+	var fp *os.File
+	fp = file
+	if fp == nil {
+		filePtr, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		fp = filePtr
+	}
+	return fp, nil
+}
+
+func unitizeSize(total int64) (int64, string) {
+	unit := "Kb"
+	total /= 1024
+	if total > 1024 {
+		total /= 1024
+		unit = "Mb"
+		if total > 1024 {
+			total /= 1024
+			unit = "Gb"
+		}
+	}
+
+	return total, unit
 }
