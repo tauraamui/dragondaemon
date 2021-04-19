@@ -289,9 +289,37 @@ func (c *Connection) Close() error {
 func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 	stopping := make(chan interface{})
 
-	reachedShutdownCase := false
 	go func(ctx context.Context, stopping chan interface{}) {
-		wg := sync.WaitGroup{}
+		clipsToSave := make(chan videoClip, 1)
+
+		wg := func(ctx context.Context, clips chan videoClip) *sync.WaitGroup {
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
+				defer wg.Done()
+				for {
+					time.Sleep(time.Millisecond * 1)
+					select {
+					case <-ctx.Done():
+						for len(clips) > 0 {
+							clip := <-clips
+							if err := clip.writeToDisk(); err != nil {
+								logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
+							}
+						}
+						return
+					default:
+						clip := <-clips
+						if err := clip.writeToDisk(); err != nil {
+							logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
+						}
+					}
+				}
+			}(ctx, &wg, clips)
+			return &wg
+		}(ctx, clipsToSave)
+
+		reachedShutdownCase := false
 		for {
 			time.Sleep(time.Millisecond * 1)
 			select {
@@ -299,6 +327,7 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
 					wg.Wait()
+					close(clipsToSave)
 					close(stopping)
 				}
 			default:
@@ -313,13 +342,7 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 					clip.frames = append(clip.frames, <-c.buffer)
 				}
 
-				wg.Add(1)
-				go func(wg *sync.WaitGroup, clip videoClip) {
-					defer wg.Done()
-					if err := clip.writeToDisk(); err != nil {
-						logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
-					}
-				}(&wg, clip)
+				clipsToSave <- clip
 			}
 		}
 	}(ctx, stopping)
