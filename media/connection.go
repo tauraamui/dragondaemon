@@ -28,42 +28,6 @@ type VideoCapturable interface {
 	Close() error
 }
 
-type videoClip struct {
-	fileName string
-	fps      int
-	frames   []gocv.Mat
-}
-
-func (v *videoClip) writeToDisk() error {
-	if len(v.frames) > 0 {
-		img := v.frames[0]
-		writer, err := gocv.VideoWriterFile(v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows(), true)
-		if err != nil {
-			return err
-		}
-
-		defer writer.Close()
-
-		logging.Info("Saving to clip file: %s", v.fileName)
-
-		for _, f := range v.frames {
-			if f.Empty() {
-				f.Close()
-				continue
-			}
-
-			if writer.IsOpened() {
-				if err := writer.Write(f); err != nil {
-					logging.Error("Unable to write frame to file: %v", err)
-				}
-			}
-			f.Close()
-		}
-	}
-	v.frames = nil
-	return nil
-}
-
 type Connection struct {
 	cache              *ristretto.Cache
 	inShutdown         int32
@@ -189,49 +153,6 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	}
 
 	return size, unit, nil
-}
-
-// will either get empty string and pointer or filled string with nil pointer
-// depending on whether it needs to just count the files still remaining in
-// this given dir or whether it needs to start counting again in a found sub dir
-func getDirSize(path string, filePtr *os.File) (int64, error) {
-	var total int64
-
-	fp, err := resolveFilePointer(path, filePtr)
-	if err != nil {
-		return total, err
-	}
-
-	files, err := fp.Readdir(100)
-	if len(files) == 0 {
-		return total, err
-	}
-
-	total += countFileSizes(files, func(f os.FileInfo) int64 {
-		done := make(chan interface{})
-
-		var total int64
-		go func(d chan interface{}, t *int64) {
-			s, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
-			if err != nil {
-				logging.Error("Unable to get dirs full size: %v...", err)
-			}
-			*t += s
-			close(done)
-		}(done, &total)
-
-		<-done
-		return total
-	})
-
-	if err != io.EOF {
-		t, err := getDirSize("", fp)
-		if err == nil {
-			total += t
-		}
-	}
-
-	return total, nil
 }
 
 func (c *Connection) Close() error {
@@ -362,6 +283,85 @@ func (c *Connection) reconnect() error {
 	c.vc.SetP(vc)
 
 	return nil
+}
+
+type videoClip struct {
+	fileName string
+	fps      int
+	frames   []gocv.Mat
+}
+
+func (v *videoClip) writeToDisk() error {
+	if len(v.frames) > 0 {
+		img := v.frames[0]
+		writer, err := gocv.VideoWriterFile(v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows(), true)
+		if err != nil {
+			return err
+		}
+
+		defer writer.Close()
+
+		logging.Info("Saving to clip file: %s", v.fileName)
+
+		for _, f := range v.frames {
+			if f.Empty() {
+				f.Close()
+				continue
+			}
+
+			if writer.IsOpened() {
+				if err := writer.Write(f); err != nil {
+					logging.Error("Unable to write frame to file: %v", err)
+				}
+			}
+			f.Close()
+		}
+	}
+	v.frames = nil
+	return nil
+}
+
+// will either get empty string and pointer or filled string with nil pointer
+// depending on whether it needs to just count the files still remaining in
+// this given dir or whether it needs to start counting again in a found sub dir
+func getDirSize(path string, filePtr *os.File) (int64, error) {
+	var total int64
+
+	fp, err := resolveFilePointer(path, filePtr)
+	if err != nil {
+		return total, err
+	}
+
+	files, err := fp.Readdir(100)
+	if len(files) == 0 {
+		return total, err
+	}
+
+	total += countFileSizes(files, func(f os.FileInfo) int64 {
+		done := make(chan interface{})
+
+		var total int64
+		go func(d chan interface{}, t *int64) {
+			s, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
+			if err != nil {
+				logging.Error("Unable to get dirs full size: %v...", err)
+			}
+			*t += s
+			close(done)
+		}(done, &total)
+
+		<-done
+		return total
+	})
+
+	if err != io.EOF {
+		t, err := getDirSize("", fp)
+		if err == nil {
+			total += t
+		}
+	}
+
+	return total, nil
 }
 
 func fetchClipFilePath(rootDir string, clipsDir string) string {
