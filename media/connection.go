@@ -21,13 +21,6 @@ import (
 
 const sizeOnDisk string = "sod"
 
-type VideoCapturable interface {
-	SetP(*gocv.VideoCapture)
-	IsOpened() bool
-	Read(*gocv.Mat) bool
-	Close() error
-}
-
 type Connection struct {
 	cache              *ristretto.Cache
 	inShutdown         int32
@@ -282,6 +275,58 @@ func (c *Connection) reconnect() error {
 	c.vc.SetP(vc)
 
 	return nil
+}
+
+type VideoCapturable interface {
+	SetP(*gocv.VideoCapture)
+	IsOpened() bool
+	Read(*gocv.Mat) bool
+	Close() error
+}
+
+type videoWriteable interface {
+	SetP(*gocv.VideoWriter)
+	IsOpened() bool
+	Write(gocv.Mat) error
+	Close() error
+}
+
+func openVideoWriter(
+	fileName string,
+	codec string,
+	fps float64,
+	frameWidth int,
+	frameHeight int,
+) (videoWriteable, error) {
+	vw, err := gocv.VideoWriterFile(fileName, codec, fps, frameWidth, frameHeight, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return &videoWriter{
+		p: vw,
+	}, err
+}
+
+type videoWriter struct {
+	p *gocv.VideoWriter
+}
+
+// SetP updates the internal pointer to the video capture instance.
+func (vw *videoWriter) SetP(w *gocv.VideoWriter) {
+	vw.p = w
+}
+
+func (vw *videoWriter) IsOpened() bool {
+	return vw.p.IsOpened()
+}
+
+func (vw *videoWriter) Write(m gocv.Mat) error {
+	return vw.p.Write(m)
+}
+
+func (vw *videoWriter) Close() error {
+	return vw.p.Close()
 }
 
 type videoClip struct {
