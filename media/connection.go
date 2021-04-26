@@ -338,7 +338,7 @@ type videoClip struct {
 func (v *videoClip) writeToDisk() error {
 	if len(v.frames) > 0 {
 		img := v.frames[0]
-		writer, err := gocv.VideoWriterFile(v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows(), true)
+		writer, err := openVideoWriter(v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows())
 		if err != nil {
 			return err
 		}
