@@ -171,7 +171,6 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 	wg := sync.WaitGroup{}
 	clipsToSave := make(chan videoClip, 3)
 	go writeClipsToDisk(ctx, &wg, clipsToSave)
-	go writeClipsToDisk(ctx, &wg, clipsToSave)
 
 	go func(ctx context.Context, wg *sync.WaitGroup, stopping chan interface{}) {
 		reachedShutdownCase := false
