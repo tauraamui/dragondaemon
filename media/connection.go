@@ -298,6 +298,10 @@ func openVideoWriter(
 	frameWidth int,
 	frameHeight int,
 ) (videoWriteable, error) {
+	mockVidWriting, foundEnv := os.LookupEnv("DRAGON_DAEMON_MOCK_VIDEO_WRITING")
+	if foundEnv && mockVidWriting == "1" {
+		return &mockVideoWriter{}, nil
+	}
 	vw, err := gocv.VideoWriterFile(fileName, codec, fps, frameWidth, frameHeight, true)
 	if err != nil {
 		return nil, err
@@ -327,6 +331,27 @@ func (vw *videoWriter) Write(m gocv.Mat) error {
 
 func (vw *videoWriter) Close() error {
 	return vw.p.Close()
+}
+
+type mockVideoWriter struct {
+	initialised bool
+}
+
+// SetP doesn't do anything it exists to satisfy videoWriteable interface
+func (mvw *mockVideoWriter) SetP(_ *gocv.VideoWriter) {}
+
+// IsOpened always returns true.
+func (mvw *mockVideoWriter) IsOpened() bool {
+	return true
+}
+
+func (mvw *mockVideoWriter) Write(m gocv.Mat) error {
+	return nil
+}
+
+func (mvw *mockVideoWriter) Close() error {
+	mvw.initialised = false
+	return nil
 }
 
 type videoClip struct {
