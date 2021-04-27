@@ -7,12 +7,16 @@ import (
 	"testing"
 
 	"github.com/franela/goblin"
+	. "github.com/onsi/gomega"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
 
 func TestConfig(t *testing.T) {
 	g := goblin.Goblin(t)
+
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	g.Describe("Loading configuration from file", func() {
 
 		mockValidConfigContent := []byte(`{
@@ -49,13 +53,13 @@ func TestConfig(t *testing.T) {
 			]
 		}`)
 
-		g.It("Should pass the expected ENV value for config location into file reader", func() {
+		g.It("Passes the expected ENV value for config location into file reader", func() {
 			// set the ENV var to known value
 			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
 
 			cfg := values{
 				r: func(path string) ([]byte, error) {
-					g.Assert(path).Equal("test-config-path")
+					Expect(path).To(Equal("test-config-path"))
 					return []byte{}, nil
 				},
 				um: json.Unmarshal,
@@ -65,7 +69,7 @@ func TestConfig(t *testing.T) {
 			cfg.Load()
 		})
 
-		g.It("Should load values from config file into struct", func() {
+		g.It("Loads values from config file into struct", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockValidConfigContent, nil
@@ -75,15 +79,16 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNil()
-			g.Assert(cfg.Debug).IsTrue()
-			g.Assert(cfg.Secret).Equal("test-secret")
-			g.Assert(cfg.MaxClipAgeInDays).Equal(7)
-			g.Assert(cfg.Cameras).Equal([]Camera{
+			Expect(err).To(BeNil())
+			Expect(cfg.Secret).To(Equal("test-secret"))
+			Expect(cfg.MaxClipAgeInDays).To(Equal(7))
+			Expect(cfg.Cameras).To(Equal([]Camera{
 				{
 					Title:          "Test Cam 1",
 					Address:        "camera-network-addr",
 					FPS:            1,
+					DateTimeLabel:  false,
+					DateTimeFormat: "2006/01/02 15:04:05.999999999",
 					SecondsPerClip: 2,
 					Disabled:       false,
 					Schedule: schedule.Schedule{
@@ -99,10 +104,10 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
-			})
+			}))
 		})
 
-		g.It("Should return error if unable to read configuration", func() {
+		g.It("Returns error if unable to read configuration", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return nil, errors.New("read failure")
@@ -110,11 +115,11 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal("Unable to read from path test-config-path: read failure")
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError("Unable to read from path test-config-path: read failure"))
 		})
 
-		g.It("Should return error if unable to unmarshal JSON into configuration struct", func() {
+		g.It("Returns error if unable to unmarshal JSON into configuration struct", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockInvalidJSONConfigContent, nil
@@ -123,11 +128,11 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal("Parsing configuration file error: invalid character 't' after object key")
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
 		})
 
-		g.It("Should return error if configuration unable to pass validation due to missing FPS field", func() {
+		g.It("Returns error if configuration unable to pass validation due to missing FPS field", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockValidationMissingRequiredFPSField, nil
@@ -137,10 +142,10 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal(
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError(
 				"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
-			)
+			))
 		})
 	})
 
