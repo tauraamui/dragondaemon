@@ -115,8 +115,8 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal("Unable to read from path test-config-path: read failure")
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError("Unable to read from path test-config-path: read failure"))
 		})
 
 		g.It("Should return error if unable to unmarshal JSON into configuration struct", func() {
@@ -128,8 +128,8 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal("Parsing configuration file error: invalid character 't' after object key")
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
 		})
 
 		g.It("Should return error if configuration unable to pass validation due to missing FPS field", func() {
@@ -142,10 +142,10 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNotNil()
-			g.Assert(err.Error()).Equal(
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError(
 				"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
-			)
+			))
 		})
 	})
 
