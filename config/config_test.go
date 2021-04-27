@@ -79,15 +79,16 @@ func TestConfig(t *testing.T) {
 			}
 
 			err := cfg.Load()
-			g.Assert(err).IsNil()
-			g.Assert(cfg.Debug).IsTrue()
-			g.Assert(cfg.Secret).Equal("test-secret")
-			g.Assert(cfg.MaxClipAgeInDays).Equal(7)
-			g.Assert(cfg.Cameras).Equal([]Camera{
+			Expect(err).To(BeNil())
+			Expect(cfg.Secret).To(Equal("test-secret"))
+			Expect(cfg.MaxClipAgeInDays).To(Equal(7))
+			Expect(cfg.Cameras).To(Equal([]Camera{
 				{
 					Title:          "Test Cam 1",
 					Address:        "camera-network-addr",
 					FPS:            1,
+					DateTimeLabel:  false,
+					DateTimeFormat: "2006/01/02 15:04:05.999999999",
 					SecondsPerClip: 2,
 					Disabled:       false,
 					Schedule: schedule.Schedule{
@@ -103,7 +104,7 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
-			})
+			}))
 		})
 
 		g.It("Should return error if unable to read configuration", func() {
