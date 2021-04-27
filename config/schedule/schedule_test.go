@@ -6,19 +6,22 @@ import (
 	"time"
 
 	"github.com/franela/goblin"
+	. "github.com/onsi/gomega"
 )
 
 func TestSchedule(t *testing.T) {
 	g := goblin.Goblin(t)
 
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	g.Describe("isTimeOnOrOff", func() {
-		g.It("Should return on if current time after nil", func() {
+		g.It("Returns on if current time after nil", func() {
 			empty, onOrOff := isTimeOnOrOff(Time(time.Now()), nil)
-			g.Assert(empty).IsTrue()
-			g.Assert(onOrOff).IsTrue()
+			Expect(empty).To(BeTrue())
+			Expect(onOrOff).To(BeTrue())
 		})
 
-		g.It("Should return on if current time before off", func() {
+		g.It("Returns on if current time before off", func() {
 			currentTime := time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 12, 0, 0, 0, time.UTC))
 
@@ -30,7 +33,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsTrue()
 		})
 
-		g.It("Should return off if current time after off", func() {
+		g.It("Returns off if current time after off", func() {
 			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 9, 0, 0, 0, time.UTC))
 
@@ -42,7 +45,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsFalse()
 		})
 
-		g.It("Should return on if current time after on", func() {
+		g.It("Returns on if current time after on", func() {
 			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
 			onTime := Time(time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC))
 
@@ -54,7 +57,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsTrue()
 		})
 
-		g.It("Should return off if current time after off", func() {
+		g.It("Returns off if current time after off", func() {
 			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC))
 
@@ -66,7 +69,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsFalse()
 		})
 
-		g.It("Should return off if current time before on after off", func() {
+		g.It("Returns off if current time before on after off", func() {
 			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 10, 0, 0, 0, time.UTC))
 			onTime := Time(time.Date(2021, 9, 13, 14, 0, 0, 0, time.UTC))
@@ -80,7 +83,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsFalse()
 		})
 
-		g.It("Should return on if current time after on before off", func() {
+		g.It("Returns on if current time after on before off", func() {
 			currentTime := time.Date(2021, 9, 13, 14, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 17, 0, 0, 0, time.UTC))
 			onTime := Time(time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC))
@@ -94,7 +97,7 @@ func TestSchedule(t *testing.T) {
 			g.Assert(onOrOff).IsTrue()
 		})
 
-		g.It("Should return on if current time after on after off", func() {
+		g.It("Returns on if current time after on after off", func() {
 			currentTime := time.Date(2021, 9, 13, 18, 0, 0, 0, time.UTC)
 			offTime := Time(time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC))
 			onTime := Time(time.Date(2021, 9, 13, 14, 0, 0, 0, time.UTC))
@@ -117,7 +120,7 @@ func TestSchedule(t *testing.T) {
 			}
 		}`)
 
-		g.It("Should return on if given time on Sunday before same day off time", func() {
+		g.It("Returns on if given time on Sunday before same day off time", func() {
 			TODAY = time.Date(2021, 2, 7, 0, 0, 0, 0, time.UTC)
 
 			testSchedule := Schedule{}
