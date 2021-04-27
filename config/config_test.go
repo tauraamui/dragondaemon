@@ -7,12 +7,16 @@ import (
 	"testing"
 
 	"github.com/franela/goblin"
+	. "github.com/onsi/gomega"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
 
 func TestConfig(t *testing.T) {
 	g := goblin.Goblin(t)
+
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	g.Describe("Loading configuration from file", func() {
 
 		mockValidConfigContent := []byte(`{
@@ -55,7 +59,7 @@ func TestConfig(t *testing.T) {
 
 			cfg := values{
 				r: func(path string) ([]byte, error) {
-					g.Assert(path).Equal("test-config-path")
+					Expect(path).To(Equal("test-config-path"))
 					return []byte{}, nil
 				},
 				um: json.Unmarshal,
