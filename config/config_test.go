@@ -53,7 +53,7 @@ func TestConfig(t *testing.T) {
 			]
 		}`)
 
-		g.It("Should pass the expected ENV value for config location into file reader", func() {
+		g.It("Passes the expected ENV value for config location into file reader", func() {
 			// set the ENV var to known value
 			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
 
@@ -69,7 +69,7 @@ func TestConfig(t *testing.T) {
 			cfg.Load()
 		})
 
-		g.It("Should load values from config file into struct", func() {
+		g.It("Loads values from config file into struct", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockValidConfigContent, nil
@@ -107,7 +107,7 @@ func TestConfig(t *testing.T) {
 			}))
 		})
 
-		g.It("Should return error if unable to read configuration", func() {
+		g.It("Returns error if unable to read configuration", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return nil, errors.New("read failure")
@@ -119,7 +119,7 @@ func TestConfig(t *testing.T) {
 			Expect(err).To(MatchError("Unable to read from path test-config-path: read failure"))
 		})
 
-		g.It("Should return error if unable to unmarshal JSON into configuration struct", func() {
+		g.It("Returns error if unable to unmarshal JSON into configuration struct", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockInvalidJSONConfigContent, nil
@@ -132,7 +132,7 @@ func TestConfig(t *testing.T) {
 			Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
 		})
 
-		g.It("Should return error if configuration unable to pass validation due to missing FPS field", func() {
+		g.It("Returns error if configuration unable to pass validation due to missing FPS field", func() {
 			cfg := values{
 				r: func(string) ([]byte, error) {
 					return mockValidationMissingRequiredFPSField, nil
