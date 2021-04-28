@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,7 +39,23 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("Loading config", func() {
-		Context("From valid JSON", func() {
+		It("Passes the expected ENV value for config location into file reader", func() {
+			// set the ENV var to known value
+			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
+
+			cfg := values{
+				r: func(path string) ([]byte, error) {
+					Expect(path).To(Equal("test-config-path"))
+					return []byte{}, nil
+				},
+				um: json.Unmarshal,
+				v:  validate.Validate,
+			}
+
+			cfg.Load()
+		})
+
+		Context("From valid config JSON", func() {
 			It("Should load valid config values", func() {
 				cfg := values{
 					r: func(string) ([]byte, error) {
