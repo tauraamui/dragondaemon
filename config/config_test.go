@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -12,7 +13,9 @@ import (
 
 var _ = Describe("Config", func() {
 	var (
-		mockValidConfigContent []byte
+		mockValidConfigContent                []byte
+		mockInvalidJSONConfigContent          []byte
+		mockValidationMissingRequiredFPSField []byte
 	)
 
 	BeforeEach(func() {
@@ -36,6 +39,19 @@ var _ = Describe("Config", func() {
 					}
 				]
 			}`)
+
+		mockInvalidJSONConfigContent = []byte(`{
+			"debug" true,
+		}`)
+
+		mockValidationMissingRequiredFPSField = []byte(`{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "Test Cam 2"
+				}
+			]
+		}`)
 	})
 
 	Describe("Loading config", func() {
@@ -92,6 +108,53 @@ var _ = Describe("Config", func() {
 						},
 					},
 				}))
+			})
+		})
+
+		Context("From failure to read config data", func() {
+			It("Should handle read error gracefully and return wrapped error", func() {
+				cfg := values{
+					r: func(string) ([]byte, error) {
+						return nil, errors.New("read failure")
+					},
+				}
+
+				err := cfg.Load()
+				Expect(err).ToNot(BeNil())
+				Expect(err).To(MatchError("Unable to read from path test-config-path: read failure"))
+			})
+		})
+
+		Context("From JSON unmarshal failure", func() {
+			It("Should handle unmarshal error gracefully and return wrapped error", func() {
+				cfg := values{
+					r: func(string) ([]byte, error) {
+						return mockInvalidJSONConfigContent, nil
+					},
+					um: json.Unmarshal,
+				}
+
+				err := cfg.Load()
+				Expect(err).ToNot(BeNil())
+				Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
+			})
+		})
+
+		Context("From config validation failure", func() {
+			It("Should handle validation error gracefully and return wrapped error", func() {
+				cfg := values{
+					r: func(string) ([]byte, error) {
+						return mockValidationMissingRequiredFPSField, nil
+					},
+					um: json.Unmarshal,
+					v:  validate.Validate,
+				}
+
+				err := cfg.Load()
+				Expect(err).ToNot(BeNil())
+				Expect(err).To(MatchError(
+					"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
+				))
 			})
 		})
 	})
