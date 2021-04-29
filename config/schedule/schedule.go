@@ -233,7 +233,6 @@ func isTimeOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
 
 // OnOffTimes for loading up on off time entries
 type OnOffTimes struct {
-	Off       *Time `json:"off"`
-	On        *Time `json:"on"`
-	weekIndex int
+	Off *Time `json:"off"`
+	On  *Time `json:"on"`
 }
