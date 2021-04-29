@@ -6,7 +6,6 @@ require (
 	github.com/ReolinkCameraAPI/reolinkapigo v0.0.2
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/franela/goblin v0.0.0-20210113153425-413781f5e6c8
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/google/uuid v1.2.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
