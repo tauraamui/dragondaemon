@@ -56,7 +56,5 @@ var _ = Describe("UserRepo", func() {
 				Expect(err).To(BeNil())
 			})
 		})
-
 	})
-
 })
