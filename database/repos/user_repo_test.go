@@ -45,7 +45,9 @@ var _ = Describe("UserRepo", func() {
 		Context("With existing user", func() {
 			var existingUserUUID string
 			BeforeEach(func() {
-				u := models.User{}
+				u := models.User{
+					Name: "test-user-account",
+				}
 				err := repo.Create(&u)
 				Expect(err).To(BeNil())
 				existingUserUUID = u.UUID
@@ -53,6 +55,11 @@ var _ = Describe("UserRepo", func() {
 
 			It("Should find the existing user by it's UUID", func() {
 				_, err := repo.FindByUUID(existingUserUUID)
+				Expect(err).To(BeNil())
+			})
+
+			It("Should find the existing user by it's name", func() {
+				_, err := repo.FindByName("test-user-account")
 				Expect(err).To(BeNil())
 			})
 		})
