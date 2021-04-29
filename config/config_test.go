@@ -7,11 +7,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
 
 var _ = Describe("Config", func() {
+	existingLoggingLevel := logging.CurrentLoggingLevel
 	var (
 		mockValidConfigContent                []byte
 		mockInvalidJSONConfigContent          []byte
@@ -19,6 +21,8 @@ var _ = Describe("Config", func() {
 	)
 
 	BeforeEach(func() {
+		logging.CurrentLoggingLevel = logging.SilentLevel
+
 		mockValidConfigContent = []byte(`{
 				"debug": true,
 				"secret": "test-secret",
@@ -52,6 +56,10 @@ var _ = Describe("Config", func() {
 				}
 			]
 		}`)
+	})
+
+	AfterEach(func() {
+		logging.CurrentLoggingLevel = existingLoggingLevel
 	})
 
 	Describe("Loading config", func() {
