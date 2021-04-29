@@ -25,7 +25,7 @@ var _ = Describe("Schedule", func() {
 				Off: &offTime,
 			})
 
-			Expect(empty).To(BeTrue())
+			Expect(empty).To(BeFalse())
 			Expect(onOrOff).To(BeTrue())
 		})
 	})
