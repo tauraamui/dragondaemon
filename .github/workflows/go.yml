@@ -7,9 +7,10 @@ on:
     branches: [ main ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
+    container:
+      image: gocv/opencv:4.5.2
     steps:
     - uses: actions/checkout@v2
 
