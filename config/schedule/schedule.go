@@ -228,28 +228,6 @@ func isTimeOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
 		}
 	}
 
-	// if weekday.On != nil && weekday.Off != nil {
-	// 	if t.After(*weekday.On) && t.Before(*weekday.Off) {
-	// 		return false, true
-	// 	}
-
-	// 	if t.After(*weekday.Off) && t.Before(*weekday.On) {
-	// 		return false, false
-	// 	}
-	// }
-
-	// if weekday.On == nil && weekday.Off != nil {
-	// 	if t.After(*weekday.Off) {
-	// 		return false, false
-	// 	}
-	// }
-
-	// if weekday.On != nil && weekday.Off == nil {
-	// 	if t.After(*weekday.On) {
-	// 		return false, true
-	// 	}
-	// }
-
 	return true, false
 }
 
