@@ -152,6 +152,8 @@ github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/tacusci/logging/v2 v2.1.0 h1:yi3tgOnaA6VRb7u9kafJxKzX1a60uiAF+25aW8q1tgM=
 github.com/tacusci/logging/v2 v2.1.0/go.mod h1:Hin7AeOcbJM7H8Crv8OXCugJFFK5Lo3qlhS6qpwDC2o=
+github.com/tacusci/logging/v2 v2.1.1 h1:aVgYcSASKwwyRh/s++yFydbn7h4Q90dxFDIklYco0YY=
+github.com/tacusci/logging/v2 v2.1.1/go.mod h1:Hin7AeOcbJM7H8Crv8OXCugJFFK5Lo3qlhS6qpwDC2o=
 github.com/takama/daemon v1.0.0 h1:XS3VLnFKmqw2Z7fQ/dHRarrVjdir9G3z7BEP8osjizQ=
 github.com/takama/daemon v1.0.0/go.mod h1:gKlhcjbqtBODg5v9H1nj5dU1a2j2GemtuWSNLD5rxOE=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=

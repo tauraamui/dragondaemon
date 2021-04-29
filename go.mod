@@ -13,7 +13,7 @@ require (
 	github.com/onsi/gomega v1.11.0
 	github.com/pkg/errors v0.9.1
 	github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0
-	github.com/tacusci/logging/v2 v2.1.0
+	github.com/tacusci/logging/v2 v2.1.1
 	github.com/takama/daemon v1.0.0
 	gocv.io/x/gocv v0.26.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
