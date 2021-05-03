@@ -23,18 +23,31 @@ const (
 type defaultSettingKey int
 
 const (
-	DATETIMEFORMAT defaultSettingKey = 0x1
+	MAXCLIPAGEINDAYS defaultSettingKey = 0x0
+	DATETIMEFORMAT   defaultSettingKey = 0x1
 )
 
 var (
 	configDir       configdir.ConfigDir
 	defaultSettings = map[defaultSettingKey]string{
-		DATETIMEFORMAT: "2006/01/02 15:04:05.999999999",
+		MAXCLIPAGEINDAYS: "__N_30",
+		DATETIMEFORMAT:   "__S_2006/01/02 15:04:05.999999999",
 	}
 )
 
 func init() {
 	configDir = configdir.New(vendorName, appName)
+}
+
+func WriteDefault() error {
+	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
+	if len(configPath) == 0 {
+		configParentDir := configDir.QueryFolders(configdir.Global)
+		if len(configParentDir) > 0 {
+			logging.Debug("CONFIG LOCATION: %s", configParentDir[0].Path)
+		}
+	}
+	return nil
 }
 
 // Camera configuration
