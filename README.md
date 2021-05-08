@@ -6,7 +6,7 @@ Connect to multiple RTSP based streams (IP cameras) and save timestamped clips t
 
 ![terminalexample](/doc/screenshots/terminal.png)
 
-## Example dd.config file
+## Example config.json file
 ```
 {
     "debug": true,
