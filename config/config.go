@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 
@@ -73,7 +74,10 @@ type ReolinkAdvanced struct {
 
 // Config to keep track of each loaded camera's configuration
 type values struct {
+	of               func(string, int, fs.FileMode) (*os.File, error)
+	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
+	m                func(interface{}) ([]byte, error)
 	um               func([]byte, interface{}) error
 	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
@@ -84,10 +88,48 @@ type values struct {
 
 func New() *values {
 	return &values{
+		of: os.OpenFile,
+		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
+		m:  json.Marshal,
 		um: json.Unmarshal,
 		v:  validate.Validate,
 	}
+}
+
+func (c *values) Save(overwrite bool) error {
+	marshalledConfig, err := c.m(c)
+	if err != nil {
+		return err
+	}
+
+	configPath, err := resolveConfigPath()
+	if err != nil {
+		return err
+	}
+
+	openingFlags := os.O_RDWR | os.O_CREATE
+	// if we're not overwriting make open file return error if file exists
+	if !overwrite {
+		openingFlags |= os.O_EXCL
+	}
+
+	f, err := os.OpenFile(configPath, openingFlags, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	writtenBytesCount, err := f.Write(marshalledConfig)
+	if err != nil {
+		return err
+	}
+
+	if len(marshalledConfig) != writtenBytesCount {
+		return errors.New("unable to write full config JSON to file")
+	}
+
+	return nil
 }
 
 func (c *values) Load() error {
@@ -116,6 +158,10 @@ func (c *values) Load() error {
 	}
 
 	return nil
+}
+
+func (c *values) ResetToDefaults() {
+	c.loadDefaults()
 }
 
 func (c *values) loadDefaults() {
