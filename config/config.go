@@ -30,9 +30,9 @@ const (
 
 var (
 	configDir       configdir.ConfigDir
-	defaultSettings = map[defaultSettingKey]string{
-		MAXCLIPAGEINDAYS: "__N_30",
-		DATETIMEFORMAT:   "__S_2006/01/02 15:04:05.999999999",
+	defaultSettings = map[defaultSettingKey]interface{}{
+		MAXCLIPAGEINDAYS: 30,
+		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
 	}
 )
 
@@ -165,10 +165,13 @@ func (c *values) ResetToDefaults() {
 }
 
 func (c *values) loadDefaults() {
+	if c.MaxClipAgeInDays <= 0 {
+		c.MaxClipAgeInDays = defaultSettings[MAXCLIPAGEINDAYS].(int)
+	}
 	for i := 0; i < len(c.Cameras); i++ {
 		camera := &c.Cameras[i]
 		if len(camera.DateTimeFormat) == 0 {
-			camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT]
+			camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT].(string)
 		}
 	}
 }
