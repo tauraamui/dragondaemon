@@ -43,17 +43,6 @@ func init() {
 	configDir = configdir.New(vendorName, appName)
 }
 
-func WriteDefault() error {
-	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
-	if len(configPath) == 0 {
-		configParentDir := configDir.QueryFolders(configdir.Global)
-		if len(configParentDir) > 0 {
-			logging.Debug("CONFIG LOCATION: %s", configParentDir[0].Path)
-		}
-	}
-	return nil
-}
-
 // Camera configuration
 type Camera struct {
 	Title           string            `json:"title" validate:"empty=false"`

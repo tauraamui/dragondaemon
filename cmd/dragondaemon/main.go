@@ -28,8 +28,18 @@ type Service struct {
 // Setup will setup local DB and ask for root admin credentials
 func (service *Service) Setup() (string, error) {
 	logging.Info("Setting up dragondaemon service...")
-	config.WriteDefault()
-	err := db.Setup()
+
+	configFile := config.New()
+	configFile.ResetToDefaults()
+	err := configFile.Save(false)
+	if err != nil {
+		if !os.IsExist(err) {
+			return "", err
+		}
+		logging.Error(err.Error())
+	}
+
+	err = db.Setup()
 	if err != nil {
 		return "", err
 	}
