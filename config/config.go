@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/shibukawa/configdir"
 	"github.com/tacusci/logging/v2"
@@ -25,13 +26,15 @@ type defaultSettingKey int
 
 const (
 	MAXCLIPAGEINDAYS defaultSettingKey = 0x0
-	DATETIMEFORMAT   defaultSettingKey = 0x1
+	CAMERAS          defaultSettingKey = 0x1
+	DATETIMEFORMAT   defaultSettingKey = 0x2
 )
 
 var (
 	configDir       configdir.ConfigDir
 	defaultSettings = map[defaultSettingKey]interface{}{
 		MAXCLIPAGEINDAYS: 30,
+		CAMERAS:          []Camera{},
 		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
 	}
 )
@@ -114,7 +117,7 @@ func (c *values) Save(overwrite bool) error {
 		openingFlags |= os.O_EXCL
 	}
 
-	f, err := os.OpenFile(configPath, openingFlags, 0666)
+	f, err := c.of(configPath, openingFlags, 0666)
 	if err != nil {
 		return err
 	}
@@ -150,7 +153,7 @@ func (c *values) Load() error {
 		return errors.Wrap(err, "Parsing configuration file error")
 	}
 
-	c.loadDefaults()
+	c.loadDefaultCameraDateLabelFormats()
 
 	err = c.v(c)
 	if err != nil {
@@ -164,16 +167,23 @@ func (c *values) ResetToDefaults() {
 	c.loadDefaults()
 }
 
-func (c *values) loadDefaults() {
-	if c.MaxClipAgeInDays <= 0 {
-		c.MaxClipAgeInDays = defaultSettings[MAXCLIPAGEINDAYS].(int)
-	}
+func (c *values) loadDefaultCameraDateLabelFormats() {
+	wg := sync.WaitGroup{}
 	for i := 0; i < len(c.Cameras); i++ {
-		camera := &c.Cameras[i]
-		if len(camera.DateTimeFormat) == 0 {
-			camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT].(string)
-		}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, camera *Camera) {
+			defer wg.Done()
+			if len(camera.DateTimeFormat) == 0 {
+				camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT].(string)
+			}
+		}(&wg, &c.Cameras[i])
 	}
+	wg.Wait()
+}
+
+func (c *values) loadDefaults() {
+	c.MaxClipAgeInDays = defaultSettings[MAXCLIPAGEINDAYS].(int)
+	c.Cameras = defaultSettings[CAMERAS].([]Camera)
 }
 
 func resolveConfigPath() (string, error) {
