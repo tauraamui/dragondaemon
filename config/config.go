@@ -89,17 +89,18 @@ func New() *values {
 	}
 }
 
-func (c *values) Save(overwrite bool) error {
+func (c *values) Save(overwrite bool) (string, error) {
 	marshalledConfig, err := c.m(c)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	configPath, err := resolveConfigPath()
-	if err != nil {
-		return err
+	configParentDirs := configDir.QueryFolders(configdir.Global)
+	if len(configParentDirs) != 1 {
+		return "", errors.New("Unable to aquire config parent dir path")
 	}
 
+	configPath := fmt.Sprintf("%s%c%s", configParentDirs[0].Path, os.PathSeparator, configFileName)
 	openingFlags := os.O_RDWR | os.O_CREATE
 	// if we're not overwriting make open file return error if file exists
 	if !overwrite {
@@ -108,20 +109,20 @@ func (c *values) Save(overwrite bool) error {
 
 	f, err := c.of(configPath, openingFlags, 0666)
 	if err != nil {
-		return err
+		return configPath, err
 	}
 	defer f.Close()
 
 	writtenBytesCount, err := f.Write(marshalledConfig)
 	if err != nil {
-		return err
+		return configPath, err
 	}
 
 	if len(marshalledConfig) != writtenBytesCount {
-		return errors.New("unable to write full config JSON to file")
+		return configPath, errors.New("unable to write full config JSON to file")
 	}
 
-	return nil
+	return configPath, nil
 }
 
 func (c *values) Load() error {
