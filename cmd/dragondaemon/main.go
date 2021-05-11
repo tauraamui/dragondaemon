@@ -31,12 +31,14 @@ func (service *Service) Setup() (string, error) {
 
 	configFile := config.New()
 	configFile.ResetToDefaults()
-	err := configFile.Save(false)
+	configPath, err := configFile.Save(false)
 	if err != nil {
 		if !os.IsExist(err) {
 			return "", err
 		}
-		logging.Error(err.Error())
+		logging.Info("Config file already exists at: %s", configPath)
+	} else {
+		logging.Info("Created default config at: %s", configPath)
 	}
 
 	err = db.Setup()
