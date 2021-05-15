@@ -69,7 +69,7 @@ type values struct {
 	of               func(string, int, fs.FileMode) (*os.File, error)
 	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
-	m                func(interface{}) ([]byte, error)
+	mi               func(interface{}, string, string) ([]byte, error)
 	um               func([]byte, interface{}) error
 	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
@@ -83,14 +83,14 @@ func New() *values {
 		of: os.OpenFile,
 		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
-		m:  json.Marshal,
+		mi: json.MarshalIndent,
 		um: json.Unmarshal,
 		v:  validate.Validate,
 	}
 }
 
 func (c *values) Save(overwrite bool) (string, error) {
-	marshalledConfig, err := c.m(c)
+	marshalledConfig, err := c.mi(c, "", "  ")
 	if err != nil {
 		return "", err
 	}
