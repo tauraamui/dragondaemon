@@ -1,6 +1,6 @@
 module github.com/tauraamui/dragondaemon
 
-go 1.13
+go 1.16
 
 require (
 	github.com/ReolinkCameraAPI/reolinkapigo v0.0.2
