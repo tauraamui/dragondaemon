@@ -3,8 +3,10 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/shibukawa/configdir"
 	"github.com/tacusci/logging/v2"
@@ -23,13 +25,17 @@ const (
 type defaultSettingKey int
 
 const (
-	DATETIMEFORMAT defaultSettingKey = 0x1
+	MAXCLIPAGEINDAYS defaultSettingKey = 0x0
+	CAMERAS          defaultSettingKey = 0x1
+	DATETIMEFORMAT   defaultSettingKey = 0x2
 )
 
 var (
 	configDir       configdir.ConfigDir
-	defaultSettings = map[defaultSettingKey]string{
-		DATETIMEFORMAT: "2006/01/02 15:04:05.999999999",
+	defaultSettings = map[defaultSettingKey]interface{}{
+		MAXCLIPAGEINDAYS: 30,
+		CAMERAS:          []Camera{},
+		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
 	}
 )
 
@@ -60,7 +66,10 @@ type ReolinkAdvanced struct {
 
 // Config to keep track of each loaded camera's configuration
 type values struct {
+	of               func(string, int, fs.FileMode) (*os.File, error)
+	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
+	mi               func(interface{}, string, string) ([]byte, error)
 	um               func([]byte, interface{}) error
 	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
@@ -71,10 +80,49 @@ type values struct {
 
 func New() *values {
 	return &values{
+		of: os.OpenFile,
+		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
+		mi: json.MarshalIndent,
 		um: json.Unmarshal,
 		v:  validate.Validate,
 	}
+}
+
+func (c *values) Save(overwrite bool) (string, error) {
+	marshalledConfig, err := c.mi(c, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
+	configParentDirs := configDir.QueryFolders(configdir.Global)
+	if len(configParentDirs) != 1 {
+		return "", errors.New("Unable to aquire config parent dir path")
+	}
+
+	configPath := fmt.Sprintf("%s%c%s", configParentDirs[0].Path, os.PathSeparator, configFileName)
+	openingFlags := os.O_RDWR | os.O_CREATE
+	// if we're not overwriting make open file return error if file exists
+	if !overwrite {
+		openingFlags |= os.O_EXCL
+	}
+
+	f, err := c.of(configPath, openingFlags, 0666)
+	if err != nil {
+		return configPath, err
+	}
+	defer f.Close()
+
+	writtenBytesCount, err := f.Write(marshalledConfig)
+	if err != nil {
+		return configPath, err
+	}
+
+	if len(marshalledConfig) != writtenBytesCount {
+		return configPath, errors.New("unable to write full config JSON to file")
+	}
+
+	return configPath, nil
 }
 
 func (c *values) Load() error {
@@ -95,7 +143,7 @@ func (c *values) Load() error {
 		return errors.Wrap(err, "Parsing configuration file error")
 	}
 
-	c.loadDefaults()
+	c.loadDefaultCameraDateLabelFormats()
 
 	err = c.v(c)
 	if err != nil {
@@ -105,13 +153,27 @@ func (c *values) Load() error {
 	return nil
 }
 
-func (c *values) loadDefaults() {
+func (c *values) ResetToDefaults() {
+	c.loadDefaults()
+}
+
+func (c *values) loadDefaultCameraDateLabelFormats() {
+	wg := sync.WaitGroup{}
 	for i := 0; i < len(c.Cameras); i++ {
-		camera := &c.Cameras[i]
-		if len(camera.DateTimeFormat) == 0 {
-			camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT]
-		}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, camera *Camera) {
+			defer wg.Done()
+			if len(camera.DateTimeFormat) == 0 {
+				camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT].(string)
+			}
+		}(&wg, &c.Cameras[i])
 	}
+	wg.Wait()
+}
+
+func (c *values) loadDefaults() {
+	c.MaxClipAgeInDays = defaultSettings[MAXCLIPAGEINDAYS].(int)
+	c.Cameras = defaultSettings[CAMERAS].([]Camera)
 }
 
 func resolveConfigPath() (string, error) {
