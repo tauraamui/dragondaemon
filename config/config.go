@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/shibukawa/configdir"
@@ -189,13 +190,10 @@ func resolveConfigPath(uc func() (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
 	}
-	return fmt.Sprintf(
-		"%s%c%s%c%s%c%s",
+
+	return filepath.Join(
 		configParentDir,
-		os.PathSeparator,
 		vendorName,
-		os.PathSeparator,
 		appName,
-		os.PathSeparator,
 		configFileName), nil
 }
