@@ -66,6 +66,7 @@ type ReolinkAdvanced struct {
 
 // Config to keep track of each loaded camera's configuration
 type values struct {
+	uc               func() (string, error)
 	of               func(string, int, fs.FileMode) (*os.File, error)
 	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
@@ -80,6 +81,7 @@ type values struct {
 
 func New() *values {
 	return &values{
+		uc: os.UserConfigDir,
 		of: os.OpenFile,
 		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
@@ -90,6 +92,7 @@ func New() *values {
 }
 
 func (c *values) Save(overwrite bool) (string, error) {
+	// TODO(tauraamui): no point in doing value marshaling if no file to write to
 	marshalledConfig, err := c.mi(c, "", "  ")
 	if err != nil {
 		return "", err
@@ -126,7 +129,7 @@ func (c *values) Save(overwrite bool) (string, error) {
 }
 
 func (c *values) Load() error {
-	configPath, err := resolveConfigPath()
+	configPath, err := resolveConfigPath(c.uc)
 	if err != nil {
 		return err
 	}
@@ -176,14 +179,23 @@ func (c *values) loadDefaults() {
 	c.Cameras = defaultSettings[CAMERAS].([]Camera)
 }
 
-func resolveConfigPath() (string, error) {
+func resolveConfigPath(uc func() (string, error)) (string, error) {
 	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
-	if len(configPath) == 0 {
-		configParentDir := configDir.QueryFolderContainsFile(configFileName)
-		if configParentDir == nil {
-			return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
-		}
-		return fmt.Sprintf("%s%c%s", configParentDir.Path, os.PathSeparator, configFileName), nil
+	if len(configPath) > 0 {
+		return configPath, nil
 	}
-	return configPath, nil
+
+	configParentDir, err := uc()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
+	}
+	return fmt.Sprintf(
+		"%s%c%s%c%s%c%s",
+		configParentDir,
+		os.PathSeparator,
+		vendorName,
+		os.PathSeparator,
+		appName,
+		os.PathSeparator,
+		configFileName), nil
 }
