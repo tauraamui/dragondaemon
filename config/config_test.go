@@ -1,11 +1,11 @@
 package config
 
 import (
-	"errors"
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config/schedule"
 )
@@ -17,6 +17,10 @@ var _ = Describe("Config", func() {
 		mockInvalidJSONConfigContent          []byte
 		mockValidationMissingRequiredFPSField []byte
 	)
+
+	testCfg := values{
+		fs: afero.NewMemMapFs(),
+	}
 
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
@@ -69,46 +73,39 @@ var _ = Describe("Config", func() {
 				os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path-root/tacusci/dragondaemon/config.json")
 				defer os.Unsetenv("DRAGON_DAEMON_CONFIG")
 
-				cfg := values{
-					r: func(path string) ([]byte, error) {
-						Expect(path).To(Equal("test-config-path-root/tacusci/dragondaemon/config.json"))
-						return []byte{}, nil
-					},
+				testCfg.r = func(path string) ([]byte, error) {
+					Expect(path).To(Equal("test-config-path-root/tacusci/dragondaemon/config.json"))
+					return []byte{}, nil
 				}
 
-				cfg.Load()
+				testCfg.Load()
 			})
 
 			It("Passes the path from user config location into file reader", func() {
-				cfg := values{
-					uc: func() (string, error) {
-						return "user-config-path-root", nil
-					},
-					r: func(path string) ([]byte, error) {
-						Expect(path).To(Equal("user-config-path-root/tacusci/dragondaemon/config.json"))
-						return []byte{}, nil
-					},
+				testCfg.uc = func() (string, error) {
+					return "user-config-path-root", nil
+				}
+				testCfg.r = func(path string) ([]byte, error) {
+					Expect(path).To(Equal("user-config-path-root/tacusci/dragondaemon/config.json"))
+					return []byte{}, nil
 				}
 
-				cfg.Load()
+				testCfg.Load()
 			})
 
 			Context("From valid config JSON", func() {
 				It("Should load valid config values", func() {
-					cfg := values{
-						uc: func() (string, error) {
-							return "user-config-path-root", nil
-						},
-						r: func(string) ([]byte, error) {
-							return mockValidConfigContent, nil
-						},
+					afero.WriteFile(testCfg.fs, "test/tacusci/dragondaemon/config.json", mockValidConfigContent, 0666)
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					testCfg.uc = func() (string, error) {
+						return "test", nil
 					}
 
-					err := cfg.Load()
+					err := testCfg.Load()
 					Expect(err).To(BeNil())
-					Expect(cfg.Secret).To(Equal("test-secret"))
-					Expect(cfg.MaxClipAgeInDays).To(Equal(7))
-					Expect(cfg.Cameras).To(Equal([]Camera{
+					Expect(testCfg.Secret).To(Equal("test-secret"))
+					Expect(testCfg.MaxClipAgeInDays).To(Equal(7))
+					Expect(testCfg.Cameras).To(Equal([]Camera{
 						{
 							Title:          "Test Cam 1",
 							Address:        "camera-network-addr",
@@ -136,33 +133,30 @@ var _ = Describe("Config", func() {
 
 			Context("From failure to read config data", func() {
 				It("Should handle read error gracefully and return wrapped error", func() {
-					cfg := values{
-						uc: func() (string, error) {
-							return "user-config-path-root", nil
-						},
-						r: func(string) ([]byte, error) {
-							return nil, errors.New("read failure")
-						},
+					testCfg.uc = func() (string, error) {
+						return "test", nil
 					}
 
-					err := cfg.Load()
+					err := testCfg.Load()
 					Expect(err).ToNot(BeNil())
-					Expect(err.Error()).To(Equal("Unable to read from path user-config-path-root/tacusci/dragondaemon/config.json: read failure"))
+					Expect(err.Error()).To(Equal("Unable to read from path test/tacusci/dragondaemon/config.json: open test/tacusci/dragondaemon/config.json: file does not exist"))
 				})
 			})
 
 			Context("From JSON unmarshal failure", func() {
 				It("Should handle unmarshal error gracefully and return wrapped error", func() {
-					cfg := values{
-						uc: func() (string, error) {
-							return "user-config-path-root", nil
-						},
-						r: func(string) ([]byte, error) {
-							return mockInvalidJSONConfigContent, nil
-						},
+					afero.WriteFile(
+						testCfg.fs,
+						"test/tacusci/dragondaemon/config.json",
+						mockInvalidJSONConfigContent,
+						0666,
+					)
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					testCfg.uc = func() (string, error) {
+						return "test", nil
 					}
 
-					err := cfg.Load()
+					err := testCfg.Load()
 					Expect(err).ToNot(BeNil())
 					Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
 				})
@@ -170,16 +164,18 @@ var _ = Describe("Config", func() {
 
 			Context("From config validation failure", func() {
 				It("Should handle validation error gracefully and return wrapped error", func() {
-					cfg := values{
-						uc: func() (string, error) {
-							return "user-config-path-root", nil
-						},
-						r: func(string) ([]byte, error) {
-							return mockValidationMissingRequiredFPSField, nil
-						},
+					afero.WriteFile(
+						testCfg.fs,
+						"test/tacusci/dragondaemon/config.json",
+						mockValidationMissingRequiredFPSField,
+						0666,
+					)
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					testCfg.uc = func() (string, error) {
+						return "test", nil
 					}
 
-					err := cfg.Load()
+					err := testCfg.Load()
 					Expect(err).ToNot(BeNil())
 					Expect(err).To(MatchError(
 						"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
