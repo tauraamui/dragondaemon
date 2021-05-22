@@ -71,7 +71,6 @@ type values struct {
 	of               func(string, int, fs.FileMode) (*os.File, error)
 	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
-	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
 	Secret           string   `json:"secret"`
 	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
@@ -84,7 +83,6 @@ func New() *values {
 		of: os.OpenFile,
 		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
-		v:  validate.Validate,
 	}
 }
 
@@ -145,7 +143,7 @@ func (c *values) Load() error {
 
 	c.loadDefaultCameraDateLabelFormats()
 
-	err = c.v(c)
+	err = validate.Validate(c)
 	if err != nil {
 		return errors.Wrap(err, "Unable to validate configuration")
 	}

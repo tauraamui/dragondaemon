@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config/schedule"
-	"gopkg.in/dealancer/validate.v2"
 )
 
 var _ = Describe("Config", func() {
@@ -71,7 +70,6 @@ var _ = Describe("Config", func() {
 					Expect(path).To(Equal("test-config-path"))
 					return []byte{}, nil
 				},
-				v: validate.Validate,
 			}
 
 			cfg.Load()
@@ -83,7 +81,6 @@ var _ = Describe("Config", func() {
 					r: func(string) ([]byte, error) {
 						return mockValidConfigContent, nil
 					},
-					v: validate.Validate,
 				}
 
 				err := cfg.Load()
@@ -150,7 +147,6 @@ var _ = Describe("Config", func() {
 					r: func(string) ([]byte, error) {
 						return mockValidationMissingRequiredFPSField, nil
 					},
-					v: validate.Validate,
 				}
 
 				err := cfg.Load()
