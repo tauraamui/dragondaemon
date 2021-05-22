@@ -18,6 +18,10 @@ var _ = Describe("Config", func() {
 		mockValidationMissingRequiredFPSField []byte
 	)
 
+	AfterEach(func() {
+		logging.CurrentLoggingLevel = existingLoggingLevel
+	})
+
 	Describe("Loading into struct", func() {
 		BeforeEach(func() {
 			logging.CurrentLoggingLevel = logging.SilentLevel
@@ -44,21 +48,17 @@ var _ = Describe("Config", func() {
 			}`)
 
 			mockInvalidJSONConfigContent = []byte(`{
-			"debug" true,
-		}`)
+				"debug" true,
+			}`)
 
 			mockValidationMissingRequiredFPSField = []byte(`{
-			"max_clip_age_in_days": 1,
-			"cameras": [
-				{
-					"title": "Test Cam 2"
-				}
-			]
-		}`)
-		})
-
-		AfterEach(func() {
-			logging.CurrentLoggingLevel = existingLoggingLevel
+				"max_clip_age_in_days": 1,
+				"cameras": [
+					{
+						"title": "Test Cam 2"
+					}
+				]
+			}`)
 		})
 
 		Describe("Loading config", func() {
