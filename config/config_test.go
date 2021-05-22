@@ -11,9 +11,8 @@ import (
 var _ = Describe("Config", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 	var (
-		mockValidConfigContent                []byte
-		mockInvalidJSONConfigContent          []byte
-		mockValidationMissingRequiredFPSField []byte
+		mockValidConfigContent       []byte
+		mockInvalidJSONConfigContent []byte
 	)
 
 	testCfg := values{
