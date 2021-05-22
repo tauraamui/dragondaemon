@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/shibukawa/configdir"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 
 	"github.com/pkg/errors"
@@ -67,8 +68,8 @@ type ReolinkAdvanced struct {
 
 // Config to keep track of each loaded camera's configuration
 type values struct {
+	fs               afero.Fs
 	uc               func() (string, error)
-	of               func(string, int, fs.FileMode) (*os.File, error)
 	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
 	Debug            bool     `json:"debug"`
@@ -79,8 +80,8 @@ type values struct {
 
 func New() *values {
 	return &values{
+		fs: afero.NewOsFs(),
 		uc: os.UserConfigDir,
-		of: os.OpenFile,
 		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
 	}
@@ -104,7 +105,7 @@ func (c *values) Save(overwrite bool) (string, error) {
 		openingFlags |= os.O_EXCL
 	}
 
-	f, err := c.of(configPath, openingFlags, 0666)
+	f, err := c.fs.OpenFile(configPath, openingFlags, 0666)
 	if err != nil {
 		return configPath, err
 	}
