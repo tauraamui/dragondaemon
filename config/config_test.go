@@ -160,27 +160,6 @@ var _ = Describe("Config", func() {
 					Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
 				})
 			})
-
-			Context("From config validation failure", func() {
-				It("Should handle validation error gracefully and return wrapped error", func() {
-					afero.WriteFile(
-						testCfg.fs,
-						"test/tacusci/dragondaemon/config.json",
-						mockValidationMissingRequiredFPSField,
-						0666,
-					)
-					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
-					testCfg.uc = func() (string, error) {
-						return "test", nil
-					}
-
-					err := testCfg.Load()
-					Expect(err).ToNot(BeNil())
-					Expect(err).To(MatchError(
-						"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
-					))
-				})
-			})
 		})
 	})
 })
