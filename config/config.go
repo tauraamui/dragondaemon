@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/shibukawa/configdir"
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 
@@ -33,17 +32,12 @@ const (
 )
 
 var (
-	configDir       configdir.ConfigDir
 	defaultSettings = map[defaultSettingKey]interface{}{
 		MAXCLIPAGEINDAYS: 30,
 		CAMERAS:          []Camera{},
 		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
 	}
 )
-
-func init() {
-	configDir = configdir.New(vendorName, appName)
-}
 
 // Camera configuration
 type Camera struct {
@@ -131,7 +125,7 @@ func (c *values) Load() error {
 
 	logging.Info("Resolved config file location: %s", configPath)
 
-	file, err := c.r(configPath)
+	file, err := afero.ReadFile(c.fs, configPath)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Unable to read from path %s", configPath))
 	}
