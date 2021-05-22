@@ -65,7 +65,6 @@ type values struct {
 	fs               afero.Fs
 	uc               func() (string, error)
 	w                func(string, []byte, fs.FileMode) error
-	r                func(string) ([]byte, error)
 	Debug            bool     `json:"debug"`
 	Secret           string   `json:"secret"`
 	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
@@ -77,7 +76,6 @@ func New() *values {
 		fs: afero.NewOsFs(),
 		uc: os.UserConfigDir,
 		w:  ioutil.WriteFile,
-		r:  ioutil.ReadFile,
 	}
 }
 
