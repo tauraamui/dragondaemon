@@ -18,14 +18,16 @@ var _ = Describe("Config", func() {
 		mockValidationMissingRequiredFPSField []byte
 	)
 
+	BeforeEach(func() {
+		logging.CurrentLoggingLevel = logging.SilentLevel
+	})
+
 	AfterEach(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
 	})
 
 	Describe("Loading into struct", func() {
 		BeforeEach(func() {
-			logging.CurrentLoggingLevel = logging.SilentLevel
-
 			mockValidConfigContent = []byte(`{
 				"debug": true,
 				"secret": "test-secret",
