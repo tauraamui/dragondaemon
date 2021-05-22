@@ -87,18 +87,17 @@ func New() *values {
 }
 
 func (c *values) Save(overwrite bool) (string, error) {
+	configPath, err := resolveConfigPath(c.uc)
+	if err != nil {
+		return "", err
+	}
+
 	// TODO(tauraamui): no point in doing value marshaling if no file to write to
 	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return "", err
 	}
 
-	configParentDirs := configDir.QueryFolders(configdir.Global)
-	if len(configParentDirs) != 1 {
-		return "", errors.New("Unable to aquire config parent dir path")
-	}
-
-	configPath := fmt.Sprintf("%s%c%s", configParentDirs[0].Path, os.PathSeparator, configFileName)
 	openingFlags := os.O_RDWR | os.O_CREATE
 	// if we're not overwriting make open file return error if file exists
 	if !overwrite {
