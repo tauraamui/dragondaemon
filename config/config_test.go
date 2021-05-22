@@ -53,15 +53,6 @@ var _ = Describe("Config", func() {
 			mockInvalidJSONConfigContent = []byte(`{
 				"debug" true,
 			}`)
-
-			mockValidationMissingRequiredFPSField = []byte(`{
-				"max_clip_age_in_days": 1,
-				"cameras": [
-					{
-						"title": "Test Cam 2"
-					}
-				]
-			}`)
 		})
 
 		Describe("Loading config", func() {
