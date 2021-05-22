@@ -71,8 +71,6 @@ type values struct {
 	of               func(string, int, fs.FileMode) (*os.File, error)
 	w                func(string, []byte, fs.FileMode) error
 	r                func(string) ([]byte, error)
-	mi               func(interface{}, string, string) ([]byte, error)
-	um               func([]byte, interface{}) error
 	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
 	Secret           string   `json:"secret"`
@@ -86,15 +84,13 @@ func New() *values {
 		of: os.OpenFile,
 		w:  ioutil.WriteFile,
 		r:  ioutil.ReadFile,
-		mi: json.MarshalIndent,
-		um: json.Unmarshal,
 		v:  validate.Validate,
 	}
 }
 
 func (c *values) Save(overwrite bool) (string, error) {
 	// TODO(tauraamui): no point in doing value marshaling if no file to write to
-	marshalledConfig, err := c.mi(c, "", "  ")
+	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +138,7 @@ func (c *values) Load() error {
 		return errors.Wrap(err, fmt.Sprintf("Unable to read from path %s", configPath))
 	}
 
-	err = c.um(file, c)
+	err = json.Unmarshal(file, c)
 	if err != nil {
 		return errors.Wrap(err, "Parsing configuration file error")
 	}

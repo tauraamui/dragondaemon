@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 
@@ -72,8 +71,7 @@ var _ = Describe("Config", func() {
 					Expect(path).To(Equal("test-config-path"))
 					return []byte{}, nil
 				},
-				um: json.Unmarshal,
-				v:  validate.Validate,
+				v: validate.Validate,
 			}
 
 			cfg.Load()
@@ -85,8 +83,7 @@ var _ = Describe("Config", func() {
 					r: func(string) ([]byte, error) {
 						return mockValidConfigContent, nil
 					},
-					um: json.Unmarshal,
-					v:  validate.Validate,
+					v: validate.Validate,
 				}
 
 				err := cfg.Load()
@@ -139,7 +136,6 @@ var _ = Describe("Config", func() {
 					r: func(string) ([]byte, error) {
 						return mockInvalidJSONConfigContent, nil
 					},
-					um: json.Unmarshal,
 				}
 
 				err := cfg.Load()
@@ -154,8 +150,7 @@ var _ = Describe("Config", func() {
 					r: func(string) ([]byte, error) {
 						return mockValidationMissingRequiredFPSField, nil
 					},
-					um: json.Unmarshal,
-					v:  validate.Validate,
+					v: validate.Validate,
 				}
 
 				err := cfg.Load()
