@@ -63,11 +63,26 @@ var _ = Describe("Config", func() {
 	Describe("Loading config", func() {
 		It("Passes the expected ENV value for config location into file reader", func() {
 			// set the ENV var to known value
-			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path")
+			os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path-root/tacusci/dragondaemon/config.json")
+			defer os.Unsetenv("DRAGON_DAEMON_CONFIG")
 
 			cfg := values{
 				r: func(path string) ([]byte, error) {
-					Expect(path).To(Equal("test-config-path"))
+					Expect(path).To(Equal("test-config-path-root/tacusci/dragondaemon/config.json"))
+					return []byte{}, nil
+				},
+			}
+
+			cfg.Load()
+		})
+
+		It("Passes the path from user config location into file reader", func() {
+			cfg := values{
+				uc: func() (string, error) {
+					return "user-config-path-root", nil
+				},
+				r: func(path string) ([]byte, error) {
+					Expect(path).To(Equal("user-config-path-root/tacusci/dragondaemon/config.json"))
 					return []byte{}, nil
 				},
 			}
@@ -78,6 +93,9 @@ var _ = Describe("Config", func() {
 		Context("From valid config JSON", func() {
 			It("Should load valid config values", func() {
 				cfg := values{
+					uc: func() (string, error) {
+						return "user-config-path-root", nil
+					},
 					r: func(string) ([]byte, error) {
 						return mockValidConfigContent, nil
 					},
@@ -116,6 +134,9 @@ var _ = Describe("Config", func() {
 		Context("From failure to read config data", func() {
 			It("Should handle read error gracefully and return wrapped error", func() {
 				cfg := values{
+					uc: func() (string, error) {
+						return "user-config-path-root", nil
+					},
 					r: func(string) ([]byte, error) {
 						return nil, errors.New("read failure")
 					},
@@ -123,13 +144,16 @@ var _ = Describe("Config", func() {
 
 				err := cfg.Load()
 				Expect(err).ToNot(BeNil())
-				Expect(err).To(MatchError("Unable to read from path test-config-path: read failure"))
+				Expect(err.Error()).To(Equal("Unable to read from path user-config-path-root/tacusci/dragondaemon/config.json: read failure"))
 			})
 		})
 
 		Context("From JSON unmarshal failure", func() {
 			It("Should handle unmarshal error gracefully and return wrapped error", func() {
 				cfg := values{
+					uc: func() (string, error) {
+						return "user-config-path-root", nil
+					},
 					r: func(string) ([]byte, error) {
 						return mockInvalidJSONConfigContent, nil
 					},
@@ -144,6 +168,9 @@ var _ = Describe("Config", func() {
 		Context("From config validation failure", func() {
 			It("Should handle validation error gracefully and return wrapped error", func() {
 				cfg := values{
+					uc: func() (string, error) {
+						return "user-config-path-root", nil
+					},
 					r: func(string) ([]byte, error) {
 						return mockValidationMissingRequiredFPSField, nil
 					},
