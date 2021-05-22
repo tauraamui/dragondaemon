@@ -6,9 +6,10 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 
-	"github.com/shibukawa/configdir"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 
 	"github.com/pkg/errors"
@@ -31,17 +32,12 @@ const (
 )
 
 var (
-	configDir       configdir.ConfigDir
 	defaultSettings = map[defaultSettingKey]interface{}{
 		MAXCLIPAGEINDAYS: 30,
 		CAMERAS:          []Camera{},
 		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
 	}
 )
-
-func init() {
-	configDir = configdir.New(vendorName, appName)
-}
 
 // Camera configuration
 type Camera struct {
@@ -66,12 +62,9 @@ type ReolinkAdvanced struct {
 
 // Config to keep track of each loaded camera's configuration
 type values struct {
-	of               func(string, int, fs.FileMode) (*os.File, error)
+	fs               afero.Fs
+	uc               func() (string, error)
 	w                func(string, []byte, fs.FileMode) error
-	r                func(string) ([]byte, error)
-	mi               func(interface{}, string, string) ([]byte, error)
-	um               func([]byte, interface{}) error
-	v                func(interface{}) error
 	Debug            bool     `json:"debug"`
 	Secret           string   `json:"secret"`
 	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
@@ -80,34 +73,31 @@ type values struct {
 
 func New() *values {
 	return &values{
-		of: os.OpenFile,
+		fs: afero.NewOsFs(),
+		uc: os.UserConfigDir,
 		w:  ioutil.WriteFile,
-		r:  ioutil.ReadFile,
-		mi: json.MarshalIndent,
-		um: json.Unmarshal,
-		v:  validate.Validate,
 	}
 }
 
 func (c *values) Save(overwrite bool) (string, error) {
-	marshalledConfig, err := c.mi(c, "", "  ")
+	configPath, err := resolveConfigPath(c.uc)
 	if err != nil {
 		return "", err
 	}
 
-	configParentDirs := configDir.QueryFolders(configdir.Global)
-	if len(configParentDirs) != 1 {
-		return "", errors.New("Unable to aquire config parent dir path")
+	// TODO(tauraamui): no point in doing value marshaling if no file to write to
+	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return "", err
 	}
 
-	configPath := fmt.Sprintf("%s%c%s", configParentDirs[0].Path, os.PathSeparator, configFileName)
 	openingFlags := os.O_RDWR | os.O_CREATE
 	// if we're not overwriting make open file return error if file exists
 	if !overwrite {
 		openingFlags |= os.O_EXCL
 	}
 
-	f, err := c.of(configPath, openingFlags, 0666)
+	f, err := c.fs.OpenFile(configPath, openingFlags, 0666)
 	if err != nil {
 		return configPath, err
 	}
@@ -126,26 +116,26 @@ func (c *values) Save(overwrite bool) (string, error) {
 }
 
 func (c *values) Load() error {
-	configPath, err := resolveConfigPath()
+	configPath, err := resolveConfigPath(c.uc)
 	if err != nil {
 		return err
 	}
 
 	logging.Info("Resolved config file location: %s", configPath)
 
-	file, err := c.r(configPath)
+	file, err := afero.ReadFile(c.fs, configPath)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Unable to read from path %s", configPath))
 	}
 
-	err = c.um(file, c)
+	err = json.Unmarshal(file, c)
 	if err != nil {
 		return errors.Wrap(err, "Parsing configuration file error")
 	}
 
 	c.loadDefaultCameraDateLabelFormats()
 
-	err = c.v(c)
+	err = validate.Validate(c)
 	if err != nil {
 		return errors.Wrap(err, "Unable to validate configuration")
 	}
@@ -176,14 +166,20 @@ func (c *values) loadDefaults() {
 	c.Cameras = defaultSettings[CAMERAS].([]Camera)
 }
 
-func resolveConfigPath() (string, error) {
+func resolveConfigPath(uc func() (string, error)) (string, error) {
 	configPath := os.Getenv("DRAGON_DAEMON_CONFIG")
-	if len(configPath) == 0 {
-		configParentDir := configDir.QueryFolderContainsFile(configFileName)
-		if configParentDir == nil {
-			return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
-		}
-		return fmt.Sprintf("%s%c%s", configParentDir.Path, os.PathSeparator, configFileName), nil
+	if len(configPath) > 0 {
+		return configPath, nil
 	}
-	return configPath, nil
+
+	configParentDir, err := uc()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
+	}
+
+	return filepath.Join(
+		configParentDir,
+		vendorName,
+		appName,
+		configFileName), nil
 }
