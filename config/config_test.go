@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
@@ -56,31 +58,21 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("Loading config", func() {
-			// TODO: replace the following two tests with unit tests for resolveConfigPath
-			// It("Passes the expected ENV value for config location into file reader", func() {
-			// 	// set the ENV var to known value
-			// 	os.Setenv("DRAGON_DAEMON_CONFIG", "test-config-path-root/tacusci/dragondaemon/config.json")
-			// 	defer os.Unsetenv("DRAGON_DAEMON_CONFIG")
+			Context("resolveConfigPath", func() {
+				It("Resolves the config path from ENV variable", func() {
+					os.Setenv("DRAGON_DAEMON_CONFIG", "test/tacusci/dragondaemon/config.json")
+					defer os.Unsetenv("DRAGON_DAEMON_CONFIG")
+					Expect(resolveConfigPath(func() (string, error) {
+						return "unused-test-config-path-root", nil
+					})).To(Equal("test/tacusci/dragondaemon/config.json"))
+				})
 
-			// 	testCfg.r = func(path string) ([]byte, error) {
-			// 		Expect(path).To(Equal("test-config-path-root/tacusci/dragondaemon/config.json"))
-			// 		return []byte{}, nil
-			// 	}
-
-			// 	testCfg.Load()
-			// })
-
-			// It("Passes the path from user config location into file reader", func() {
-			// 	testCfg.uc = func() (string, error) {
-			// 		return "user-config-path-root", nil
-			// 	}
-			// 	testCfg.r = func(path string) ([]byte, error) {
-			// 		Expect(path).To(Equal("user-config-path-root/tacusci/dragondaemon/config.json"))
-			// 		return []byte{}, nil
-			// 	}
-
-			// 	testCfg.Load()
-			// })
+				It("Resolves the config path from user config location", func() {
+					Expect(resolveConfigPath(func() (string, error) {
+						return "test", nil
+					})).To(Equal("test/tacusci/dragondaemon/config.json"))
+				})
+			})
 
 			Context("From valid config JSON", func() {
 				It("Should load valid config values", func() {
