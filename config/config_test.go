@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -13,16 +14,18 @@ import (
 var _ = Describe("Config", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 	var (
-		mockValidConfigContent       []byte
-		mockInvalidJSONConfigContent []byte
+		mockValidConfigContent                []byte
+		mockInvalidJSONConfigContent          []byte
+		mockValidationMissingRequiredFPSField []byte
 	)
 
-	testCfg := values{
-		fs: afero.NewMemMapFs(),
-	}
+	var testCfg values
 
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
+		testCfg = values{
+			fs: afero.NewMemMapFs(),
+		}
 	})
 
 	AfterEach(func() {
@@ -54,6 +57,15 @@ var _ = Describe("Config", func() {
 
 			mockInvalidJSONConfigContent = []byte(`{
 				"debug" true,
+			}`)
+
+			mockValidationMissingRequiredFPSField = []byte(`{
+				"max_clip_age_in_days": 1,
+				"cameras": [
+					{
+						"title": "Test Cam 2"
+					}
+				]
 			}`)
 		})
 
@@ -126,20 +138,46 @@ var _ = Describe("Config", func() {
 
 			Context("From JSON unmarshal failure", func() {
 				It("Should handle unmarshal error gracefully and return wrapped error", func() {
-					afero.WriteFile(
+					err := afero.WriteFile(
 						testCfg.fs,
 						"test/tacusci/dragondaemon/config.json",
 						mockInvalidJSONConfigContent,
 						0666,
 					)
+					Expect(err).To(BeNil())
+
 					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
 					testCfg.uc = func() (string, error) {
 						return "test", nil
 					}
 
-					err := testCfg.Load()
+					err = testCfg.Load()
 					Expect(err).ToNot(BeNil())
 					Expect(err).To(MatchError("Parsing configuration file error: invalid character 't' after object key"))
+				})
+			})
+
+			Context("From config validation failure", func() {
+				It("Should handle validation error gracefully and return wrapped error", func() {
+					err := afero.WriteFile(
+						testCfg.fs,
+						"test/tacusci/dragondaemon/config.json",
+						mockValidationMissingRequiredFPSField,
+						0666,
+					)
+					Expect(err).To(BeNil())
+
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					testCfg.uc = func() (string, error) {
+						return "test", nil
+					}
+
+					err = testCfg.Load()
+					Expect(err).ToNot(BeNil())
+					fmt.Println(err.Error())
+					Expect(err).To(MatchError(
+						"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
+					))
 				})
 			})
 		})
