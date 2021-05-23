@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -174,7 +173,6 @@ var _ = Describe("Config", func() {
 
 					err = testCfg.Load()
 					Expect(err).ToNot(BeNil())
-					fmt.Println(err.Error())
 					Expect(err).To(MatchError(
 						"Unable to validate configuration: Validation error in field \"FPS\" of type \"int\" using validator \"gte=1\"",
 					))
