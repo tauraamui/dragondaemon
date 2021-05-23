@@ -85,7 +85,6 @@ func (c *values) Save(overwrite bool) (string, error) {
 		return "", err
 	}
 
-	// TODO(tauraamui): no point in doing value marshaling if no file to write to
 	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return "", err
