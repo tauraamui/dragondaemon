@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/config/schedule"
@@ -120,6 +121,25 @@ var _ = Describe("Config", func() {
 							},
 						},
 					}))
+				})
+			})
+
+			Context("Loading defaults", func() {
+				It("Should assign values fields to default values", func() {
+					testCfg.ResetToDefaults()
+					Expect(testCfg.MaxClipAgeInDays).To(Equal(30))
+					Expect(testCfg.Cameras).To(BeEmpty())
+				})
+			})
+
+			Context("From failure to resolve config path", func() {
+				It("Should handle path resolve error gracefully and return wrapped error", func() {
+					testCfg.uc = func() (string, error) {
+						return "", errors.New("error resolving user config dir")
+					}
+					err := testCfg.Load()
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("unable to resolve config.json config file location: error resolving user config dir"))
 				})
 			})
 
