@@ -244,6 +244,16 @@ var _ = Describe("Config", func() {
 				Expect(newConfig.MaxClipAgeInDays).To(Equal(9))
 				Expect(newConfig.Cameras).To(BeEmpty())
 			})
+
+			It("Should handle path resolve error gracefully and return wrapped error", func() {
+				testCfg.uc = func() (string, error) {
+					return "", errors.New("error resolving user config dir")
+				}
+				path, err := testCfg.Save(true)
+				Expect(path).To(BeEmpty())
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("unable to resolve config.json config file location: error resolving user config dir"))
+			})
 		})
 	})
 })
