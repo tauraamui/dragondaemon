@@ -173,7 +173,7 @@ func resolveConfigPath(uc func() (string, error)) (string, error) {
 
 	configParentDir, err := uc()
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve %s config file location", configFileName)
+		return "", fmt.Errorf("unable to resolve %s config file location: %w", configFileName, err)
 	}
 
 	return filepath.Join(
