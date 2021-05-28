@@ -7,6 +7,10 @@ default: build
 test:
 	go test -v ./...
 
+.PHONY: watch
+watch:
+	ginkgo watch ./...
+
 .PHONY: build
 build:
 	mkdir -p builds && go build -o ./builds/dragond ./cmd/dragondaemon/
