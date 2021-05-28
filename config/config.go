@@ -87,6 +87,7 @@ func (c *values) Save(overwrite bool) (string, error) {
 
 	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
+		// this should be impossible to happen, so is not covered in tests
 		return "", err
 	}
 
@@ -98,17 +99,17 @@ func (c *values) Save(overwrite bool) (string, error) {
 
 	f, err := c.fs.OpenFile(configPath, openingFlags, 0666)
 	if err != nil {
-		return configPath, err
+		return "", fmt.Errorf("unable to open file: %w", err)
 	}
 	defer f.Close()
 
 	writtenBytesCount, err := f.Write(marshalledConfig)
 	if err != nil {
-		return configPath, err
+		return "", err
 	}
 
 	if len(marshalledConfig) != writtenBytesCount {
-		return configPath, errors.New("unable to write full config JSON to file")
+		return "", errors.New("unable to write full config JSON to file")
 	}
 
 	return configPath, nil
