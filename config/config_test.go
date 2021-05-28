@@ -254,6 +254,14 @@ var _ = Describe("Config", func() {
 				Expect(err).ToNot(BeNil())
 				Expect(err.Error()).To(Equal("unable to resolve config.json config file location: error resolving user config dir"))
 			})
+
+			It("Should handle open file error gracefully and return wrapped error", func() {
+				testCfg.fs = afero.NewReadOnlyFs(afero.NewMemMapFs())
+				path, err := testCfg.Save(true)
+				Expect(path).To(BeEmpty())
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("unable to open file: operation not permitted"))
+			})
 		})
 	})
 })
