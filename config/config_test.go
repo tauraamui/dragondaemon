@@ -200,4 +200,68 @@ var _ = Describe("Config", func() {
 			})
 		})
 	})
+
+	Describe("Writing struct to disk", func() {
+		Describe("Saving config", func() {
+
+			var testCfg values
+			var filesystem afero.Fs
+			testUserConfigResolver := func() (string, error) {
+				return "test", nil
+			}
+
+			BeforeEach(func() {
+				filesystem = afero.NewMemMapFs()
+				testCfg = values{
+					fs: filesystem,
+					uc: testUserConfigResolver,
+				}
+			})
+
+			It("Should write to file", func() {
+				testCfg.MaxClipAgeInDays = 9
+				testCfg.Cameras = []Camera{}
+				path, err := testCfg.Save(false)
+
+				Expect(path).To(Equal("test/tacusci/dragondaemon/config.json"))
+				Expect(err).To(BeNil())
+
+				configFile, err := testCfg.fs.Open("test/tacusci/dragondaemon/config.json")
+				Expect(err).To(BeNil())
+				defer configFile.Close()
+
+				data, err := afero.ReadAll(configFile)
+				Expect(err).To(BeNil())
+				Expect(data).ToNot(BeEmpty())
+
+				newConfig := values{
+					fs: filesystem,
+					uc: testUserConfigResolver,
+				}
+				err = newConfig.Load()
+				Expect(err).To(BeNil())
+
+				Expect(newConfig.MaxClipAgeInDays).To(Equal(9))
+				Expect(newConfig.Cameras).To(BeEmpty())
+			})
+
+			It("Should handle path resolve error gracefully and return wrapped error", func() {
+				testCfg.uc = func() (string, error) {
+					return "", errors.New("error resolving user config dir")
+				}
+				path, err := testCfg.Save(true)
+				Expect(path).To(BeEmpty())
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("unable to resolve config.json config file location: error resolving user config dir"))
+			})
+
+			It("Should handle open file error gracefully and return wrapped error", func() {
+				testCfg.fs = afero.NewReadOnlyFs(afero.NewMemMapFs())
+				path, err := testCfg.Save(true)
+				Expect(path).To(BeEmpty())
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("unable to open file: operation not permitted"))
+			})
+		})
+	})
 })

@@ -5,7 +5,11 @@ default: build
 
 .PHONY: test
 test:
-	go test -v ./...
+	ginkgo ./...
+
+.PHONY: watch
+watch:
+	ginkgo watch ./...
 
 .PHONY: build
 build:
