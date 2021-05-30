@@ -12,9 +12,9 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/api/auth"
 	"github.com/tauraamui/dragondaemon/common"
-	db "github.com/tauraamui/dragondaemon/database"
-	"github.com/tauraamui/dragondaemon/database/repos"
-	"github.com/tauraamui/dragondaemon/media"
+	db "github.com/tauraamui/dragondaemon/pkg/database"
+	"github.com/tauraamui/dragondaemon/pkg/database/repos"
+	"github.com/tauraamui/dragondaemon/pkg/media"
 	"gorm.io/gorm"
 )
 
