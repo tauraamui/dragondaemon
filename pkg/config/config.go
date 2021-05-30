@@ -13,7 +13,7 @@ import (
 	"github.com/tacusci/logging/v2"
 
 	"github.com/pkg/errors"
-	"github.com/tauraamui/dragondaemon/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"gopkg.in/dealancer/validate.v2"
 )
 

@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/database/models"
-	"github.com/tauraamui/dragondaemon/database/repos"
+	"github.com/tauraamui/dragondaemon/pkg/database/models"
+	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

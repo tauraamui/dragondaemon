@@ -11,9 +11,9 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
-	"github.com/tauraamui/dragondaemon/config"
-	db "github.com/tauraamui/dragondaemon/database"
-	"github.com/tauraamui/dragondaemon/media"
+	"github.com/tauraamui/dragondaemon/pkg/config"
+	db "github.com/tauraamui/dragondaemon/pkg/database"
+	"github.com/tauraamui/dragondaemon/pkg/media"
 )
 
 const (

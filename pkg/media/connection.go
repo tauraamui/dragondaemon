@@ -14,8 +14,8 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/config"
-	"github.com/tauraamui/dragondaemon/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/config"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"gocv.io/x/gocv"
 )
 
