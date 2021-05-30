@@ -9,8 +9,8 @@ import (
 
 	"github.com/shibukawa/configdir"
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/database/models"
-	"github.com/tauraamui/dragondaemon/database/repos"
+	"github.com/tauraamui/dragondaemon/pkg/database/models"
+	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"golang.org/x/term"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

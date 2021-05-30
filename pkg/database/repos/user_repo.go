@@ -3,7 +3,7 @@ package repos
 import (
 	"fmt"
 
-	"github.com/tauraamui/dragondaemon/database/models"
+	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"gorm.io/gorm"
 )
 

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 )
 
 var _ = Describe("Config", func() {

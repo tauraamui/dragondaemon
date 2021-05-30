@@ -3,7 +3,7 @@ package models_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/tauraamui/dragondaemon/database/models"
+	"github.com/tauraamui/dragondaemon/pkg/database/models"
 )
 
 var _ = Describe("User", func() {
