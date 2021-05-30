@@ -84,28 +84,6 @@ func NewConnection(
 	}
 }
 
-func (c *Connection) ShowInWindow(winTitle string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.window != nil {
-		c.window.Close()
-	}
-
-	c.window = gocv.NewWindow(winTitle)
-	img := gocv.NewMat()
-	defer img.Close()
-
-	for atomic.LoadInt32(&c.inShutdown) == 0 {
-		c.vc.Read(&img)
-		if img.Empty() {
-			continue
-		}
-		c.window.IMShow(img)
-		c.window.WaitKey(1)
-	}
-}
-
 func (c *Connection) UUID() string {
 	return c.uuid
 }
