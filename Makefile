@@ -7,6 +7,10 @@ default: build
 test:
 	ginkgo ./...
 
+.PHONY: vtest
+vtest:
+	ginkgo -v ./...
+
 .PHONY: watch
 watch:
 	ginkgo watch ./...
