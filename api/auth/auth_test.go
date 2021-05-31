@@ -3,6 +3,7 @@ package auth_test
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	. "github.com/onsi/ginkgo"
@@ -12,7 +13,9 @@ import (
 )
 
 type testCustomClaims struct {
-	UserUUID string `json:"useruuid"`
+	UserUUID  string `json:"useruuid"`
+	Audience  string `json:"aud"`
+	ExpiresAt int    `json:"exp"`
 }
 
 var _ = Describe("Auth", func() {
@@ -22,10 +25,14 @@ var _ = Describe("Auth", func() {
 
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
+		auth.TimeNow = func() time.Time {
+			return time.Date(2001, 1, 1, 12, 0, 0, 0, time.UTC)
+		}
 	})
 
 	AfterEach(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
+		auth.TimeNow = time.Now
 	})
 
 	Context("GenToken", func() {
@@ -43,6 +50,9 @@ var _ = Describe("Auth", func() {
 			json.Unmarshal(decodedClaims, &testCustomClaims)
 
 			Expect(testCustomClaims.UserUUID).To(Equal("testuser"))
+			Expect(testCustomClaims.Audience).To(Equal("dragondaemon"))
+			Expect(testCustomClaims.ExpiresAt).ToNot(BeZero())
+			Expect(time.Unix(int64(testCustomClaims.ExpiresAt), 0).Minute()).To(Equal(15))
 		})
 	})
 })
