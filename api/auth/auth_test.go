@@ -25,18 +25,20 @@ var _ = Describe("Auth", func() {
 
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
-		auth.TimeNow = func() time.Time {
-			return time.Date(2001, 1, 1, 12, 0, 0, 0, time.UTC)
-		}
 	})
 
 	AfterEach(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
-		auth.TimeNow = time.Now
 	})
 
 	Context("GenToken", func() {
 		It("Should return a JWT which contains payload data with given username and is signed correctly", func() {
+			auth.TimeNow = func() time.Time {
+				return time.Date(2001, 1, 1, 12, 0, 0, 0, time.UTC)
+			}
+
+			defer func() { auth.TimeNow = time.Now }()
+
 			token, err := auth.GenToken(TESTING_SECRET, "testuser")
 			Expect(err).To(BeNil())
 			Expect(token).ToNot(BeEmpty())
@@ -53,6 +55,16 @@ var _ = Describe("Auth", func() {
 			Expect(testCustomClaims.Audience).To(Equal("dragondaemon"))
 			Expect(testCustomClaims.ExpiresAt).ToNot(BeZero())
 			Expect(time.Unix(int64(testCustomClaims.ExpiresAt), 0).Minute()).To(Equal(15))
+		})
+
+		It("Should validate token and return correct user UUID from payload segment", func() {
+			token, err := auth.GenToken(TESTING_SECRET, "testuser")
+			Expect(err).To(BeNil())
+			Expect(token).ToNot(BeEmpty())
+
+			userUUID, err := auth.ValidateToken(TESTING_SECRET, token)
+			Expect(err).To(BeNil())
+			Expect(userUUID).To(Equal("testuser"))
 		})
 	})
 })
