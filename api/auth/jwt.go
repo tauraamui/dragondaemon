@@ -12,12 +12,16 @@ type customClaims struct {
 	jwt.StandardClaims
 }
 
+var TimeNow = func() time.Time {
+	return time.Now()
+}
+
 func GenToken(secret, username string) (string, error) {
 	claims := customClaims{
 		UserUUID: username,
 		StandardClaims: jwt.StandardClaims{
 			Audience:  "dragondaemon",
-			ExpiresAt: time.Now().UTC().Add(time.Minute * 15).Unix(),
+			ExpiresAt: TimeNow().UTC().Add(time.Minute * 15).Unix(),
 		},
 	}
 
