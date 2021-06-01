@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -12,12 +13,16 @@ type customClaims struct {
 	jwt.StandardClaims
 }
 
+var TimeNow = func() time.Time {
+	return time.Now()
+}
+
 func GenToken(secret, username string) (string, error) {
 	claims := customClaims{
 		UserUUID: username,
 		StandardClaims: jwt.StandardClaims{
 			Audience:  "dragondaemon",
-			ExpiresAt: time.Now().UTC().Add(time.Minute * 15).Unix(),
+			ExpiresAt: TimeNow().UTC().Add(time.Minute * 15).Unix(),
 		},
 	}
 
@@ -35,16 +40,21 @@ func ValidateToken(secret, tokenString string) (string, error) {
 	)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to validate token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*customClaims)
+	return checkClaims(token.Claims)
+}
+
+func checkClaims(claims jwt.Claims) (string, error) {
+	cc, ok := claims.(*customClaims)
 	if !ok {
-		return "", errors.New("unable to pass claims")
+		return "", errors.New("unable to parse claims")
 	}
 
-	if claims.ExpiresAt < time.Now().UTC().Unix() {
+	if cc.ExpiresAt < TimeNow().UTC().Unix() {
 		return "", errors.New("auth token has expired")
 	}
-	return claims.UserUUID, nil
+
+	return cc.UserUUID, nil
 }
