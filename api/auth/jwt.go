@@ -43,13 +43,18 @@ func ValidateToken(secret, tokenString string) (string, error) {
 		return "", fmt.Errorf("unable to validate token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*customClaims)
+	return checkClaims(token.Claims)
+}
+
+func checkClaims(claims jwt.Claims) (string, error) {
+	cc, ok := claims.(*customClaims)
 	if !ok {
-		return "", errors.New("unable to pass claims")
+		return "", errors.New("unable to parse claims")
 	}
 
-	if claims.ExpiresAt < TimeNow().UTC().Unix() {
+	if cc.ExpiresAt < TimeNow().UTC().Unix() {
 		return "", errors.New("auth token has expired")
 	}
-	return claims.UserUUID, nil
+
+	return cc.UserUUID, nil
 }
