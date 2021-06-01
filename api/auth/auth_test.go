@@ -66,5 +66,16 @@ var _ = Describe("Auth", func() {
 			Expect(err).To(BeNil())
 			Expect(userUUID).To(Equal("testuser"))
 		})
+
+		It("Should handle validation error gracefully and return wrapped error", func() {
+			token, err := auth.GenToken(TESTING_SECRET, "testuser")
+			Expect(err).To(BeNil())
+			Expect(token).ToNot(BeEmpty())
+
+			userUUID, err := auth.ValidateToken("incorrect-secret", token)
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("unable to validate token: signature is invalid"))
+			Expect(userUUID).To(BeEmpty())
+		})
 	})
 })
