@@ -77,5 +77,16 @@ var _ = Describe("Auth", func() {
 			Expect(err.Error()).To(Equal("unable to validate token: signature is invalid"))
 			Expect(userUUID).To(BeEmpty())
 		})
+
+		It("Should handle token expired error gracefully and return error", func() {
+			auth.CustomClaims.StandardClaims = jwt.StandardClaims{
+				ExpiresAt: 1,
+			}
+
+			userUUID, err := auth.CheckClaims(auth.CustomClaims)
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("auth token has expired"))
+			Expect(userUUID).To(BeEmpty())
+		})
 	})
 })
