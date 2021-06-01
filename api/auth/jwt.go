@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -39,7 +40,7 @@ func ValidateToken(secret, tokenString string) (string, error) {
 	)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to validate token: %w", err)
 	}
 
 	claims, ok := token.Claims.(*customClaims)
