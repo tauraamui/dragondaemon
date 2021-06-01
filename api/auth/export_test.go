@@ -7,3 +7,4 @@ var CustomClaims = &customClaims{
 	UserUUID:       "",
 	StandardClaims: jwt.StandardClaims{},
 }
+var NotPointerForCustomClaims customClaims = customClaims{}

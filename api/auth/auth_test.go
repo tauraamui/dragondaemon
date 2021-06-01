@@ -78,6 +78,13 @@ var _ = Describe("Auth", func() {
 			Expect(userUUID).To(BeEmpty())
 		})
 
+		It("Should handle unable to parse claims gracefully and return error", func() {
+			userUUID, err := auth.CheckClaims(auth.NotPointerForCustomClaims)
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("unable to parse claims"))
+			Expect(userUUID).To(BeEmpty())
+		})
+
 		It("Should handle token expired error gracefully and return error", func() {
 			auth.CustomClaims.StandardClaims = jwt.StandardClaims{
 				ExpiresAt: 1,
