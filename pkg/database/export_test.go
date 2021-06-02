@@ -1,8 +1,11 @@
 package data
 
+import "github.com/spf13/afero"
+
 func OverloadUC(overload func() (string, error)) {
 	uc = overload
 }
 
-var UC = uc
-var FS = fs
+func OverloadFS(overload afero.Fs) {
+	fs = overload
+}
