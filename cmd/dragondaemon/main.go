@@ -13,6 +13,7 @@ import (
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
 	"github.com/tauraamui/dragondaemon/pkg/config"
+	data "github.com/tauraamui/dragondaemon/pkg/database"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/media"
 )
@@ -44,7 +45,10 @@ func (service *Service) Setup() (string, error) {
 
 	err = db.Setup()
 	if err != nil {
-		return "", err
+		if !errors.Is(err, data.ErrDBAlreadyExists) {
+			return "", err
+		}
+		logging.Error(err.Error())
 	}
 
 	return "Setup successful...", nil
