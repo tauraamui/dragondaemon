@@ -23,4 +23,7 @@ clips/*
 *.avi
 dd.config
 .dd.config.swp
+config.json
 dragond
+
+dd.db
