@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +34,7 @@ var (
 
 var uc = os.UserCacheDir
 var fs = afero.NewOsFs()
+var promptReader io.Reader = os.Stdin
 
 func Setup() error {
 	logging.Info("Creating database file...")
@@ -168,7 +170,7 @@ func askForPassword(attempts int) (string, error) {
 
 func promptForValue(promptText string) (string, error) {
 	fmt.Printf("%s: ", promptText)
-	stdinReader := bufio.NewReader(os.Stdin)
+	stdinReader := bufio.NewReader(promptReader)
 	value, err := stdinReader.ReadString('\n')
 	if err != nil {
 		return "", err
