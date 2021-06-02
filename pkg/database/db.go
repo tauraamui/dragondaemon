@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/shibukawa/configdir"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
@@ -27,18 +29,15 @@ const (
 var (
 	ErrCreateDBFile    = errors.New("unable to create database file")
 	ErrDBAlreadyExists = errors.New("database file already exists")
-
-	configDir configdir.ConfigDir
 )
 
-func init() {
-	configDir = configdir.New(vendorName, appName)
-}
+var uc = os.UserCacheDir
+var fs = afero.NewOsFs()
 
 func Setup() error {
 	logging.Info("Creating database file...")
 
-	if err := createFile(); err != nil {
+	if err := createFile(uc, fs); err != nil {
 		return err
 	}
 
@@ -67,7 +66,7 @@ func Setup() error {
 }
 
 func Destroy() error {
-	dbFilePath, err := resolveDBPath()
+	dbFilePath, err := resolveDBPath(uc)
 	if err != nil {
 		return fmt.Errorf("unable to delete database file: %w", err)
 	}
@@ -76,7 +75,7 @@ func Destroy() error {
 }
 
 func Connect() (*gorm.DB, error) {
-	dbPath, err := resolveDBPath()
+	dbPath, err := resolveDBPath(uc)
 	logging.Debug("Connecting to DB: %s", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open db connection: %w", err)
@@ -104,19 +103,33 @@ func createRootUser(db *gorm.DB, username, password string) error {
 	})
 }
 
-func resolveDBPath() (string, error) {
-	dbParentDir := configDir.QueryFolderContainsFile(databaseFileName)
-	if dbParentDir == nil {
-		return "", fmt.Errorf("unable to find %s in config location", databaseFileName)
+func resolveDBPath(uc func() (string, error)) (string, error) {
+	databasePath := os.Getenv("DRAGON_DAEMON_DB")
+	if len(databasePath) > 0 {
+		return databasePath, nil
 	}
-	return fmt.Sprintf("%s%c%s", dbParentDir.Path, os.PathSeparator, databaseFileName), nil
+
+	databaseParentDir, err := uc()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve %s database file location: %w", databaseFileName, err)
+	}
+
+	return filepath.Join(
+		databaseParentDir,
+		vendorName,
+		appName,
+		databaseFileName), nil
 }
 
-func createFile() error {
-	folder := configDir.QueryFolderContainsFile(databaseFileName)
-	if folder == nil {
-		folders := configDir.QueryFolders(configDirType)
-		_, err := folders[0].Create(databaseFileName)
+func createFile(uc func() (string, error), fs afero.Fs) error {
+	path, err := resolveDBPath(uc)
+	if err != nil {
+		return err
+	}
+
+	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
+		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), 0700)
+		_, err := fs.Create(path)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
 		}
