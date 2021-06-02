@@ -99,7 +99,7 @@ func (c *values) Save(overwrite bool) (string, error) {
 
 	f, err := c.fs.OpenFile(configPath, openingFlags, 0666)
 	if err != nil {
-		return "", fmt.Errorf("unable to open file: %w", err)
+		return configPath, fmt.Errorf("unable to open file: %w", err)
 	}
 	defer f.Close()
 

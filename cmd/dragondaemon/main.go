@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -33,7 +34,7 @@ func (service *Service) Setup() (string, error) {
 	configFile.ResetToDefaults()
 	configPath, err := configFile.Save(false)
 	if err != nil {
-		if !os.IsExist(err) {
+		if !errors.Is(err, os.ErrExist) {
 			return "", err
 		}
 		logging.Info("Config file already exists at: %s", configPath)
@@ -53,7 +54,7 @@ func (service *Service) RemoveSetup() (string, error) {
 	logging.Info("Removing setup for dragondaemon service...")
 	err := db.Destroy()
 	if err != nil {
-		return "", err
+		logging.Error("unable to delete database file: %s", err.Error())
 	}
 
 	return "Removing setup successful...", nil
