@@ -9,10 +9,17 @@ import (
 )
 
 var _ = Describe("Data", func() {
+	// Context("Setup run against blank file system", func() {
+	// 	It("Should create full file path for DB", func() {
+	// 	})
+	// })
+
 	It("Should return error from setup due to path resolution failure", func() {
-		data.OverloadUC(func() (string, error) {
+		reset := data.OverloadUC(func() (string, error) {
 			return "", errors.New("test cache dir error")
 		})
+		defer reset()
+
 		err := data.Setup()
 
 		Expect(err).ToNot(BeNil())
