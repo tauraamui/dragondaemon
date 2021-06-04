@@ -10,6 +10,15 @@ import (
 	data "github.com/tauraamui/dragondaemon/pkg/database"
 )
 
+type testPasswordPromptReader struct {
+	testPassword string
+	testError    error
+}
+
+func (t testPasswordPromptReader) ReadPassword() ([]byte, error) {
+	return []byte(t.testPassword), t.testError
+}
+
 var _ = Describe("Data", func() {
 	Context("Setup run against blank file system", func() {
 		It("Should create full file path for DB", func() {
@@ -17,12 +26,19 @@ var _ = Describe("Data", func() {
 			defer resetFS()
 
 			resetPromptReader := data.OverloadPromptReader(
-				strings.NewReader("testadmin\ntestpassword\n"),
+				strings.NewReader("testadmin\n"),
 			)
 			defer resetPromptReader()
 
+			resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+				testPasswordPromptReader{
+					testPassword: "testpassword",
+				},
+			)
+			defer resetPasswordPromptReader()
+
 			err := data.Setup()
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(BeNil())
 		})
 	})
 

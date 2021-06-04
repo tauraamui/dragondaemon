@@ -23,3 +23,9 @@ func OverloadPromptReader(overload io.Reader) func() {
 	promptReader = overload
 	return func() { promptReader = promptReaderRef }
 }
+
+func OverloadPasswordPromptReader(overload passwordReader) func() {
+	passwordPromptReaderRef := passwordPromptReader
+	passwordPromptReader = overload
+	return func() { passwordPromptReader = passwordPromptReaderRef }
+}

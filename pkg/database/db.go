@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/shibukawa/configdir"
 	"github.com/spf13/afero"
@@ -35,6 +36,17 @@ var (
 var uc = os.UserCacheDir
 var fs = afero.NewOsFs()
 var promptReader io.Reader = os.Stdin
+var passwordPromptReader passwordReader = stdinPasswordReader{}
+
+type passwordReader interface {
+	ReadPassword() ([]byte, error)
+}
+
+type stdinPasswordReader struct{}
+
+func (s stdinPasswordReader) ReadPassword() ([]byte, error) {
+	return term.ReadPassword(syscall.Stdin)
+}
 
 func Setup() error {
 	logging.Info("Creating database file...")
@@ -181,7 +193,7 @@ func promptForValue(promptText string) (string, error) {
 
 func promptForValueEchoOff(promptText string) (string, error) {
 	fmt.Printf("%s: ", promptText)
-	valueBytes, err := term.ReadPassword(0)
+	valueBytes, err := passwordPromptReader.ReadPassword()
 	if err != nil {
 		return "", err
 	}
