@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	addToCollection(&User{})
+	registerForAutomigration(&User{})
 }
 
 type User struct {
