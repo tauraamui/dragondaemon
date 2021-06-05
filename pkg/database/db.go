@@ -106,11 +106,11 @@ func Destroy() error {
 
 func Connect() (*gorm.DB, error) {
 	dbPath, err := resolveDBPath(uc)
-	logging.Debug("Connecting to DB: %s", dbPath)
 	if err != nil {
 		return nil, err
 	}
 
+	logging.Debug("Connecting to DB: %s", dbPath)
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
 	if err != nil {
