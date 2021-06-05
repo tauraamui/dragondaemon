@@ -76,7 +76,9 @@ func Setup() error {
 		return err
 	}
 
-	fmt.Println("Please enter root admin credentials...")
+	if logging.CurrentLoggingLevel != logging.SilentLevel {
+		fmt.Println("Please enter root admin credentials...")
+	}
 	rootUsername, err := askForUsername()
 	if err != nil {
 		return fmt.Errorf("failed to prompt for root username: %w", err)
@@ -185,7 +187,9 @@ func askForPassword(attempts int) (string, error) {
 	}
 
 	if strings.Compare(password, repeatedPassword) != 0 {
-		fmt.Println("Entered passwords do not match... Try again...")
+		if logging.CurrentLoggingLevel != logging.SilentLevel {
+			fmt.Println("Entered passwords do not match... Try again...")
+		}
 		attempts++
 		if attempts >= 3 {
 			return "", errors.New("tried entering new password at least 3 times")
@@ -209,6 +213,8 @@ func promptForValueEchoOff(promptText string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("")
+	if logging.CurrentLoggingLevel != logging.SilentLevel {
+		fmt.Println("")
+	}
 	return strings.TrimSpace(string(valueBytes)), nil
 }
