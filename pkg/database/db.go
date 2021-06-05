@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,16 +34,33 @@ var (
 
 var uc = os.UserCacheDir
 var fs = afero.NewOsFs()
-var promptReader io.Reader = os.Stdin
+var plainPromptReader plainReader = stdinPlainReader{}
 var passwordPromptReader passwordReader = stdinPasswordReader{}
 
+type plainReader interface {
+	ReadPlain(promptText string) (string, error)
+}
+
 type passwordReader interface {
-	ReadPassword() ([]byte, error)
+	ReadPassword(promptText string) ([]byte, error)
+}
+
+type stdinPlainReader struct{}
+
+func (s stdinPlainReader) ReadPlain(promptText string) (string, error) {
+	if len(promptText) > 0 {
+		fmt.Printf("%s: ", promptText)
+	}
+	stdinReader := bufio.NewReader(os.Stdin)
+	return stdinReader.ReadString('\n')
 }
 
 type stdinPasswordReader struct{}
 
-func (s stdinPasswordReader) ReadPassword() ([]byte, error) {
+func (s stdinPasswordReader) ReadPassword(promptText string) ([]byte, error) {
+	if len(promptText) > 0 {
+		fmt.Printf("%s: ", promptText)
+	}
 	return term.ReadPassword(syscall.Stdin)
 }
 
@@ -181,19 +197,15 @@ func askForPassword(attempts int) (string, error) {
 }
 
 func promptForValue(promptText string) (string, error) {
-	fmt.Printf("%s: ", promptText)
-	stdinReader := bufio.NewReader(promptReader)
-	value, err := stdinReader.ReadString('\n')
+	value, err := plainPromptReader.ReadPlain(promptText)
 	if err != nil {
 		return "", err
 	}
-
 	return strings.TrimSpace(value), nil
 }
 
 func promptForValueEchoOff(promptText string) (string, error) {
-	fmt.Printf("%s: ", promptText)
-	valueBytes, err := passwordPromptReader.ReadPassword()
+	valueBytes, err := passwordPromptReader.ReadPassword(promptText)
 	if err != nil {
 		return "", err
 	}

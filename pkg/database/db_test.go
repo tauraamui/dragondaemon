@@ -2,34 +2,62 @@ package data_test
 
 import (
 	"errors"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
+	"github.com/tacusci/logging/v2"
 	data "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 )
+
+type testPlainPromptReader struct {
+	testUsername string
+	testError    error
+}
+
+func (t testPlainPromptReader) ReadPlain(string) (string, error) {
+	return t.testUsername, t.testError
+}
 
 type testPasswordPromptReader struct {
 	testPassword string
 	testError    error
 }
 
-func (t testPasswordPromptReader) ReadPassword() ([]byte, error) {
+func (t testPasswordPromptReader) ReadPassword(string) ([]byte, error) {
 	return []byte(t.testPassword), t.testError
 }
 
 var _ = Describe("Data", func() {
-	Context("Setup run against blank file system", func() {
-		It("Should create full file path for DB", func() {
-			resetFS := data.OverloadFS(afero.NewMemMapFs())
-			defer resetFS()
+	existingLoggingLevel := logging.CurrentLoggingLevel
 
-			resetPromptReader := data.OverloadPromptReader(
-				strings.NewReader("testadmin\n"),
+	BeforeEach(func() {
+		logging.CurrentLoggingLevel = logging.SilentLevel
+	})
+
+	AfterEach(func() {
+		logging.CurrentLoggingLevel = existingLoggingLevel
+	})
+
+	Context("Setup run against blank file system", func() {
+		var resetFs func() = nil
+
+		BeforeEach(func() {
+			resetFs = data.OverloadFS(afero.NewMemMapFs())
+		})
+
+		AfterEach(func() {
+			resetFs()
+		})
+
+		It("Should create full file path for DB", func() {
+			resetPlainPromptReader := data.OverloadPlainPromptReader(
+				testPlainPromptReader{
+					testUsername: "testadmin",
+				},
 			)
-			defer resetPromptReader()
+			defer resetPlainPromptReader()
 
 			resetPasswordPromptReader := data.OverloadPasswordPromptReader(
 				testPasswordPromptReader{

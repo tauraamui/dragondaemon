@@ -1,8 +1,6 @@
 package data
 
 import (
-	"io"
-
 	"github.com/spf13/afero"
 )
 
@@ -18,10 +16,10 @@ func OverloadFS(overload afero.Fs) func() {
 	return func() { fs = fsRef }
 }
 
-func OverloadPromptReader(overload io.Reader) func() {
-	promptReaderRef := promptReader
-	promptReader = overload
-	return func() { promptReader = promptReaderRef }
+func OverloadPlainPromptReader(overload plainReader) func() {
+	plainPromptReaderRef := plainPromptReader
+	plainPromptReader = overload
+	return func() { plainPromptReader = plainPromptReaderRef }
 }
 
 func OverloadPasswordPromptReader(overload passwordReader) func() {
