@@ -36,7 +36,7 @@ type multipleAttemptPasswordPromptReader struct {
 }
 
 func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, error) {
-	if t.attemptCount >= t.maxCalls+1 {
+	if t.attemptCount >= t.maxCalls {
 		return nil, errors.New("TESTING ERROR: multipleAttempts exceeds maximum call limit")
 	}
 	password := []byte(t.passwordsToAttempt[t.attemptCount])
