@@ -36,10 +36,10 @@ type multipleAttemptPasswordPromptReader struct {
 }
 
 func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, error) {
-	password := []byte(t.passwordsToAttempt[t.attemptCount])
-	if t.attemptCount+1 >= t.maxCalls+1 {
+	if t.attemptCount >= t.maxCalls+1 {
 		return nil, errors.New("TESTING ERROR: multipleAttempts exceeds maximum call limit")
 	}
+	password := []byte(t.passwordsToAttempt[t.attemptCount])
 	t.attemptCount++
 	return password, t.testError
 }
@@ -115,8 +115,10 @@ var _ = Describe("Data", func() {
 
 			resetPasswordPromptReader := data.OverloadPasswordPromptReader(
 				&multipleAttemptPasswordPromptReader{
-					maxCalls:           4,
-					passwordsToAttempt: []string{"actual", "firstrepeat", "secondrepeat", "thirdrepeat"},
+					maxCalls: 6,
+					passwordsToAttempt: []string{
+						"1stpair", "1stpairnomatch", "2ndpair", "2ndpairnomatch", "3rdpair", "3rdpairnomatch",
+					},
 				},
 			)
 			defer resetPasswordPromptReader()
