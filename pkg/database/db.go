@@ -108,13 +108,13 @@ func Connect() (*gorm.DB, error) {
 	dbPath, err := resolveDBPath(uc)
 	logging.Debug("Connecting to DB: %s", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open db connection: %w", err)
+		return nil, err
 	}
 
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to open db connection: %w", err)
 	}
 
 	err = models.AutoMigrate(db)
