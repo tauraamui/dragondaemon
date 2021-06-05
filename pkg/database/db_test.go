@@ -51,7 +51,7 @@ var _ = Describe("Data", func() {
 			resetFs()
 		})
 
-		It("Should create full file path for DB", func() {
+		It("Should create full file path for DB with single root user entry", func() {
 			resetPlainPromptReader := data.OverloadPlainPromptReader(
 				testPlainPromptReader{
 					testUsername: "testadmin",
