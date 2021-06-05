@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
 	data "github.com/tauraamui/dragondaemon/pkg/database"
+	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 )
 
 type testPasswordPromptReader struct {
@@ -39,6 +40,14 @@ var _ = Describe("Data", func() {
 
 			err := data.Setup()
 			Expect(err).To(BeNil())
+
+			conn, err := data.Connect()
+			Expect(err).To(BeNil())
+			userRepo := repos.UserRepository{DB: conn}
+
+			user, err := userRepo.FindByName("testadmin")
+			Expect(err).To(BeNil())
+			Expect(user.Name).To(Equal("testadmin"))
 		})
 	})
 
