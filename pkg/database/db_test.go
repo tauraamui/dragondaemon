@@ -29,6 +29,18 @@ func (t testPasswordPromptReader) ReadPassword(string) ([]byte, error) {
 	return []byte(t.testPassword), t.testError
 }
 
+type multipleAttemptPasswordPromptReader struct {
+	attemptCount       int
+	passwordsToAttempt []string
+	testError          error
+}
+
+func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, error) {
+	password := []byte(t.passwordsToAttempt[t.attemptCount])
+	t.attemptCount++
+	return password, t.testError
+}
+
 var _ = Describe("Data", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 
@@ -77,17 +89,38 @@ var _ = Describe("Data", func() {
 			Expect(err).To(BeNil())
 			Expect(user.Name).To(Equal("testadmin"))
 		})
-	})
 
-	It("Should return error from setup due to path resolution failure", func() {
-		reset := data.OverloadUC(func() (string, error) {
-			return "", errors.New("test cache dir error")
+		It("Should return error from setup due to path resolution failure", func() {
+			reset := data.OverloadUC(func() (string, error) {
+				return "", errors.New("test cache dir error")
+			})
+			defer reset()
+
+			err := data.Setup()
+
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("unable to resolve dd.db database file location: test cache dir error"))
 		})
-		defer reset()
 
-		err := data.Setup()
+		It("Should return error from too many incorrect password attempts", func() {
+			resetPlainPromptReader := data.OverloadPlainPromptReader(
+				testPlainPromptReader{
+					testUsername: "testadmin",
+				},
+			)
+			defer resetPlainPromptReader()
 
-		Expect(err).ToNot(BeNil())
-		Expect(err.Error()).To(Equal("unable to resolve dd.db database file location: test cache dir error"))
+			resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+				&multipleAttemptPasswordPromptReader{
+					attemptCount:       0,
+					passwordsToAttempt: []string{"actual", "firstrepeat", "secondrepeat", "thirdrepeat"},
+				},
+			)
+			defer resetPasswordPromptReader()
+
+			err := data.Setup()
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("failed to prompt for root password: tried entering new password at least 3 times"))
+		})
 	})
 })
