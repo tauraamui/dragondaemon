@@ -77,7 +77,7 @@ var _ = Describe("UserRepo", func() {
 			It("Should have created the user with an encrypted version of password", func() {
 				u, err := repo.FindByUUID(existingUserUUID)
 				Expect(err).To(BeNil())
-				Expect(len(u.AuthHash)).ToNot(BeZero())
+				Expect(u.AuthHash).ToNot(BeEmpty())
 				Expect(u.AuthHash).ToNot(Equal("test-user-password"))
 			})
 		})
