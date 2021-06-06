@@ -59,15 +59,19 @@ func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, erro
 var _ = Describe("Data", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 
+	var resetFs func() = nil
+
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
+		resetFs = data.OverloadFS(afero.NewMemMapFs())
 	})
 
 	AfterEach(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
+		resetFs()
 	})
 
-	Context("Setup run against blank file system", func() {
+	Context("Running setup", func() {
 		var resetFs func() = nil
 
 		BeforeEach(func() {
@@ -117,27 +121,33 @@ var _ = Describe("Data", func() {
 			Expect(err.Error()).To(Equal("unable to resolve dd.db database file location: test cache dir error"))
 		})
 
-		It("Should return error from too many incorrect password attempts", func() {
-			resetPlainPromptReader := data.OverloadPlainPromptReader(
-				testPlainPromptReader{
-					testUsername: "testadmin",
-				},
-			)
-			defer resetPlainPromptReader()
+		Context("Reading from stdin or equivilent", func() {
+			It("Should handle username prompt error gracefully and return wrapped error", func() {
+				// TODO(tauraamui): implement full test
+			})
 
-			resetPasswordPromptReader := data.OverloadPasswordPromptReader(
-				&multipleAttemptPasswordPromptReader{
-					maxCalls: 6,
-					passwordsToAttempt: []string{
-						"1stpair", "1stpairnomatch", "2ndpair", "2ndpairnomatch", "3rdpair", "3rdpairnomatch",
+			It("Should return error from too many incorrect password attempts", func() {
+				resetPlainPromptReader := data.OverloadPlainPromptReader(
+					testPlainPromptReader{
+						testUsername: "testadmin",
 					},
-				},
-			)
-			defer resetPasswordPromptReader()
+				)
+				defer resetPlainPromptReader()
 
-			err := data.Setup()
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("failed to prompt for root password: tried entering new password at least 3 times"))
+				resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+					&multipleAttemptPasswordPromptReader{
+						maxCalls: 6,
+						passwordsToAttempt: []string{
+							"1stpair", "1stpairnomatch", "2ndpair", "2ndpairnomatch", "3rdpair", "3rdpairnomatch",
+						},
+					},
+				)
+				defer resetPasswordPromptReader()
+
+				err := data.Setup()
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("failed to prompt for root password: tried entering new password at least 3 times"))
+			})
 		})
 	})
 
