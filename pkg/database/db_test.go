@@ -121,9 +121,26 @@ var _ = Describe("Data", func() {
 			Expect(err.Error()).To(Equal("unable to resolve dd.db database file location: test cache dir error"))
 		})
 
-		Context("Reading from stdin or equivilent", func() {
+		Context("Reading new root username and password input", func() {
 			It("Should handle username prompt error gracefully and return wrapped error", func() {
-				// TODO(tauraamui): implement full test
+				resetPlainPromptReader := data.OverloadPlainPromptReader(
+					testPlainPromptReader{
+						testError: errors.New("testing read username error"),
+					},
+				)
+				defer resetPlainPromptReader()
+
+				resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+					testPasswordPromptReader{
+						testPassword: "testpassword",
+					},
+				)
+				defer resetPasswordPromptReader()
+
+				err := data.Setup()
+
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("failed to prompt for root username: testing read username error"))
 			})
 
 			It("Should return error from too many incorrect password attempts", func() {
