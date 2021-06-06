@@ -134,6 +134,22 @@ var _ = Describe("Data", func() {
 			Expect(err.Error()).To(Equal("unable to resolve dd.db database file location: test cache dir error"))
 		})
 
+		It("Should handle unable to resolve DB path gracefully and return wrapped error", func() {
+			err := data.Setup()
+			Expect(err).To(BeNil())
+
+			reset := data.OverloadUC(func() (string, error) {
+				return "", errors.New("test cache dir error")
+			})
+			defer reset()
+
+			err = data.Destroy()
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal(
+				"unable to delete database file: unable to resolve dd.db database file location: test cache dir error",
+			))
+		})
+
 		Context("Reading new root username and password input", func() {
 			It("Should handle username prompt error gracefully and return wrapped error", func() {
 				resetPlainPromptReader := data.OverloadPlainPromptReader(
