@@ -73,30 +73,31 @@ var _ = Describe("Data", func() {
 
 	Context("Running setup", func() {
 		var resetFs func() = nil
+		var resetPlainPromptReader func()
+		var resetPasswordPromptReader func()
 
 		BeforeEach(func() {
 			resetFs = data.OverloadFS(afero.NewMemMapFs())
-		})
-
-		AfterEach(func() {
-			resetFs()
-		})
-
-		It("Should create full file path for DB with single root user entry", func() {
-			resetPlainPromptReader := data.OverloadPlainPromptReader(
+			resetPlainPromptReader = data.OverloadPlainPromptReader(
 				testPlainPromptReader{
 					testUsername: "testadmin",
 				},
 			)
-			defer resetPlainPromptReader()
 
-			resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+			resetPasswordPromptReader = data.OverloadPasswordPromptReader(
 				testPasswordPromptReader{
 					testPassword: "testpassword",
 				},
 			)
-			defer resetPasswordPromptReader()
+		})
 
+		AfterEach(func() {
+			resetFs()
+			resetPlainPromptReader()
+			resetPasswordPromptReader()
+		})
+
+		It("Should create full file path for DB with single root user entry", func() {
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
@@ -107,6 +108,18 @@ var _ = Describe("Data", func() {
 			user, err := userRepo.FindByName("testadmin")
 			Expect(err).To(BeNil())
 			Expect(user.Name).To(Equal("testadmin"))
+		})
+
+		It("Should create file and then be removed on destroy call", func() {
+			err := data.Setup()
+			Expect(err).To(BeNil())
+
+			err = data.Destroy()
+			Expect(err).To(BeNil())
+
+			err = data.Destroy()
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("remove /home/tauraamui/.cache/tacusci/dragondaemon/dd.db: no such file or directory"))
 		})
 
 		It("Should return error from setup due to path resolution failure", func() {
