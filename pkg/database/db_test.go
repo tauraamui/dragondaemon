@@ -111,6 +111,11 @@ var _ = Describe("Data", func() {
 		})
 
 		It("Should create file and then be removed on destroy call", func() {
+			resetUC := data.OverloadUC(func() (string, error) {
+				return "/testroot/.cache", nil
+			})
+			defer resetUC()
+
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
@@ -119,7 +124,7 @@ var _ = Describe("Data", func() {
 
 			err = data.Destroy()
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("remove /home/tauraamui/.cache/tacusci/dragondaemon/dd.db: no such file or directory"))
+			Expect(err.Error()).To(Equal("remove /testroot/.cache/tacusci/dragondaemon/dd.db: no such file or directory"))
 		})
 
 		It("Should return error from setup due to path resolution failure", func() {
