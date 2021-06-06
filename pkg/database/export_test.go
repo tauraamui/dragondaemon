@@ -1,8 +1,16 @@
 package data
 
 import (
+	"io"
+
 	"github.com/spf13/afero"
 )
+
+func NewStdinPlainReader(readFrom io.Reader) stdinPlainReader {
+	return stdinPlainReader{
+		readFrom: readFrom,
+	}
+}
 
 func OverloadUC(overload func() (string, error)) func() {
 	ucRef := uc

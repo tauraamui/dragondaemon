@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,7 +35,7 @@ var (
 
 var uc = os.UserCacheDir
 var fs = afero.NewOsFs()
-var plainPromptReader plainReader = stdinPlainReader{}
+var plainPromptReader plainReader = stdinPlainReader{readFrom: os.Stdin}
 var passwordPromptReader passwordReader = stdinPasswordReader{}
 
 type plainReader interface {
@@ -45,14 +46,17 @@ type passwordReader interface {
 	ReadPassword(promptText string) ([]byte, error)
 }
 
-type stdinPlainReader struct{}
+type stdinPlainReader struct {
+	readFrom io.Reader
+}
 
 func (s stdinPlainReader) ReadPlain(promptText string) (string, error) {
 	if len(promptText) > 0 {
 		fmt.Printf("%s: ", promptText)
 	}
-	stdinReader := bufio.NewReader(os.Stdin)
-	return stdinReader.ReadString('\n')
+	stdinReader := bufio.NewReader(s.readFrom)
+	value, err := stdinReader.ReadString('\n')
+	return strings.TrimSpace(value), err
 }
 
 type stdinPasswordReader struct{}

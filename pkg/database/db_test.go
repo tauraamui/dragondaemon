@@ -11,6 +11,18 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 )
 
+type testReader struct {
+	onReadCallback func()
+	readData       []byte
+	readError      error
+}
+
+func (t testReader) Read(b []byte) (int, error) {
+	t.onReadCallback()
+	n := copy(b, t.readData)
+	return n, t.readError
+}
+
 type testPlainPromptReader struct {
 	testUsername string
 	testError    error
@@ -126,6 +138,25 @@ var _ = Describe("Data", func() {
 			err := data.Setup()
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("failed to prompt for root password: tried entering new password at least 3 times"))
+		})
+	})
+
+	Context("Plain prompt reader implementation", func() {
+		It("Should read from given readable and return value", func() {
+			calledCount := 0
+			plainReader := data.NewStdinPlainReader(
+				testReader{
+					readData: []byte("testuser\n"),
+					onReadCallback: func() {
+						calledCount++
+					},
+				},
+			)
+
+			value, err := plainReader.ReadPlain("")
+			Expect(err).To(BeNil())
+			Expect(value).To(Equal("testuser"))
+			Expect(calledCount).To(Equal(1))
 		})
 	})
 })
