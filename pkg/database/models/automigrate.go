@@ -11,10 +11,11 @@ func AutoMigrate(db *gorm.DB) error {
 		if err := db.AutoMigrate(m); err != nil {
 			return err
 		}
+		m = nil
 	}
 	return nil
 }
 
-func addToCollection(m Model) {
+func registerForAutomigration(m Model) {
 	models = append(models, m)
 }

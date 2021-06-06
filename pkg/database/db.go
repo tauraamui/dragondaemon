@@ -4,10 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/shibukawa/configdir"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
@@ -27,18 +31,47 @@ const (
 var (
 	ErrCreateDBFile    = errors.New("unable to create database file")
 	ErrDBAlreadyExists = errors.New("database file already exists")
-
-	configDir configdir.ConfigDir
 )
 
-func init() {
-	configDir = configdir.New(vendorName, appName)
+var uc = os.UserCacheDir
+var fs = afero.NewOsFs()
+var plainPromptReader plainReader = stdinPlainReader{readFrom: os.Stdin}
+var passwordPromptReader passwordReader = stdinPasswordReader{}
+
+type plainReader interface {
+	ReadPlain(promptText string) (string, error)
+}
+
+type passwordReader interface {
+	ReadPassword(promptText string) ([]byte, error)
+}
+
+type stdinPlainReader struct {
+	readFrom io.Reader
+}
+
+func (s stdinPlainReader) ReadPlain(promptText string) (string, error) {
+	if len(promptText) > 0 {
+		fmt.Printf("%s: ", promptText)
+	}
+	stdinReader := bufio.NewReader(s.readFrom)
+	value, err := stdinReader.ReadString('\n')
+	return strings.TrimSpace(value), err
+}
+
+type stdinPasswordReader struct{}
+
+func (s stdinPasswordReader) ReadPassword(promptText string) ([]byte, error) {
+	if len(promptText) > 0 {
+		fmt.Printf("%s: ", promptText)
+	}
+	return term.ReadPassword(syscall.Stdin)
 }
 
 func Setup() error {
 	logging.Info("Creating database file...")
 
-	if err := createFile(); err != nil {
+	if err := createFile(uc, fs); err != nil {
 		return err
 	}
 
@@ -47,7 +80,9 @@ func Setup() error {
 		return err
 	}
 
-	fmt.Println("Please enter root admin credentials...")
+	if logging.CurrentLoggingLevel != logging.SilentLevel {
+		fmt.Println("Please enter root admin credentials...")
+	}
 	rootUsername, err := askForUsername()
 	if err != nil {
 		return fmt.Errorf("failed to prompt for root username: %w", err)
@@ -67,7 +102,7 @@ func Setup() error {
 }
 
 func Destroy() error {
-	dbFilePath, err := resolveDBPath()
+	dbFilePath, err := resolveDBPath(uc)
 	if err != nil {
 		return fmt.Errorf("unable to delete database file: %w", err)
 	}
@@ -76,16 +111,16 @@ func Destroy() error {
 }
 
 func Connect() (*gorm.DB, error) {
-	dbPath, err := resolveDBPath()
-	logging.Debug("Connecting to DB: %s", dbPath)
+	dbPath, err := resolveDBPath(uc)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open db connection: %w", err)
+		return nil, err
 	}
 
+	logging.Debug("Connecting to DB: %s", dbPath)
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to open db connection: %w", err)
 	}
 
 	err = models.AutoMigrate(db)
@@ -104,19 +139,33 @@ func createRootUser(db *gorm.DB, username, password string) error {
 	})
 }
 
-func resolveDBPath() (string, error) {
-	dbParentDir := configDir.QueryFolderContainsFile(databaseFileName)
-	if dbParentDir == nil {
-		return "", fmt.Errorf("unable to find %s in config location", databaseFileName)
+func resolveDBPath(uc func() (string, error)) (string, error) {
+	databasePath := os.Getenv("DRAGON_DAEMON_DB")
+	if len(databasePath) > 0 {
+		return databasePath, nil
 	}
-	return fmt.Sprintf("%s%c%s", dbParentDir.Path, os.PathSeparator, databaseFileName), nil
+
+	databaseParentDir, err := uc()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve %s database file location: %w", databaseFileName, err)
+	}
+
+	return filepath.Join(
+		databaseParentDir,
+		vendorName,
+		appName,
+		databaseFileName), nil
 }
 
-func createFile() error {
-	folder := configDir.QueryFolderContainsFile(databaseFileName)
-	if folder == nil {
-		folders := configDir.QueryFolders(configDirType)
-		_, err := folders[0].Create(databaseFileName)
+func createFile(uc func() (string, error), fs afero.Fs) error {
+	path, err := resolveDBPath(uc)
+	if err != nil {
+		return err
+	}
+
+	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
+		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), 0700)
+		_, err := fs.Create(path)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
 		}
@@ -142,7 +191,9 @@ func askForPassword(attempts int) (string, error) {
 	}
 
 	if strings.Compare(password, repeatedPassword) != 0 {
-		fmt.Println("Entered passwords do not match... Try again...")
+		if logging.CurrentLoggingLevel != logging.SilentLevel {
+			fmt.Println("Entered passwords do not match... Try again...")
+		}
 		attempts++
 		if attempts >= 3 {
 			return "", errors.New("tried entering new password at least 3 times")
@@ -154,22 +205,20 @@ func askForPassword(attempts int) (string, error) {
 }
 
 func promptForValue(promptText string) (string, error) {
-	fmt.Printf("%s: ", promptText)
-	stdinReader := bufio.NewReader(os.Stdin)
-	value, err := stdinReader.ReadString('\n')
+	value, err := plainPromptReader.ReadPlain(promptText)
 	if err != nil {
 		return "", err
 	}
-
 	return strings.TrimSpace(value), nil
 }
 
 func promptForValueEchoOff(promptText string) (string, error) {
-	fmt.Printf("%s: ", promptText)
-	valueBytes, err := term.ReadPassword(0)
+	valueBytes, err := passwordPromptReader.ReadPassword(promptText)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("")
+	if logging.CurrentLoggingLevel != logging.SilentLevel {
+		fmt.Println("")
+	}
 	return strings.TrimSpace(string(valueBytes)), nil
 }

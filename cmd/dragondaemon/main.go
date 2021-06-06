@@ -44,7 +44,10 @@ func (service *Service) Setup() (string, error) {
 
 	err = db.Setup()
 	if err != nil {
-		return "", err
+		if !errors.Is(err, db.ErrDBAlreadyExists) {
+			return "", err
+		}
+		logging.Error(err.Error())
 	}
 
 	return "Setup successful...", nil
