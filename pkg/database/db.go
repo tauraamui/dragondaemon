@@ -164,7 +164,7 @@ func createFile(uc func() (string, error), fs afero.Fs) error {
 	}
 
 	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
-		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), 0700)
+		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm)
 		_, err := fs.Create(path)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
