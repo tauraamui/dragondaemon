@@ -172,7 +172,7 @@ func createFile(uc func() (string, error), fs afero.Fs) error {
 		return nil
 	}
 
-	return ErrDBAlreadyExists
+	return fmt.Errorf("%w: %s", ErrDBAlreadyExists, path)
 }
 
 func askForUsername() (string, error) {

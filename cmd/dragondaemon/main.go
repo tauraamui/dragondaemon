@@ -30,16 +30,12 @@ type Service struct {
 func (service *Service) Setup() (string, error) {
 	logging.Info("Setting up dragondaemon service...")
 
-	configFile := config.New()
-	configFile.ResetToDefaults()
-	configPath, err := configFile.Save(false)
+	err := config.Setup()
 	if err != nil {
-		if !errors.Is(err, os.ErrExist) {
+		if !errors.Is(err, config.ErrConfigAlreadyExists) {
 			return "", err
 		}
-		logging.Info("Config file already exists at: %s", configPath)
-	} else {
-		logging.Info("Created default config at: %s", configPath)
+		logging.Error(err.Error())
 	}
 
 	err = db.Setup()
