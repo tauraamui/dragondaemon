@@ -369,7 +369,7 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	}
 	defer mat.Close()
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 10)
 	mat.CopyTo(m)
 	return mvc.initialised
 }
