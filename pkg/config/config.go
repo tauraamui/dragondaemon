@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/spf13/afero"
@@ -32,7 +33,9 @@ const (
 )
 
 var (
-	defaultSettings = map[defaultSettingKey]interface{}{
+	ErrCreateConfigFile    = errors.New("unable to create default config file")
+	ErrConfigAlreadyExists = errors.New("config file already exists")
+	defaultSettings        = map[defaultSettingKey]interface{}{
 		MAXCLIPAGEINDAYS: 30,
 		CAMERAS:          []Camera{},
 		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
@@ -79,10 +82,31 @@ func New() *values {
 	}
 }
 
+func Setup() error {
+	c := New()
+	c.ResetToDefaults()
+	configPath, err := c.Save(false)
+	if err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			return err
+		}
+		return fmt.Errorf("%w: %s", ErrConfigAlreadyExists, configPath)
+	}
+
+	logging.Info("Created default config at: %s", configPath)
+
+	return nil
+}
+
 func (c *values) Save(overwrite bool) (string, error) {
-	configPath, err := resolveConfigPath(c.uc)
+	path, err := resolveConfigPath(c.uc)
 	if err != nil {
 		return "", err
+	}
+
+	parentDirPath := strings.Replace(path, configFileName, "", -1)
+	if _, err := c.fs.Stat(parentDirPath); errors.Is(err, os.ErrNotExist) {
+		os.MkdirAll(parentDirPath, os.ModeDir|os.ModePerm)
 	}
 
 	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
@@ -97,9 +121,9 @@ func (c *values) Save(overwrite bool) (string, error) {
 		openingFlags |= os.O_EXCL
 	}
 
-	f, err := c.fs.OpenFile(configPath, openingFlags, 0666)
+	f, err := c.fs.OpenFile(path, openingFlags, 0666)
 	if err != nil {
-		return configPath, fmt.Errorf("unable to open file: %w", err)
+		return path, fmt.Errorf("unable to open file: %w", err)
 	}
 	defer f.Close()
 
@@ -112,7 +136,7 @@ func (c *values) Save(overwrite bool) (string, error) {
 		return "", errors.New("unable to write full config JSON to file")
 	}
 
-	return configPath, nil
+	return path, nil
 }
 
 func (c *values) Load() error {
