@@ -36,7 +36,6 @@ type Connection struct {
 	vc                 VideoCapturable
 	rtspStream         string
 	buffer             chan gocv.Mat
-	window             *gocv.Window
 }
 
 func NewConnection(
@@ -128,9 +127,6 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
-	if c.window != nil {
-		c.window.Close()
-	}
 	close(c.buffer)
 	c.cache.Close()
 	return c.vc.Close()
