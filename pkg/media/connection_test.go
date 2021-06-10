@@ -1,8 +1,13 @@
 package media_test
 
 import (
+	"io"
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/afero"
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/media"
@@ -29,8 +34,26 @@ func (tmvc *testMockVideoCapture) Close() error {
 }
 
 var _ = Describe("Connection", func() {
+	existingLoggingLevel := logging.CurrentLoggingLevel
+
 	Context("NewConnection", func() {
+		var resetFs func() = nil
+		var mockFs afero.Fs = nil
+
+		BeforeEach(func() {
+			logging.CurrentLoggingLevel = logging.SilentLevel
+			mockFs = afero.NewMemMapFs()
+			resetFs = media.OverloadFS(mockFs)
+		})
+
+		AfterEach(func() {
+			logging.CurrentLoggingLevel = existingLoggingLevel
+			resetFs()
+			mockFs = nil
+		})
+
 		It("Should return a new connection instance", func() {
+			mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)
 			conn := media.NewConnection(
 				"TestConnection",
 				"/testroot/clips",
@@ -45,6 +68,8 @@ var _ = Describe("Connection", func() {
 			Expect(conn).ToNot(BeNil())
 			Expect(conn.UUID()).ToNot(BeEmpty())
 			Expect(conn.Title()).To(Equal("TestConnection"))
+			_, _, err := conn.SizeOnDisk()
+			Expect(err).To(MatchError(io.EOF))
 		})
 	})
 })
