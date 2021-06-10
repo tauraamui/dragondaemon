@@ -13,6 +13,7 @@ import (
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
@@ -20,6 +21,8 @@ import (
 )
 
 const sizeOnDisk string = "sod"
+
+var fs = afero.NewOsFs()
 
 type Connection struct {
 	cache              *ristretto.Cache
@@ -367,7 +370,7 @@ func (v *videoClip) writeToDisk() error {
 // will either get empty string and pointer or filled string with nil pointer
 // depending on whether it needs to just count the files still remaining in
 // this given dir or whether it needs to start counting again in a found sub dir
-func getDirSize(path string, filePtr *os.File) (int64, error) {
+func getDirSize(path string, filePtr afero.File) (int64, error) {
 	var total int64
 
 	fp, err := resolveFilePointer(path, filePtr)
@@ -484,11 +487,11 @@ func countFileSizes(files []os.FileInfo, onDirFile func(os.FileInfo) int64) int6
 	return total
 }
 
-func resolveFilePointer(path string, file *os.File) (*os.File, error) {
-	var fp *os.File
+func resolveFilePointer(path string, file afero.File) (afero.File, error) {
+	var fp afero.File
 	fp = file
 	if fp == nil {
-		filePtr, err := os.Open(path)
+		filePtr, err := fs.Open(path)
 		if err != nil {
 			return nil, err
 		}
