@@ -24,16 +24,21 @@ const sizeOnDisk string = "sod"
 
 var fs = afero.NewOsFs()
 
+type ConnectonSettings struct {
+	PersistLocation string
+	FPS             int
+	SecondsPerClip  int
+	Schedule        schedule.Schedule
+	Reolink         config.ReolinkAdvanced
+}
+
 type Connection struct {
+	sett               ConnectonSettings
 	cache              *ristretto.Cache
 	inShutdown         int32
 	attemptToReconnect chan bool
 	uuid               string
 	title              string
-	persistLocation    string
-	fps                int
-	secondsPerClip     int
-	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
 	vc                 VideoCapturable
@@ -43,17 +48,13 @@ type Connection struct {
 
 func NewConnection(
 	title string,
-	persistLocation string,
-	fps int,
-	secondsPerClip int,
-	schedule schedule.Schedule,
-	reolink config.ReolinkAdvanced,
+	sett ConnectonSettings,
 	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
 	var reolinkConn *reolinkapi.Camera
-	if reolink.Enabled {
-		conn, err := reolinkapi.NewCamera(reolink.Username, reolink.Password, reolink.APIAddress)
+	if sett.Reolink.Enabled {
+		conn, err := reolinkapi.NewCamera(sett.Reolink.Username, sett.Reolink.Password, sett.Reolink.APIAddress)
 		if err != nil {
 			logging.Error("Unable to get control connection for camera...")
 		}
@@ -71,14 +72,11 @@ func NewConnection(
 	}
 
 	return &Connection{
+		sett:               sett,
 		cache:              cache,
 		attemptToReconnect: make(chan bool, 1),
 		uuid:               uuid.NewString(),
 		title:              title,
-		persistLocation:    persistLocation,
-		fps:                fps,
-		secondsPerClip:     secondsPerClip,
-		schedule:           schedule,
 		reolinkControl:     reolinkConn,
 		vc:                 vc,
 		rtspStream:         rtspStream,
@@ -110,7 +108,7 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	}
 
 	startTime := time.Now()
-	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
+	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.sett.PersistLocation, os.PathSeparator, c.title), nil)
 	endTime := time.Now()
 
 	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
@@ -156,13 +154,13 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 				}
 			default:
 				clip := videoClip{
-					fileName: fetchClipFilePath(c.persistLocation, c.title),
+					fileName: fetchClipFilePath(c.sett.PersistLocation, c.title),
 					frames:   []gocv.Mat{},
-					fps:      c.fps,
+					fps:      c.sett.FPS,
 				}
 				// collect enough frames for clip
 				var framesRead uint
-				for framesRead = 0; framesRead < uint(c.fps*c.secondsPerClip); framesRead++ {
+				for framesRead = 0; framesRead < uint(c.sett.FPS*c.sett.SecondsPerClip); framesRead++ {
 					clip.frames = append(clip.frames, <-c.buffer)
 				}
 

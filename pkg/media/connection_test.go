@@ -56,11 +56,13 @@ var _ = Describe("Connection", func() {
 			mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)
 			conn := media.NewConnection(
 				"TestConnection",
-				"/testroot/clips",
-				30,
-				2,
-				schedule.Schedule{},
-				config.ReolinkAdvanced{Enabled: false},
+				media.ConnectonSettings{
+					PersistLocation: "/testroot/clips",
+					FPS:             30,
+					SecondsPerClip:  2,
+					Schedule:        schedule.Schedule{},
+					Reolink:         config.ReolinkAdvanced{Enabled: false},
+				},
 				&testMockVideoCapture{},
 				"fake-stream-addr",
 			)
