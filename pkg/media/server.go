@@ -17,8 +17,6 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/pkg/config"
-	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"gocv.io/x/gocv"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
@@ -56,33 +54,24 @@ func (s *Server) IsRunning() bool {
 func (s *Server) Connect(
 	title string,
 	rtspStream string,
-	persistLocation string,
-	fps int,
-	dateTimeLabel bool,
-	dateTimeFormat string,
-	secondsPerClip int,
-	schedule schedule.Schedule,
-	reolink config.ReolinkAdvanced,
+	sett ConnectonSettings,
 ) {
-	vc, err := openVideoCapture(rtspStream, title, fps, dateTimeLabel, dateTimeFormat)
+	vc, err := openVideoCapture(
+		rtspStream, title, sett.FPS, sett.DateTimeLabel, sett.DateTimeFormat,
+	)
+
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
 	}
 
 	logging.Info("Connected to stream [%s] at [%s]", title, rtspStream)
-	if len(persistLocation) == 0 {
-		persistLocation = "."
+	if len(sett.PersistLocation) == 0 {
+		sett.PersistLocation = "."
 	}
 	conn := NewConnection(
 		title,
-		ConnectonSettings{
-			PersistLocation: persistLocation,
-			FPS:             fps,
-			SecondsPerClip:  secondsPerClip,
-			Schedule:        schedule,
-			Reolink:         reolink,
-		},
+		sett,
 		vc,
 		rtspStream,
 	)

@@ -28,6 +28,8 @@ type ConnectonSettings struct {
 	PersistLocation string
 	FPS             int
 	SecondsPerClip  int
+	DateTimeLabel   bool
+	DateTimeFormat  string
 	Schedule        schedule.Schedule
 	Reolink         config.ReolinkAdvanced
 }
