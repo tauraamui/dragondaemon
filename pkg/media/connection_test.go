@@ -1,8 +1,10 @@
 package media_test
 
 import (
+	"context"
 	"io"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,6 +17,9 @@ import (
 )
 
 type testMockVideoCapture struct {
+	isOpenedFunc func() bool
+	readFunc     func(m *gocv.Mat) bool
+	closeFunc    func() error
 }
 
 // SetP doesn't do anything it exists to satisfy VideoCapturable interface
@@ -22,15 +27,15 @@ func (tmvc *testMockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
 // IsOpened always returns true.
 func (tmvc *testMockVideoCapture) IsOpened() bool {
-	return true
+	return tmvc.isOpenedFunc()
 }
 
 func (tmvc *testMockVideoCapture) Read(m *gocv.Mat) bool {
-	return false
+	return tmvc.readFunc(m)
 }
 
 func (tmvc *testMockVideoCapture) Close() error {
-	return nil
+	return tmvc.closeFunc()
 }
 
 var _ = Describe("Connection", func() {
@@ -72,6 +77,8 @@ var _ = Describe("Connection", func() {
 
 		Context("Connection instance", func() {
 			var conn *media.Connection
+			var videoCapture *testMockVideoCapture
+
 			BeforeEach(func() {
 				mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)
 				conn = media.NewConnection(
@@ -83,9 +90,13 @@ var _ = Describe("Connection", func() {
 						Schedule:        schedule.Schedule{},
 						Reolink:         config.ReolinkAdvanced{Enabled: false},
 					},
-					&testMockVideoCapture{},
+					videoCapture,
 					"test-connection-instance-addr",
 				)
+			})
+
+			AfterEach(func() {
+				videoCapture = &testMockVideoCapture{}
 			})
 
 			It("Should have populated UUID", func() {
@@ -101,6 +112,30 @@ var _ = Describe("Connection", func() {
 				Expect(int(size)).To(Equal(0))
 				Expect(unit).To(BeEmpty())
 				Expect(err).To(MatchError(io.EOF))
+			})
+
+			Context("Connection streaming frames to channel", func() {
+				It("Should read video frames from given connection into buffer channel", func() {
+					videoCapture.isOpenedFunc = func() bool { return true }
+					videoCapture.readFunc = func(m *gocv.Mat) bool {
+						mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+						defer mat.Close()
+						mat.AddFloat(3.15)
+						mat.CopyTo(m)
+						return true
+					}
+
+					ctx, cancelStreaming := context.WithCancel(context.Background())
+					stopping := conn.Stream(ctx)
+					go func() {
+						time.Sleep(500 * time.Millisecond)
+						Expect(conn.Buffer()).To(HaveLen(6))
+						cancelStreaming()
+					}()
+					<-stopping
+
+					Expect(conn.Buffer()).To(HaveLen(0))
+				})
 			})
 		})
 	})
