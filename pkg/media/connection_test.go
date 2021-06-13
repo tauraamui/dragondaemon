@@ -68,10 +68,40 @@ var _ = Describe("Connection", func() {
 			)
 
 			Expect(conn).ToNot(BeNil())
-			Expect(conn.UUID()).ToNot(BeEmpty())
-			Expect(conn.Title()).To(Equal("TestConnection"))
-			_, _, err := conn.SizeOnDisk()
-			Expect(err).To(MatchError(io.EOF))
+		})
+
+		Context("Connection instance", func() {
+			var conn *media.Connection
+			BeforeEach(func() {
+				mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)
+				conn = media.NewConnection(
+					"TestConnectionInstance",
+					media.ConnectonSettings{
+						PersistLocation: "/testroot/clips",
+						FPS:             15,
+						SecondsPerClip:  3,
+						Schedule:        schedule.Schedule{},
+						Reolink:         config.ReolinkAdvanced{Enabled: false},
+					},
+					&testMockVideoCapture{},
+					"test-connection-instance-addr",
+				)
+			})
+
+			It("Should have populated UUID", func() {
+				Expect(conn.UUID()).ToNot(BeEmpty())
+			})
+
+			It("Should have populated title", func() {
+				Expect(conn.Title()).To(Equal("TestConnectionInstance"))
+			})
+
+			It("Should return total size on disk as EOF with empty size and unit values", func() {
+				size, unit, err := conn.SizeOnDisk()
+				Expect(int(size)).To(Equal(0))
+				Expect(unit).To(BeEmpty())
+				Expect(err).To(MatchError(io.EOF))
+			})
 		})
 	})
 })
