@@ -116,11 +116,13 @@ var _ = Describe("Connection", func() {
 
 			Context("Connection streaming frames to channel", func() {
 				It("Should read video frames from given connection into buffer channel", func() {
+					var matSumVal1 float64
 					videoCapture.isOpenedFunc = func() bool { return true }
 					videoCapture.readFunc = func(m *gocv.Mat) bool {
 						mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
 						defer mat.Close()
 						mat.AddFloat(3.15)
+						matSumVal1 = mat.Sum().Val1
 						mat.CopyTo(m)
 						return true
 					}
@@ -130,6 +132,8 @@ var _ = Describe("Connection", func() {
 					go func() {
 						time.Sleep(500 * time.Millisecond)
 						Expect(conn.Buffer()).To(HaveLen(6))
+						mat := <-conn.Buffer()
+						Expect(mat.Sum().Val1).To(Equal(matSumVal1))
 						cancelStreaming()
 					}()
 					<-stopping
