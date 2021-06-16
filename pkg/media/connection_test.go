@@ -129,15 +129,21 @@ var _ = Describe("Connection", func() {
 
 					ctx, cancelStreaming := context.WithCancel(context.Background())
 					stopping := conn.Stream(ctx)
+
+					runningBufferLength := 0
+					var readMat gocv.Mat
+					defer readMat.Close()
+
 					go func() {
 						time.Sleep(500 * time.Millisecond)
-						Expect(conn.Buffer()).To(HaveLen(6))
-						mat := <-conn.Buffer()
-						Expect(mat.Sum().Val1).To(Equal(matSumVal1))
+						runningBufferLength = len(conn.Buffer())
+						readMat = <-conn.Buffer()
 						cancelStreaming()
 					}()
-					<-stopping
 
+					Eventually(stopping).Should(BeClosed())
+					Expect(runningBufferLength).To(Equal(6))
+					Expect(readMat.Sum().Val1).To(Equal(matSumVal1))
 					Expect(conn.Buffer()).To(HaveLen(0))
 				})
 			})
