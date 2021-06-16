@@ -142,8 +142,11 @@ var _ = Describe("Connection", func() {
 					}()
 
 					Eventually(stopping).Should(BeClosed())
+					// make sure the buffer is filled max to 6
 					Expect(runningBufferLength).To(Equal(6))
+					// make sure mat read matches mat written
 					Expect(readMat.Sum().Val1).To(Equal(matSumVal1))
+					// make sure buffer is flushed on stream shutdown
 					Expect(conn.Buffer()).To(HaveLen(0))
 				})
 			})
