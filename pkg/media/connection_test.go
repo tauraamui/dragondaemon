@@ -2,6 +2,7 @@ package media_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"time"
@@ -27,15 +28,24 @@ func (tmvc *testMockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
 // IsOpened always returns true.
 func (tmvc *testMockVideoCapture) IsOpened() bool {
-	return tmvc.isOpenedFunc()
+	if tmvc.readFunc != nil {
+		return tmvc.isOpenedFunc()
+	}
+	panic(errors.New("call to missing test mock video capture isOpened function"))
 }
 
 func (tmvc *testMockVideoCapture) Read(m *gocv.Mat) bool {
-	return tmvc.readFunc(m)
+	if tmvc.readFunc != nil {
+		return tmvc.readFunc(m)
+	}
+	panic(errors.New("call to missing test mock video capture read function"))
 }
 
 func (tmvc *testMockVideoCapture) Close() error {
-	return tmvc.closeFunc()
+	if tmvc.closeFunc != nil {
+		return tmvc.closeFunc()
+	}
+	panic(errors.New("call to missing test mock video capture close function"))
 }
 
 var _ = Describe("Connection", func() {
