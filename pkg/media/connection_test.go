@@ -159,6 +159,26 @@ var _ = Describe("Connection", func() {
 					// make sure buffer is flushed on stream shutdown
 					Expect(conn.Buffer()).To(HaveLen(0))
 				})
+
+				It("Should attempt to reconnect until read eventually returns ok", func() {
+					videoCapture.isOpenedFunc = func() bool { return true }
+
+					readCallCount := 0
+					videoCapture.readFunc = func(m *gocv.Mat) bool {
+						readCallCount++
+						return readCallCount > 10
+					}
+
+					ctx, cancelStreaming := context.WithCancel(context.Background())
+					stopping := conn.Stream(ctx)
+
+					go func() {
+						time.Sleep(500 * time.Millisecond)
+						cancelStreaming()
+					}()
+
+					Eventually(stopping).Should(BeClosed())
+				})
 			})
 		})
 	})
