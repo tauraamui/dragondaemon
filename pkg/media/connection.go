@@ -244,12 +244,18 @@ func (c *Connection) reconnect() error {
 		logging.Error("Failed to close connection... ERROR: %v", err)
 	}
 
-	vc, err := gocv.OpenVideoCapture(c.rtspStream)
+	vc, err := openVideoCapture(
+		c.rtspStream,
+		c.title,
+		c.sett.FPS,
+		c.sett.DateTimeLabel,
+		c.sett.DateTimeFormat,
+	)
 	if err != nil {
 		return err
 	}
 
-	c.vc.SetP(vc)
+	c.vc = vc
 
 	return nil
 }

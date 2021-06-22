@@ -420,7 +420,7 @@ func (c *circle) Brightness(x, y float64) uint8 {
 	}
 }
 
-func openVideoCapture(
+var openVideoCapture = func(
 	rtspStream string,
 	title string,
 	fps int,
