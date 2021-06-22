@@ -13,6 +13,18 @@ func OverloadFS(overload afero.Fs) func() {
 	return func() { fs = fsRef }
 }
 
+func OverloadOpenVideoCapture(overload func(
+	string,
+	string,
+	int,
+	bool,
+	string,
+) (VideoCapturable, error)) func() {
+	openVidCapRef := openVideoCapture
+	openVideoCapture = overload
+	return func() { openVideoCapture = openVidCapRef }
+}
+
 func (c *Connection) Stream(ctx context.Context) chan struct{} {
 	return c.stream(ctx)
 }
