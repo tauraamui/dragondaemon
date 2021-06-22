@@ -88,6 +88,7 @@ var _ = Describe("Connection", func() {
 		Context("Connection instance", func() {
 			var conn *media.Connection
 			var videoCapture *testMockVideoCapture
+			var resetVidCapOverload func()
 
 			BeforeEach(func() {
 				mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)
@@ -103,9 +104,16 @@ var _ = Describe("Connection", func() {
 					videoCapture,
 					"test-connection-instance-addr",
 				)
+
+				resetVidCapOverload = media.OverloadOpenVideoCapture(
+					func(string, string, int, bool, string) (media.VideoCapturable, error) {
+						return videoCapture, nil
+					},
+				)
 			})
 
 			AfterEach(func() {
+				resetVidCapOverload()
 				videoCapture = &testMockVideoCapture{}
 			})
 
@@ -162,6 +170,7 @@ var _ = Describe("Connection", func() {
 
 				It("Should attempt to reconnect until read eventually returns ok", func() {
 					videoCapture.isOpenedFunc = func() bool { return true }
+					videoCapture.closeFunc = func() error { return nil }
 
 					readCallCount := 0
 					videoCapture.readFunc = func(m *gocv.Mat) bool {
