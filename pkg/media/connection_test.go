@@ -89,6 +89,7 @@ var _ = Describe("Connection", func() {
 			var conn *media.Connection
 			var videoCapture *testMockVideoCapture
 			var resetVidCapOverload func()
+			var openVidCapCallback func()
 
 			BeforeEach(func() {
 				mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)
@@ -107,6 +108,9 @@ var _ = Describe("Connection", func() {
 
 				resetVidCapOverload = media.OverloadOpenVideoCapture(
 					func(string, string, int, bool, string) (media.VideoCapturable, error) {
+						if openVidCapCallback != nil {
+							openVidCapCallback()
+						}
 						return videoCapture, nil
 					},
 				)
@@ -170,7 +174,15 @@ var _ = Describe("Connection", func() {
 
 				It("Should attempt to reconnect until read eventually returns ok", func() {
 					videoCapture.isOpenedFunc = func() bool { return true }
-					videoCapture.closeFunc = func() error { return nil }
+
+					openVideoCaptureCallCount := 0
+					openVidCapCallback = func() { openVideoCaptureCallCount++ }
+
+					closeCallCount := 0
+					videoCapture.closeFunc = func() error {
+						closeCallCount++
+						return nil
+					}
 
 					readCallCount := 0
 					videoCapture.readFunc = func(m *gocv.Mat) bool {
@@ -182,11 +194,17 @@ var _ = Describe("Connection", func() {
 					stopping := conn.Stream(ctx)
 
 					go func() {
-						time.Sleep(500 * time.Millisecond)
-						cancelStreaming()
+						defer cancelStreaming()
+						for {
+							if openVideoCaptureCallCount >= 10 && closeCallCount >= 10 {
+								break
+							}
+						}
 					}()
 
 					Eventually(stopping).Should(BeClosed())
+					Expect(openVideoCaptureCallCount).To(Equal(10))
+					Expect(closeCallCount).To(Equal(10))
 				})
 			})
 		})
