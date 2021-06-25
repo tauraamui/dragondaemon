@@ -22,6 +22,7 @@ jobs:
       run: go test -v ./...
 
   coverage:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: gocv/opencv:4.5.2
