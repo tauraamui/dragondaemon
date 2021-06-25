@@ -13,6 +13,7 @@ import (
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
+	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
@@ -21,37 +22,41 @@ import (
 
 const sizeOnDisk string = "sod"
 
+var fs = afero.NewOsFs()
+
+type ConnectonSettings struct {
+	PersistLocation string
+	FPS             int
+	SecondsPerClip  int
+	DateTimeLabel   bool
+	DateTimeFormat  string
+	Schedule        schedule.Schedule
+	Reolink         config.ReolinkAdvanced
+}
+
 type Connection struct {
+	sett               ConnectonSettings
 	cache              *ristretto.Cache
 	inShutdown         int32
 	attemptToReconnect chan bool
 	uuid               string
 	title              string
-	persistLocation    string
-	fps                int
-	secondsPerClip     int
-	schedule           schedule.Schedule
 	reolinkControl     *reolinkapi.Camera
 	mu                 sync.Mutex
 	vc                 VideoCapturable
 	rtspStream         string
 	buffer             chan gocv.Mat
-	window             *gocv.Window
 }
 
 func NewConnection(
 	title string,
-	persistLocation string,
-	fps int,
-	secondsPerClip int,
-	schedule schedule.Schedule,
-	reolink config.ReolinkAdvanced,
+	sett ConnectonSettings,
 	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
 	var reolinkConn *reolinkapi.Camera
-	if reolink.Enabled {
-		conn, err := reolinkapi.NewCamera(reolink.Username, reolink.Password, reolink.APIAddress)
+	if sett.Reolink.Enabled {
+		conn, err := reolinkapi.NewCamera(sett.Reolink.Username, sett.Reolink.Password, sett.Reolink.APIAddress)
 		if err != nil {
 			logging.Error("Unable to get control connection for camera...")
 		}
@@ -69,14 +74,11 @@ func NewConnection(
 	}
 
 	return &Connection{
+		sett:               sett,
 		cache:              cache,
 		attemptToReconnect: make(chan bool, 1),
 		uuid:               uuid.NewString(),
 		title:              title,
-		persistLocation:    persistLocation,
-		fps:                fps,
-		secondsPerClip:     secondsPerClip,
-		schedule:           schedule,
 		reolinkControl:     reolinkConn,
 		vc:                 vc,
 		rtspStream:         rtspStream,
@@ -108,7 +110,7 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 	}
 
 	startTime := time.Now()
-	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.persistLocation, os.PathSeparator, c.title), nil)
+	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.sett.PersistLocation, os.PathSeparator, c.title), nil)
 	endTime := time.Now()
 
 	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
@@ -128,9 +130,6 @@ func (c *Connection) SizeOnDisk() (int64, string, error) {
 
 func (c *Connection) Close() error {
 	atomic.StoreInt32(&c.inShutdown, 1)
-	if c.window != nil {
-		c.window.Close()
-	}
 	close(c.buffer)
 	c.cache.Close()
 	return c.vc.Close()
@@ -157,13 +156,13 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 				}
 			default:
 				clip := videoClip{
-					fileName: fetchClipFilePath(c.persistLocation, c.title),
+					fileName: fetchClipFilePath(c.sett.PersistLocation, c.title),
 					frames:   []gocv.Mat{},
-					fps:      c.fps,
+					fps:      c.sett.FPS,
 				}
 				// collect enough frames for clip
 				var framesRead uint
-				for framesRead = 0; framesRead < uint(c.fps*c.secondsPerClip); framesRead++ {
+				for framesRead = 0; framesRead < uint(c.sett.FPS*c.sett.SecondsPerClip); framesRead++ {
 					clip.frames = append(clip.frames, <-c.buffer)
 				}
 
@@ -245,12 +244,18 @@ func (c *Connection) reconnect() error {
 		logging.Error("Failed to close connection... ERROR: %v", err)
 	}
 
-	vc, err := gocv.OpenVideoCapture(c.rtspStream)
+	vc, err := openVideoCapture(
+		c.rtspStream,
+		c.title,
+		c.sett.FPS,
+		c.sett.DateTimeLabel,
+		c.sett.DateTimeFormat,
+	)
 	if err != nil {
 		return err
 	}
 
-	c.vc.SetP(vc)
+	c.vc = vc
 
 	return nil
 }
@@ -371,7 +376,7 @@ func (v *videoClip) writeToDisk() error {
 // will either get empty string and pointer or filled string with nil pointer
 // depending on whether it needs to just count the files still remaining in
 // this given dir or whether it needs to start counting again in a found sub dir
-func getDirSize(path string, filePtr *os.File) (int64, error) {
+func getDirSize(path string, filePtr afero.File) (int64, error) {
 	var total int64
 
 	fp, err := resolveFilePointer(path, filePtr)
@@ -488,11 +493,11 @@ func countFileSizes(files []os.FileInfo, onDirFile func(os.FileInfo) int64) int6
 	return total
 }
 
-func resolveFilePointer(path string, file *os.File) (*os.File, error) {
-	var fp *os.File
+func resolveFilePointer(path string, file afero.File) (afero.File, error) {
+	var fp afero.File
 	fp = file
 	if fp == nil {
-		filePtr, err := os.Open(path)
+		filePtr, err := fs.Open(path)
 		if err != nil {
 			return nil, err
 		}

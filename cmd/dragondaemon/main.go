@@ -108,13 +108,15 @@ func (service *Service) Manage() (string, error) {
 		mediaServer.Connect(
 			c.Title,
 			c.Address,
-			c.PersistLoc,
-			c.FPS,
-			c.DateTimeLabel,
-			c.DateTimeFormat,
-			c.SecondsPerClip,
-			c.Schedule,
-			c.ReolinkAdvanced,
+			media.ConnectonSettings{
+				PersistLocation: c.PersistLoc,
+				FPS:             c.FPS,
+				SecondsPerClip:  c.SecondsPerClip,
+				DateTimeLabel:   c.DateTimeLabel,
+				DateTimeFormat:  c.DateTimeFormat,
+				Schedule:        c.Schedule,
+				Reolink:         c.ReolinkAdvanced,
+			},
 		)
 	}
 

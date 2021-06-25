@@ -17,8 +17,6 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/tacusci/logging/v2"
-	"github.com/tauraamui/dragondaemon/pkg/config"
-	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"gocv.io/x/gocv"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
@@ -56,31 +54,24 @@ func (s *Server) IsRunning() bool {
 func (s *Server) Connect(
 	title string,
 	rtspStream string,
-	persistLocation string,
-	fps int,
-	dateTimeLabel bool,
-	dateTimeFormat string,
-	secondsPerClip int,
-	schedule schedule.Schedule,
-	reolink config.ReolinkAdvanced,
+	sett ConnectonSettings,
 ) {
-	vc, err := openVideoCapture(rtspStream, title, fps, dateTimeLabel, dateTimeFormat)
+	vc, err := openVideoCapture(
+		rtspStream, title, sett.FPS, sett.DateTimeLabel, sett.DateTimeFormat,
+	)
+
 	if err != nil {
 		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream)
 		return
 	}
 
 	logging.Info("Connected to stream [%s] at [%s]", title, rtspStream)
-	if len(persistLocation) == 0 {
-		persistLocation = "."
+	if len(sett.PersistLocation) == 0 {
+		sett.PersistLocation = "."
 	}
 	conn := NewConnection(
 		title,
-		persistLocation,
-		fps,
-		secondsPerClip,
-		schedule,
-		reolink,
+		sett,
 		vc,
 		rtspStream,
 	)
@@ -194,7 +185,7 @@ func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan 
 				}
 
 				if conn := activeConnections[currentConnection]; conn != nil {
-					fullPersistLocation := fmt.Sprintf("%s%c%s", conn.persistLocation, os.PathSeparator, conn.title)
+					fullPersistLocation := fmt.Sprintf("%s%c%s", conn.sett.PersistLocation, os.PathSeparator, conn.title)
 					files, err := ioutil.ReadDir(fullPersistLocation)
 					if err != nil {
 						logging.Error("Unable to read contents of connection persist location %s: %v", fullPersistLocation, err)
@@ -429,7 +420,7 @@ func (c *circle) Brightness(x, y float64) uint8 {
 	}
 }
 
-func openVideoCapture(
+var openVideoCapture = func(
 	rtspStream string,
 	title string,
 	fps int,
