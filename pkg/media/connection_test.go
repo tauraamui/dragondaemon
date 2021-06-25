@@ -156,6 +156,14 @@ var _ = Describe("Connection", func() {
 					size, unit := media.UnitizeSize(KB)
 					Expect(size).To(BeNumerically("==", 1))
 					Expect(unit).To(Equal("Kb"))
+
+					size, unit = media.UnitizeSize((KB * KB) + KB)
+					Expect(size).To(BeNumerically("==", 1))
+					Expect(unit).To(Equal("Mb"))
+
+					size, unit = media.UnitizeSize((KB * KB * KB) + (KB * KB))
+					Expect(size).To(BeNumerically("==", 1))
+					Expect(unit).To(Equal("Gb"))
 				})
 
 				It("Should return total size on disk as EOF with empty size and unit values", func() {
