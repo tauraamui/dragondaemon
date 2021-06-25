@@ -11,6 +11,10 @@ test:
 vtest:
 	ginkgo -v ./...
 
+.PHONY: coverage
+coverage:
+	go test -coverpkg=./... -coverprofile=profile.cov ./... && go tool cover -func profile.cov && rm profile.cov
+
 .PHONY: watch
 watch:
 	ginkgo watch ./...
