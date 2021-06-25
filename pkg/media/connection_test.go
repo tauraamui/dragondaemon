@@ -162,6 +162,7 @@ var _ = Describe("Connection", func() {
 					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 
 					Expect(err).To(BeNil())
+					defer binFile.Close()
 					err = binFile.Truncate(1e4)
 					Expect(err).To(BeNil())
 
@@ -172,7 +173,37 @@ var _ = Describe("Connection", func() {
 				})
 
 				It("Should return total size on disk including sub dirs within persist dir", func() {
+					clipsRootDirPath := "/testroot/clips/TestConnectionInstance"
+					mockFs.MkdirAll(clipsRootDirPath, os.ModeDir|os.ModePerm)
 
+					clipsSubDirPath1 := "/testroot/clips/TestConnectionInstance/subdir1"
+					mockFs.MkdirAll(clipsSubDirPath1, os.ModeDir|os.ModePerm)
+
+					clipsSubDirPath2 := "/testroot/clips/TestConnectionInstance/subdir2"
+					mockFs.MkdirAll(clipsSubDirPath2, os.ModeDir|os.ModePerm)
+
+					rootBinFile, err := mockFs.Create(filepath.Join(clipsRootDirPath, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer rootBinFile.Close()
+					err = rootBinFile.Truncate(1e4)
+					Expect(err).To(BeNil())
+
+					subBinFile1, err := mockFs.Create(filepath.Join(clipsSubDirPath1, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer subBinFile1.Close()
+					err = subBinFile1.Truncate(1e4)
+					Expect(err).To(BeNil())
+
+					subBinFile2, err := mockFs.Create(filepath.Join(clipsSubDirPath2, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer subBinFile2.Close()
+					err = subBinFile2.Truncate(1e4)
+					Expect(err).To(BeNil())
+
+					size, unit, err := conn.SizeOnDisk()
+					Expect(size).To(Equal(int64(29)))
+					Expect(unit).To(Equal("Kb"))
+					Expect(err).To(BeNil())
 				})
 			})
 
