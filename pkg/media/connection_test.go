@@ -155,15 +155,15 @@ var _ = Describe("Connection", func() {
 				It("Should return different units and sizes given byte counts", func() {
 					size, unit := media.UnitizeSize(KB)
 					Expect(size).To(BeNumerically("==", 1))
-					Expect(unit).To(Equal("Kb"))
+					Expect(unit).To(Equal("KB"))
 
 					size, unit = media.UnitizeSize(KB * KB)
 					Expect(size).To(BeNumerically("==", 1))
-					Expect(unit).To(Equal("Mb"))
+					Expect(unit).To(Equal("MB"))
 
 					size, unit = media.UnitizeSize(KB * KB * KB)
 					Expect(size).To(BeNumerically("==", 1))
-					Expect(unit).To(Equal("Gb"))
+					Expect(unit).To(Equal("GB"))
 				})
 
 				It("Should return total size on disk as EOF with empty size and unit values", func() {
@@ -185,7 +185,7 @@ var _ = Describe("Connection", func() {
 
 					size, unit, err := conn.SizeOnDisk()
 					Expect(size).To(BeNumerically("==", 9))
-					Expect(unit).To(Equal("Kb"))
+					Expect(unit).To(Equal("KB"))
 					Expect(err).To(BeNil())
 				})
 
@@ -219,7 +219,7 @@ var _ = Describe("Connection", func() {
 
 					size, unit, err := conn.SizeOnDisk()
 					Expect(size).To(BeNumerically("==", 18))
-					Expect(unit).To(Equal("Kb"))
+					Expect(unit).To(Equal("KB"))
 					Expect(err).To(BeNil())
 				})
 
@@ -237,7 +237,7 @@ var _ = Describe("Connection", func() {
 
 					size, unit, err := conn.SizeOnDisk()
 					Expect(size).To(BeNumerically("==", 150))
-					Expect(unit).To(Equal("Mb"))
+					Expect(unit).To(Equal("MB"))
 					Expect(err).To(BeNil())
 				})
 			})
