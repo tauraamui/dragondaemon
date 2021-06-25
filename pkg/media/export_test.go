@@ -37,3 +37,7 @@ func (c *Connection) Buffer() chan gocv.Mat {
 func (c *Connection) ReolinkControl() *reolinkapi.Camera {
 	return c.reolinkControl
 }
+
+func UnitizeSize(total int64) (int64, string) {
+	return unitizeSize(total)
+}
