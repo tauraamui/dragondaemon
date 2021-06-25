@@ -85,7 +85,25 @@ var _ = Describe("Connection", func() {
 			Expect(conn).ToNot(BeNil())
 		})
 
-		Context("Connection instance", func() {
+		It("Should return connection instance with missing reolink connection", func() {
+			mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)
+			conn := media.NewConnection(
+				"TestConnection",
+				media.ConnectonSettings{
+					PersistLocation: "/testroot/clips",
+					FPS:             30,
+					SecondsPerClip:  2,
+					Schedule:        schedule.Schedule{},
+					Reolink:         config.ReolinkAdvanced{Enabled: true},
+				},
+				&testMockVideoCapture{},
+				"fake-stream-addr",
+			)
+
+			Expect(conn.ReolinkControl()).To(BeNil())
+		})
+
+		Context("Using a connection instance", func() {
 			var conn *media.Connection
 			var videoCapture *testMockVideoCapture
 			var resetVidCapOverload func()

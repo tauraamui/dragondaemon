@@ -3,6 +3,7 @@ package media
 import (
 	"context"
 
+	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/spf13/afero"
 	"gocv.io/x/gocv"
 )
@@ -31,4 +32,8 @@ func (c *Connection) Stream(ctx context.Context) chan struct{} {
 
 func (c *Connection) Buffer() chan gocv.Mat {
 	return c.buffer
+}
+
+func (c *Connection) ReolinkControl() *reolinkapi.Camera {
+	return c.reolinkControl
 }
