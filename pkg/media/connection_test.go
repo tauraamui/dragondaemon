@@ -175,7 +175,7 @@ var _ = Describe("Connection", func() {
 					defer readMat.Close()
 
 					go func() {
-						time.Sleep(500 * time.Millisecond)
+						time.Sleep(10 * time.Millisecond)
 						runningBufferLength = len(conn.Buffer())
 						readMat = <-conn.Buffer()
 						cancelStreaming()
