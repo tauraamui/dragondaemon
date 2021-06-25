@@ -157,11 +157,11 @@ var _ = Describe("Connection", func() {
 					Expect(size).To(BeNumerically("==", 1))
 					Expect(unit).To(Equal("Kb"))
 
-					size, unit = media.UnitizeSize((KB * KB) + KB)
+					size, unit = media.UnitizeSize(KB * KB)
 					Expect(size).To(BeNumerically("==", 1))
 					Expect(unit).To(Equal("Mb"))
 
-					size, unit = media.UnitizeSize((KB * KB * KB) + (KB * KB))
+					size, unit = media.UnitizeSize(KB * KB * KB)
 					Expect(size).To(BeNumerically("==", 1))
 					Expect(unit).To(Equal("Gb"))
 				})

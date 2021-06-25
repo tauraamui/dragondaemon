@@ -509,10 +509,10 @@ func resolveFilePointer(path string, file afero.File) (afero.File, error) {
 func unitizeSize(total int64) (int64, string) {
 	unit := "Kb"
 	total /= 1024
-	if total > 1024 {
+	if total >= 1024 {
 		total /= 1024
 		unit = "Mb"
-		if total > 1024 {
+		if total >= 1024 {
 			total /= 1024
 			unit = "Gb"
 		}
