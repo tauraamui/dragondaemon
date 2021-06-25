@@ -1,6 +1,12 @@
 name: Go
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "*"
 
 jobs:
   build:
@@ -22,7 +28,6 @@ jobs:
       run: go test -v ./...
 
   coverage:
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: gocv/opencv:4.5.2
