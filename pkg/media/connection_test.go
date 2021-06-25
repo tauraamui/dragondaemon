@@ -148,26 +148,32 @@ var _ = Describe("Connection", func() {
 				Expect(conn.Title()).To(Equal("TestConnectionInstance"))
 			})
 
-			It("Should return total size on disk as EOF with empty size and unit values", func() {
-				size, unit, err := conn.SizeOnDisk()
-				Expect(int(size)).To(Equal(0))
-				Expect(unit).To(BeEmpty())
-				Expect(err).To(MatchError(io.EOF))
-			})
+			Context("Connect checking total file size in persist dir", func() {
+				It("Should return total size on disk as EOF with empty size and unit values", func() {
+					size, unit, err := conn.SizeOnDisk()
+					Expect(int(size)).To(Equal(0))
+					Expect(unit).To(BeEmpty())
+					Expect(err).To(MatchError(io.EOF))
+				})
 
-			It("Should return total size on disk which matches real total size", func() {
-				clipsDirPath := "/testroot/clips/TestConnectionInstance"
-				mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
-				binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
+				It("Should return total size on disk which matches real total size", func() {
+					clipsDirPath := "/testroot/clips/TestConnectionInstance"
+					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
+					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 
-				Expect(err).To(BeNil())
-				err = binFile.Truncate(1e4)
-				Expect(err).To(BeNil())
+					Expect(err).To(BeNil())
+					err = binFile.Truncate(1e4)
+					Expect(err).To(BeNil())
 
-				size, unit, err := conn.SizeOnDisk()
-				Expect(size).To(Equal(int64(9)))
-				Expect(unit).To(Equal("Kb"))
-				Expect(err).To(BeNil())
+					size, unit, err := conn.SizeOnDisk()
+					Expect(size).To(Equal(int64(9)))
+					Expect(unit).To(Equal("Kb"))
+					Expect(err).To(BeNil())
+				})
+
+				It("Should return total size on disk including sub dirs within persist dir", func() {
+
+				})
 			})
 
 			Context("Connection streaming frames to channel", func() {
