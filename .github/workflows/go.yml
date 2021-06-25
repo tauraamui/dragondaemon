@@ -20,3 +20,28 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+  coverage:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    container:
+      image: gocv/opencv:4.5.2
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Generate coverage report
+      run: go test -v ./... -covermode=atomic -coverprofile=coverage.txt
+
+    - name: Upload coverage report
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODE_COV_TOKEN }}
+        files: ./coverage.txt
+        name: codecov-umbrella # optional
+        fail_ci_if_error: true
+        verbose: true
