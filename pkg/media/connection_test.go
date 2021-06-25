@@ -3,6 +3,7 @@ package media_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -203,6 +204,24 @@ var _ = Describe("Connection", func() {
 					size, unit, err := conn.SizeOnDisk()
 					Expect(size).To(Equal(int64(29)))
 					Expect(unit).To(Equal("Kb"))
+					Expect(err).To(BeNil())
+				})
+
+				It("Should return total size of 150 files within root persist dir", func() {
+					clipsDirPath := "/testroot/clips/TestConnectionInstance"
+					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
+
+					for i := 0; i < 150; i++ {
+						binFile, err := mockFs.Create(filepath.Join(clipsDirPath, fmt.Sprintf("mock%d.bin", i)))
+						Expect(err).To(BeNil())
+						defer binFile.Close()
+						err = binFile.Truncate(1e4)
+						Expect(err).To(BeNil())
+					}
+
+					size, unit, err := conn.SizeOnDisk()
+					Expect(size).To(Equal(int64(1)))
+					Expect(unit).To(Equal("Mb"))
 					Expect(err).To(BeNil())
 				})
 			})
