@@ -150,6 +150,12 @@ var _ = Describe("Connection", func() {
 			})
 
 			Context("Connect checking total file size in persist dir", func() {
+				It("Should return different units and sizes given byte counts", func() {
+					size, unit := media.UnitizeSize(1024)
+					Expect(size).To(BeNumerically("==", 1))
+					Expect(unit).To(Equal("Kb"))
+				})
+
 				It("Should return total size on disk as EOF with empty size and unit values", func() {
 					size, unit, err := conn.SizeOnDisk()
 					Expect(int(size)).To(Equal(0))
