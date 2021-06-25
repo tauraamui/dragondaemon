@@ -19,6 +19,8 @@ import (
 	"gocv.io/x/gocv"
 )
 
+const KB int64 = 1024
+
 type testMockVideoCapture struct {
 	isOpenedFunc func() bool
 	readFunc     func(m *gocv.Mat) bool
@@ -151,14 +153,14 @@ var _ = Describe("Connection", func() {
 
 			Context("Connect checking total file size in persist dir", func() {
 				It("Should return different units and sizes given byte counts", func() {
-					size, unit := media.UnitizeSize(1024)
+					size, unit := media.UnitizeSize(KB)
 					Expect(size).To(BeNumerically("==", 1))
 					Expect(unit).To(Equal("Kb"))
 				})
 
 				It("Should return total size on disk as EOF with empty size and unit values", func() {
 					size, unit, err := conn.SizeOnDisk()
-					Expect(int(size)).To(Equal(0))
+					Expect(size).To(BeNumerically("==", 0))
 					Expect(unit).To(BeEmpty())
 					Expect(err).To(MatchError(io.EOF))
 				})
@@ -170,11 +172,11 @@ var _ = Describe("Connection", func() {
 
 					Expect(err).To(BeNil())
 					defer binFile.Close()
-					err = binFile.Truncate(1e4)
+					err = binFile.Truncate(KB * 9)
 					Expect(err).To(BeNil())
 
 					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(Equal(int64(9)))
+					Expect(size).To(BeNumerically("==", 9))
 					Expect(unit).To(Equal("Kb"))
 					Expect(err).To(BeNil())
 				})
@@ -192,23 +194,23 @@ var _ = Describe("Connection", func() {
 					rootBinFile, err := mockFs.Create(filepath.Join(clipsRootDirPath, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer rootBinFile.Close()
-					err = rootBinFile.Truncate(1e4)
+					err = rootBinFile.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
 					subBinFile1, err := mockFs.Create(filepath.Join(clipsSubDirPath1, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer subBinFile1.Close()
-					err = subBinFile1.Truncate(1e4)
+					err = subBinFile1.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
 					subBinFile2, err := mockFs.Create(filepath.Join(clipsSubDirPath2, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer subBinFile2.Close()
-					err = subBinFile2.Truncate(1e4)
+					err = subBinFile2.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
 					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(Equal(int64(29)))
+					Expect(size).To(BeNumerically("==", 18))
 					Expect(unit).To(Equal("Kb"))
 					Expect(err).To(BeNil())
 				})
@@ -221,12 +223,12 @@ var _ = Describe("Connection", func() {
 						binFile, err := mockFs.Create(filepath.Join(clipsDirPath, fmt.Sprintf("mock%d.bin", i)))
 						Expect(err).To(BeNil())
 						defer binFile.Close()
-						err = binFile.Truncate(1e4)
+						err = binFile.Truncate(KB * KB)
 						Expect(err).To(BeNil())
 					}
 
 					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(Equal(int64(1)))
+					Expect(size).To(BeNumerically("==", 150))
 					Expect(unit).To(Equal("Mb"))
 					Expect(err).To(BeNil())
 				})
@@ -299,8 +301,8 @@ var _ = Describe("Connection", func() {
 					}()
 
 					Eventually(stopping).Should(BeClosed())
-					Expect(openVideoCaptureCallCount).To(Equal(10))
-					Expect(closeCallCount).To(Equal(10))
+					Expect(openVideoCaptureCallCount).To(BeNumerically("==", 10))
+					Expect(closeCallCount).To(BeNumerically("==", 10))
 				})
 			})
 		})
