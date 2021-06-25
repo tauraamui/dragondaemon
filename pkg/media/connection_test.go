@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -152,6 +153,21 @@ var _ = Describe("Connection", func() {
 				Expect(int(size)).To(Equal(0))
 				Expect(unit).To(BeEmpty())
 				Expect(err).To(MatchError(io.EOF))
+			})
+
+			It("Should return total size on disk which matches real total size", func() {
+				clipsDirPath := "/testroot/clips/TestConnectionInstance"
+				mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
+				binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
+
+				Expect(err).To(BeNil())
+				err = binFile.Truncate(1e4)
+				Expect(err).To(BeNil())
+
+				size, unit, err := conn.SizeOnDisk()
+				Expect(size).To(Equal(int64(9)))
+				Expect(unit).To(Equal("Kb"))
+				Expect(err).To(BeNil())
 			})
 
 			Context("Connection streaming frames to channel", func() {
