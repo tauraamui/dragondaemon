@@ -105,7 +105,7 @@ func Destroy() error {
 		return fmt.Errorf("unable to delete database file: %w", err)
 	}
 
-	return os.Remove(dbFilePath)
+	return fs.Remove(dbFilePath)
 }
 
 func Connect() (*gorm.DB, error) {
@@ -162,7 +162,7 @@ func createFile(uc func() (string, error), fs afero.Fs) error {
 	}
 
 	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
-		err = os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm)
+		err = fs.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
 		}

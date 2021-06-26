@@ -124,7 +124,7 @@ var _ = Describe("Data", func() {
 
 			err = data.Destroy()
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("remove /testroot/.cache/tacusci/dragondaemon/dd.db: no such file or directory"))
+			Expect(err.Error()).To(Equal("remove /testroot/.cache/tacusci/dragondaemon/dd.db: file does not exist"))
 		})
 
 		It("Should return error from setup due to path resolution failure", func() {
