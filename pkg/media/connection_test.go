@@ -196,7 +196,7 @@ var _ = Describe("Connection", func() {
 					Expect(err).To(BeNil())
 				})
 
-				XIt("Should return total size on disk from checking disk and then reading from cache", func() {
+				It("Should return total size on disk from checking disk and then reading from cache", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
 					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
 					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
