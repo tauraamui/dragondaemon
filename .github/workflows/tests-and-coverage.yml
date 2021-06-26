@@ -1,4 +1,5 @@
-name: Go
+
+name: Tests and Coverage
 
 on:
   push:
@@ -9,24 +10,6 @@ on:
       - "*"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    container:
-      image: gocv/opencv:4.5.2
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.16
-
-    - name: Build
-      run: go build -v ./...
-
-    - name: Test
-      run: go test -v ./...
-
   coverage:
     runs-on: ubuntu-latest
     container:
@@ -47,6 +30,6 @@ jobs:
       with:
         token: ${{ secrets.CODE_COV_TOKEN }}
         files: ./coverage.txt
-        name: codecov-umbrella # optional
+        name: codecov-umbrella
         fail_ci_if_error: true
         verbose: true
