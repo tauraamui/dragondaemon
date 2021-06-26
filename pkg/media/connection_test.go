@@ -177,9 +177,8 @@ var _ = Describe("Connection", func() {
 
 			Context("Connect checking total file size in persist dir", func() {
 				It("Should return total size on disk as EOF with empty size and unit values", func() {
-					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(BeNumerically("==", 0))
-					Expect(unit).To(BeEmpty())
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("0KB"))
 					Expect(err).To(MatchError(io.EOF))
 				})
 
@@ -192,9 +191,8 @@ var _ = Describe("Connection", func() {
 					err = binFile.Truncate(KB * 9)
 					Expect(err).To(BeNil())
 
-					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(BeNumerically("==", 9))
-					Expect(unit).To(Equal("KB"))
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("9KB"))
 					Expect(err).To(BeNil())
 				})
 
@@ -208,16 +206,14 @@ var _ = Describe("Connection", func() {
 					err = binFile.Truncate(KB * 9)
 					Expect(err).To(BeNil())
 
-					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(BeNumerically("==", 9))
-					Expect(unit).To(Equal("KB"))
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("9KB"))
 					Expect(err).To(BeNil())
 
 					mockFs.Remove(binFile.Name())
 
-					size, unit, err = conn.SizeOnDisk()
-					Expect(size).To(BeNumerically("==", 9))
-					Expect(unit).To(Equal("KB"))
+					size, err = conn.SizeOnDisk()
+					Expect(size).To(Equal("9KB"))
 					Expect(err).To(BeNil())
 				})
 
@@ -248,9 +244,8 @@ var _ = Describe("Connection", func() {
 					err = subBinFile2.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
-					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(BeNumerically("==", 18))
-					Expect(unit).To(Equal("KB"))
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("18KB"))
 					Expect(err).To(BeNil())
 				})
 
@@ -265,9 +260,8 @@ var _ = Describe("Connection", func() {
 						Expect(err).To(BeNil())
 					}
 
-					size, unit, err := conn.SizeOnDisk()
-					Expect(size).To(BeNumerically("==", 150))
-					Expect(unit).To(Equal("MB"))
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("150MB"))
 					Expect(err).To(BeNil())
 				})
 			})
