@@ -60,15 +60,20 @@ var _ = Describe("Data", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 
 	var resetFs func() = nil
+	var resetUC func() = nil
 
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
 		resetFs = data.OverloadFS(afero.NewMemMapFs())
+		resetUC = data.OverloadUC(func() (string, error) {
+			return "/testroot/.cache", nil
+		})
 	})
 
 	AfterEach(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
 		resetFs()
+		resetUC()
 	})
 
 	Context("Running setup", func() {
@@ -111,11 +116,6 @@ var _ = Describe("Data", func() {
 		})
 
 		It("Should create file and then be removed on destroy call", func() {
-			resetUC := data.OverloadUC(func() (string, error) {
-				return "/testroot/.cache", nil
-			})
-			defer resetUC()
-
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
@@ -133,11 +133,6 @@ var _ = Describe("Data", func() {
 		})
 
 		It("Should return error from setup due to db already existing", func() {
-			resetUC := data.OverloadUC(func() (string, error) {
-				return "/testroot/.cache", nil
-			})
-			defer resetUC()
-
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
@@ -146,10 +141,9 @@ var _ = Describe("Data", func() {
 		})
 
 		It("Should return error from setup due to path resolution failure", func() {
-			reset := data.OverloadUC(func() (string, error) {
+			resetUC = data.OverloadUC(func() (string, error) {
 				return "", errors.New("test cache dir error")
 			})
-			defer reset()
 
 			err := data.Setup()
 
@@ -161,10 +155,9 @@ var _ = Describe("Data", func() {
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
-			reset := data.OverloadUC(func() (string, error) {
+			resetUC = data.OverloadUC(func() (string, error) {
 				return "", errors.New("test cache dir error")
 			})
-			defer reset()
 
 			err = data.Destroy()
 			Expect(err).ToNot(BeNil())
