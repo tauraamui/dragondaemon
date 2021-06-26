@@ -123,8 +123,7 @@ var _ = Describe("Data", func() {
 			Expect(err).To(BeNil())
 
 			err = data.Destroy()
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("remove /testroot/.cache/tacusci/dragondaemon/dd.db: file does not exist"))
+			Expect(err).To(MatchError("remove /testroot/.cache/tacusci/dragondaemon/dd.db: file does not exist"))
 		})
 
 		It("Should return error from setup due to read only fs", func() {
