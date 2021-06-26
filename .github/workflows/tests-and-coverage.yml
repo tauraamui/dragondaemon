@@ -1,5 +1,4 @@
-
-name: Tests and Coverage
+name: tests
 
 on:
   push:
