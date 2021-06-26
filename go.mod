@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/ReolinkCameraAPI/reolinkapigo v0.0.2
+	github.com/allegro/bigcache/v3 v3.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0

@@ -78,12 +78,12 @@ func (s *Server) Connect(
 
 	go func(c *Connection) {
 		logging.Info("Fetching connection size on disk...")
-		size, unit, err := c.SizeOnDisk()
+		size, err := c.SizeOnDisk()
 		if err != nil {
 			logging.Error("Unable to fetch size on disk: %v", err)
 			return
 		}
-		logging.Info("Connection [%s] size on disk: %d%s", conn.title, size, unit)
+		logging.Info("Connection [%s] size on disk: %s", conn.title, size)
 	}(conn)
 
 	s.trackConnection(conn, true)

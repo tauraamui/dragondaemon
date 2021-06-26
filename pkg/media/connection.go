@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
-	"github.com/dgraph-io/ristretto"
+	"github.com/allegro/bigcache/v3"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
@@ -36,7 +36,7 @@ type ConnectonSettings struct {
 
 type Connection struct {
 	sett               ConnectonSettings
-	cache              *ristretto.Cache
+	cache              *bigcache.BigCache
 	inShutdown         int32
 	attemptToReconnect chan bool
 	uuid               string
@@ -54,23 +54,16 @@ func NewConnection(
 	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
-	var reolinkConn *reolinkapi.Camera
-	if sett.Reolink.Enabled {
-		conn, err := reolinkapi.NewCamera(sett.Reolink.Username, sett.Reolink.Password, sett.Reolink.APIAddress)
-		if err != nil {
-			logging.Error("Unable to get control connection for camera...")
-		}
-
-		reolinkConn = conn
+	control, err := connectReolinkControl(
+		sett.Reolink.Username, sett.Reolink.Password, sett.Reolink.APIAddress,
+	)
+	if err != nil {
+		logging.Error(err.Error())
 	}
 
-	cache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 100,
-		MaxCost:     2,
-		BufferItems: 64,
-	})
+	cache, err := initCache()
 	if err != nil {
-		logging.Error("Unable to intialise in-memory cache: %v...", err)
+		logging.Error(err.Error())
 	}
 
 	return &Connection{
@@ -79,7 +72,7 @@ func NewConnection(
 		attemptToReconnect: make(chan bool, 1),
 		uuid:               uuid.NewString(),
 		title:              title,
-		reolinkControl:     reolinkConn,
+		reolinkControl:     control,
 		vc:                 vc,
 		rtspStream:         rtspStream,
 		buffer:             make(chan gocv.Mat, 6),
@@ -94,38 +87,38 @@ func (c *Connection) Title() string {
 	return c.title
 }
 
-func (c *Connection) SizeOnDisk() (int64, string, error) {
+func (c *Connection) SizeOnDisk() (string, error) {
 	var size int64
 	var unit string
+	var sizeWithUnitSuffix string
 
-	e, ok := c.cache.Get(sizeOnDisk)
-	if ok {
-		logging.Debug("FOUND SIZE IN CACHE")
-		sizeVal, ok := e.(int64)
-		if ok {
-			logging.Debug("SIZE VALUE OF TYPE INT64")
-			size, unit = unitizeSize(sizeVal)
-			return size, unit, nil
-		}
+	s, err := c.cache.Get(sizeOnDisk)
+	if err == nil {
+		return string(s), nil
+	} else {
+		logging.Error("unable to retrieve size from cache: %w", err)
 	}
 
 	startTime := time.Now()
-	total, err := getDirSize(fmt.Sprintf("%s%c%s", c.sett.PersistLocation, os.PathSeparator, c.title), nil)
+	total, err := getDirSize(filepath.Join(c.sett.PersistLocation, c.title), nil)
 	endTime := time.Now()
 
 	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
 
 	if err != nil {
-		return total, "", err
+		size, unit := unitizeSize(0)
+		return fmt.Sprintf("%d%s", size, unit), err
 	}
 
 	size, unit = unitizeSize(total)
+	sizeWithUnitSuffix = fmt.Sprintf("%d%s", size, unit)
 
-	if ok := c.cache.SetWithTTL(sizeOnDisk, size, 1, time.Minute*5); ok {
-		logging.Debug("SAVED DISK SIZE TO CACHE")
+	err = c.cache.Set(sizeOnDisk, []byte(sizeWithUnitSuffix))
+	if err != nil {
+		logging.Error("unable to store disk size in cache: %w", err)
 	}
 
-	return size, unit, nil
+	return sizeWithUnitSuffix, nil
 }
 
 func (c *Connection) Close() error {
@@ -373,6 +366,22 @@ func (v *videoClip) writeToDisk() error {
 	return nil
 }
 
+func connectReolinkControl(username, password, addr string) (conn *reolinkapi.Camera, err error) {
+	conn, err = reolinkapi.NewCamera(username, password, addr)
+	if err != nil {
+		err = fmt.Errorf("unable to connect to camera API: %w", err)
+	}
+	return
+}
+
+func initCache() (cache *bigcache.BigCache, err error) {
+	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
+	if err != nil {
+		err = fmt.Errorf("unable to initialise connection cache: %w", err)
+	}
+	return
+}
+
 // will either get empty string and pointer or filled string with nil pointer
 // depending on whether it needs to just count the files still remaining in
 // this given dir or whether it needs to start counting again in a found sub dir
@@ -394,7 +403,7 @@ func getDirSize(path string, filePtr afero.File) (int64, error) {
 
 		var total int64
 		go func(d chan interface{}, t *int64) {
-			s, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
+			s, err := getDirSize(filepath.Join(path, f.Name()), nil)
 			if err != nil {
 				logging.Error("Unable to get dirs full size: %v...", err)
 			}
