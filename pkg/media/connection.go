@@ -403,7 +403,7 @@ func getDirSize(path string, filePtr afero.File) (int64, error) {
 
 		var total int64
 		go func(d chan interface{}, t *int64) {
-			s, err := getDirSize(fmt.Sprintf("%s%c%s", path, os.PathSeparator, f.Name()), nil)
+			s, err := getDirSize(filepath.Join(path, f.Name()), nil)
 			if err != nil {
 				logging.Error("Unable to get dirs full size: %v...", err)
 			}
