@@ -184,13 +184,15 @@ var _ = Describe("Connection", func() {
 
 				It("Should return total size on disk which matches real total size", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
-					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 
+					By("Creating file on disk of size 9KB")
+					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer binFile.Close()
 					err = binFile.Truncate(KB * 9)
 					Expect(err).To(BeNil())
 
+					By("Querying disk size with just created file on disk")
 					size, err := conn.SizeOnDisk()
 					Expect(size).To(Equal("9KB"))
 					Expect(err).To(BeNil())
@@ -199,17 +201,20 @@ var _ = Describe("Connection", func() {
 				It("Should return total size on disk from checking disk and then reading from cache", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
 					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
-					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 
+					By("Creating file on disk of size 9KB")
+					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer binFile.Close()
 					err = binFile.Truncate(KB * 9)
 					Expect(err).To(BeNil())
 
+					By("Querying disk size with just created file on disk")
 					size, err := conn.SizeOnDisk()
 					Expect(size).To(Equal("9KB"))
 					Expect(err).To(BeNil())
 
+					By("Querying disk size after deleting all files from disk")
 					mockFs.Remove(binFile.Name())
 
 					size, err = conn.SizeOnDisk()
@@ -226,24 +231,28 @@ var _ = Describe("Connection", func() {
 					clipsSubDirPath2 := "/testroot/clips/TestConnectionInstance/subdir2"
 					mockFs.MkdirAll(clipsSubDirPath2, os.ModeDir|os.ModePerm)
 
+					By("Creating file on disk within root dir of size 6KB")
 					rootBinFile, err := mockFs.Create(filepath.Join(clipsRootDirPath, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer rootBinFile.Close()
 					err = rootBinFile.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
+					By("Creating file on disk within sub dir 1 of size 6KB")
 					subBinFile1, err := mockFs.Create(filepath.Join(clipsSubDirPath1, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer subBinFile1.Close()
 					err = subBinFile1.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
+					By("Creating file on disk within sub dir 2 of size 6KB")
 					subBinFile2, err := mockFs.Create(filepath.Join(clipsSubDirPath2, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer subBinFile2.Close()
 					err = subBinFile2.Truncate(KB * 6)
 					Expect(err).To(BeNil())
 
+					By("Querying disk size with all just created files on disk")
 					size, err := conn.SizeOnDisk()
 					Expect(size).To(Equal("18KB"))
 					Expect(err).To(BeNil())
@@ -252,6 +261,7 @@ var _ = Describe("Connection", func() {
 				It("Should return total size of 150 files within root persist dir", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
 
+					By("Creating 150 files on disk of size 1MB")
 					for i := 0; i < 150; i++ {
 						binFile, err := mockFs.Create(filepath.Join(clipsDirPath, fmt.Sprintf("mock%d.bin", i)))
 						Expect(err).To(BeNil())
@@ -260,6 +270,7 @@ var _ = Describe("Connection", func() {
 						Expect(err).To(BeNil())
 					}
 
+					By("Querying disk size with all just created files on disk")
 					size, err := conn.SizeOnDisk()
 					Expect(size).To(Equal("150MB"))
 					Expect(err).To(BeNil())
