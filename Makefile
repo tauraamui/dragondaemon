@@ -15,6 +15,14 @@ vtest:
 coverage:
 	go test -coverpkg=./... -coverprofile=profile.cov ./... && go tool cover -func profile.cov && rm profile.cov
 
+.PHONY: install-linter
+install-linter:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1
+
+.PHONY: lint
+lint:
+	golangci-lint run
+
 .PHONY: watch
 watch:
 	ginkgo watch ./...
