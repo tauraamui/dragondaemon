@@ -106,7 +106,8 @@ func (c *Connection) SizeOnDisk() (string, error) {
 	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
 
 	if err != nil {
-		return "0KB", err
+		size, unit := unitizeSize(0)
+		return fmt.Sprintf("%d%s", size, unit), err
 	}
 
 	size, unit = unitizeSize(total)
