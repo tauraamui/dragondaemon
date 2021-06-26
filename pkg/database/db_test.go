@@ -133,6 +133,19 @@ var _ = Describe("Data", func() {
 			Expect(err).To(MatchError("unable to create database file: operation not permitted"))
 		})
 
+		It("Should return error from setup due to db already existing", func() {
+			resetUC := data.OverloadUC(func() (string, error) {
+				return "/testroot/.cache", nil
+			})
+			defer resetUC()
+
+			err := data.Setup()
+			Expect(err).To(BeNil())
+
+			err = data.Setup()
+			Expect(err).To(MatchError("database file already exists: /testroot/.cache/tacusci/dragondaemon/dd.db"))
+		})
+
 		It("Should return error from setup due to path resolution failure", func() {
 			reset := data.OverloadUC(func() (string, error) {
 				return "", errors.New("test cache dir error")
