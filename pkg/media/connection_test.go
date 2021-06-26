@@ -117,7 +117,7 @@ var _ = Describe("Connection", func() {
 			var openVidCapCallback func()
 
 			BeforeEach(func() {
-				Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
+				Expect(mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)).To(BeNil())
 				conn = media.NewConnection(
 					"TestConnectionInstance",
 					media.ConnectonSettings{
@@ -200,7 +200,7 @@ var _ = Describe("Connection", func() {
 
 				It("Should return total size on disk from checking disk and then reading from cache", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
-					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
+					Expect(mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)).To(BeNil())
 
 					By("Creating file on disk of size 9KB")
 					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
@@ -226,10 +226,10 @@ var _ = Describe("Connection", func() {
 					clipsRootDirPath := "/testroot/clips/TestConnectionInstance"
 
 					clipsSubDirPath1 := "/testroot/clips/TestConnectionInstance/subdir1"
-					mockFs.MkdirAll(clipsSubDirPath1, os.ModeDir|os.ModePerm)
+					Expect(mockFs.MkdirAll(clipsSubDirPath1, os.ModeDir|os.ModePerm)).To(BeNil())
 
 					clipsSubDirPath2 := "/testroot/clips/TestConnectionInstance/subdir2"
-					mockFs.MkdirAll(clipsSubDirPath2, os.ModeDir|os.ModePerm)
+					Expect(mockFs.MkdirAll(clipsSubDirPath2, os.ModeDir|os.ModePerm)).To(BeNil())
 
 					By("Creating file on disk within root dir of size 6KB")
 					rootBinFile, err := mockFs.Create(filepath.Join(clipsRootDirPath, "mock.bin"))

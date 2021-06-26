@@ -25,7 +25,7 @@ var _ = Describe("UserRepo", func() {
 		Expect(db).ToNot(BeNil())
 		mockDBConn = db
 
-		models.AutoMigrate(mockDBConn)
+		Expect(models.AutoMigrate(mockDBConn)).To(BeNil())
 	})
 
 	AfterEach(func() {

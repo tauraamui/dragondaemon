@@ -10,7 +10,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shibukawa/configdir"
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
@@ -22,7 +21,6 @@ import (
 )
 
 const (
-	configDirType    = configdir.System
 	vendorName       = "tacusci"
 	appName          = "dragondaemon"
 	databaseFileName = "dd.db"
@@ -164,7 +162,10 @@ func createFile(uc func() (string, error), fs afero.Fs) error {
 	}
 
 	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
-		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm)
+		err = os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
+		}
 		_, err := fs.Create(path)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)

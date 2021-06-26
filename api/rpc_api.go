@@ -19,7 +19,9 @@ import (
 )
 
 func init() {
-	rpc.Register(Session{})
+	if err := rpc.Register(Session{}); err != nil {
+		logging.Error("unable to register session type for RPC") //nolint
+	}
 }
 
 const SIGREMOTE = Signal(0x1)

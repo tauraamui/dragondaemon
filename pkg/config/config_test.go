@@ -88,8 +88,12 @@ var _ = Describe("Config", func() {
 
 			Context("From valid config JSON", func() {
 				It("Should load valid config values", func() {
-					afero.WriteFile(testCfg.fs, "test/tacusci/dragondaemon/config.json", mockValidConfigContent, 0666)
-					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					Expect(
+						afero.WriteFile(
+							testCfg.fs, "test/tacusci/dragondaemon/config.json", mockValidConfigContent, 0666,
+						),
+					).To(BeNil())
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json") //nolint
 					testCfg.uc = func() (string, error) {
 						return "test", nil
 					}
@@ -165,7 +169,7 @@ var _ = Describe("Config", func() {
 					)
 					Expect(err).To(BeNil())
 
-					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json") //nolint
 					testCfg.uc = func() (string, error) {
 						return "test", nil
 					}
@@ -186,7 +190,7 @@ var _ = Describe("Config", func() {
 					)
 					Expect(err).To(BeNil())
 
-					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json")
+					defer testCfg.fs.Remove("test/tacusci/dragondaemon/config.json") //nolint
 					testCfg.uc = func() (string, error) {
 						return "test", nil
 					}
