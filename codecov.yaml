@@ -4,6 +4,7 @@ coverage:
       default:
         target: auto
         threshold: 1%
-    patch:
-      default:
-        target: 80%
+    # disabled until total coverage increased to approx 75%
+    # patch:
+    #   default:
+    #     target: 80%
