@@ -147,7 +147,7 @@ var _ = Describe("Connection", func() {
 			})
 
 			AfterSuite(func() {
-				conn.Close()
+				Expect(conn.Close()).To(BeNil())
 				conn = nil
 			})
 
