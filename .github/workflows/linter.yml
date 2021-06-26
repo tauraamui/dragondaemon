@@ -11,6 +11,8 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
+    container:
+      image: gocv/opencv:4.5.2
     steps:
       - uses: actions/checkout@v2
       - name: golangci-lint
