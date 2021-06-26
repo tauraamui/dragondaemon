@@ -72,7 +72,7 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("Should return a new connection instance", func() {
-			mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)
+			Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
 			conn := media.NewConnection(
 				"TestConnection",
 				media.ConnectonSettings{
@@ -93,7 +93,7 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("Should return connection instance with missing reolink connection", func() {
-			mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)
+			Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
 			conn := media.NewConnection(
 				"TestConnection",
 				media.ConnectonSettings{
@@ -117,7 +117,7 @@ var _ = Describe("Connection", func() {
 			var openVidCapCallback func()
 
 			BeforeEach(func() {
-				mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)
+				Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
 				conn = media.NewConnection(
 					"TestConnectionInstance",
 					media.ConnectonSettings{
@@ -215,7 +215,7 @@ var _ = Describe("Connection", func() {
 					Expect(err).To(BeNil())
 
 					By("Querying disk size after deleting all files from disk")
-					mockFs.Remove(binFile.Name())
+					Expect(mockFs.Remove(binFile.Name())).To(BeNil())
 
 					size, err = conn.SizeOnDisk()
 					Expect(size).To(Equal("9KB"))

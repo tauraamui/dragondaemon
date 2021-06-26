@@ -28,14 +28,14 @@ type Service struct {
 
 // Setup will setup local DB and ask for root admin credentials
 func (service *Service) Setup() (string, error) {
-	logging.Info("Setting up dragondaemon service...")
+	logging.Info("Setting up dragondaemon service...") //nolint
 
 	err := config.Setup()
 	if err != nil {
 		if !errors.Is(err, config.ErrConfigAlreadyExists) {
 			return "", err
 		}
-		logging.Error(err.Error())
+		logging.Error(err.Error()) //nolint
 	}
 
 	err = db.Setup()
@@ -43,17 +43,17 @@ func (service *Service) Setup() (string, error) {
 		if !errors.Is(err, db.ErrDBAlreadyExists) {
 			return "", err
 		}
-		logging.Error(err.Error())
+		logging.Error(err.Error()) //nolint
 	}
 
 	return "Setup successful...", nil
 }
 
 func (service *Service) RemoveSetup() (string, error) {
-	logging.Info("Removing setup for dragondaemon service...")
+	logging.Info("Removing setup for dragondaemon service...") //nolint
 	err := db.Destroy()
 	if err != nil {
-		logging.Error("unable to delete database file: %s", err.Error())
+		logging.Error("unable to delete database file: %s", err.Error()) //nolint
 	}
 
 	return "Removing setup successful...", nil
@@ -87,21 +87,21 @@ func (service *Service) Manage() (string, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	logging.Info("Starting dragon daemon...")
+	logging.Info("Starting dragon daemon...") //nolint
 
 	mediaServer := media.NewServer(debugMode)
 
 	cfg := config.New()
-	logging.Info("Loading configuration")
+	logging.Info("Loading configuration") //nolint
 	err := cfg.Load()
 	if err != nil {
-		logging.Fatal("Error loading configuration: %v", err)
+		logging.Fatal("Error loading configuration: %v", err) //nolint
 	}
-	logging.Info("Loaded configuration")
+	logging.Info("Loaded configuration") //nolint
 
 	for _, c := range cfg.Cameras {
 		if c.Disabled {
-			logging.Warn("Connection %s is disabled, skipping...", c.Title)
+			logging.Warn("Connection %s is disabled, skipping...", c.Title) //nolint
 			continue
 		}
 
@@ -125,7 +125,7 @@ func (service *Service) Manage() (string, error) {
 		rpcListenPort = ":3121"
 	}
 
-	logging.Info("Running API server on port %s...", rpcListenPort)
+	logging.Info("Running API server on port %s...", rpcListenPort) //nolint
 	mediaServerAPI, err := api.New(
 		interrupt,
 		mediaServer,
@@ -135,15 +135,15 @@ func (service *Service) Manage() (string, error) {
 		},
 	)
 	if err != nil {
-		logging.Error("unable to start API server: %v", err)
+		logging.Error("unable to start API server: %v", err) //nolint
 	} else {
 		err := api.StartRPC(mediaServerAPI)
 		if err != nil {
-			logging.Error("Unable to start API RPC server: %v...", err)
+			logging.Error("Unable to start API RPC server: %v...", err) //nolint
 		}
 	}
 
-	logging.Info("Running media server...")
+	logging.Info("Running media server...") //nolint
 	mediaServer.Run(media.Options{
 		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
 	})
@@ -151,22 +151,22 @@ func (service *Service) Manage() (string, error) {
 	// wait for application terminate signal from OS
 	killSignal := <-interrupt
 	fmt.Print("\r")
-	logging.Error("Received signal: %s", killSignal)
+	logging.Error("Received signal: %s", killSignal) //nolint
 
-	logging.Info("Shutting down API server...")
+	logging.Info("Shutting down API server...") //nolint
 	err = api.ShutdownRPC(mediaServerAPI)
 	if err != nil {
-		logging.Error("Unable to shutdown API server: %v...", err)
+		logging.Error("Unable to shutdown API server: %v...", err) //nolint
 	}
 
 	// trigger server shutdown and wait
-	logging.Info("Shutting down media server...")
+	logging.Info("Shutting down media server...") //nolint
 	<-mediaServer.Shutdown()
 
-	logging.Info("Closing camera connections...")
+	logging.Info("Closing camera connections...") //nolint
 	err = mediaServer.Close()
 	if err != nil {
-		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err))
+		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err)) //nolint
 		os.Exit(1)
 	}
 
@@ -202,16 +202,16 @@ func main() {
 
 	srv, err := daemon.New(name, description, daemonType)
 	if err != nil {
-		logging.Error(err.Error())
+		logging.Error(err.Error()) //nolint
 		os.Exit(1)
 	}
 
 	service := &Service{srv}
 	status, err := service.Manage()
 	if err != nil {
-		logging.Error(err.Error())
+		logging.Error(err.Error()) //nolint
 		os.Exit(1)
 	}
 
-	logging.Info(status)
+	logging.Info(status) //nolint
 }

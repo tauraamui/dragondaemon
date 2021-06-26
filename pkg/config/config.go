@@ -93,7 +93,7 @@ func Setup() error {
 		return fmt.Errorf("%w: %s", ErrConfigAlreadyExists, configPath)
 	}
 
-	logging.Info("Created default config at: %s", configPath)
+	logging.Info("Created default config at: %s", configPath) //nolint
 
 	return nil
 }
@@ -145,7 +145,7 @@ func (c *values) Load() error {
 		return err
 	}
 
-	logging.Info("Resolved config file location: %s", configPath)
+	logging.Info("Resolved config file location: %s", configPath) //nolint
 
 	file, err := afero.ReadFile(c.fs, configPath)
 	if err != nil {

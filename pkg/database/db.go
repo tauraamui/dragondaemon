@@ -69,7 +69,7 @@ func (s stdinPasswordReader) ReadPassword(promptText string) ([]byte, error) {
 }
 
 func Setup() error {
-	logging.Info("Creating database file...")
+	logging.Info("Creating database file...") //nolint
 
 	if err := createFile(uc, fs); err != nil {
 		return err
@@ -96,7 +96,7 @@ func Setup() error {
 		return fmt.Errorf("unable to create root user entry: %w", err)
 	}
 
-	logging.Info("Created root admin user")
+	logging.Info("Created root admin user") //nolint
 
 	return nil
 }
@@ -116,7 +116,7 @@ func Connect() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	logging.Debug("Connecting to DB: %s", dbPath)
+	logging.Debug("Connecting to DB: %s", dbPath) //nolint
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
 	if err != nil {
