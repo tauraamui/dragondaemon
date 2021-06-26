@@ -127,6 +127,12 @@ var _ = Describe("Data", func() {
 			Expect(err.Error()).To(Equal("remove /testroot/.cache/tacusci/dragondaemon/dd.db: file does not exist"))
 		})
 
+		It("Should return error from setup due to read only fs", func() {
+			resetFs = data.OverloadFS(afero.NewReadOnlyFs(afero.NewMemMapFs()))
+			err := data.Setup()
+			Expect(err).To(MatchError("unable to create database file: operation not permitted"))
+		})
+
 		It("Should return error from setup due to path resolution failure", func() {
 			reset := data.OverloadUC(func() (string, error) {
 				return "", errors.New("test cache dir error")
