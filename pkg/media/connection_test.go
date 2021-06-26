@@ -82,11 +82,14 @@ var _ = Describe("Connection", func() {
 					Schedule:        schedule.Schedule{},
 					Reolink:         config.ReolinkAdvanced{Enabled: false},
 				},
-				&testMockVideoCapture{},
+				&testMockVideoCapture{
+					closeFunc: func() error { return nil },
+				},
 				"fake-stream-addr",
 			)
 
 			Expect(conn).ToNot(BeNil())
+			Expect(conn.Close()).To(BeNil())
 		})
 
 		It("Should return connection instance with missing reolink connection", func() {
@@ -143,6 +146,11 @@ var _ = Describe("Connection", func() {
 				videoCapture = &testMockVideoCapture{}
 			})
 
+			AfterSuite(func() {
+				conn.Close()
+				conn = nil
+			})
+
 			It("Should have populated UUID", func() {
 				Expect(conn.UUID()).ToNot(BeEmpty())
 			})
@@ -151,7 +159,7 @@ var _ = Describe("Connection", func() {
 				Expect(conn.Title()).To(Equal("TestConnectionInstance"))
 			})
 
-			Context("Connect checking total file size in persist dir", func() {
+			Context("Calling unitizeSize directly", func() {
 				It("Should return different units and sizes given byte counts", func() {
 					size, unit := media.UnitizeSize(KB)
 					Expect(size).To(BeNumerically("==", 1))
@@ -165,7 +173,9 @@ var _ = Describe("Connection", func() {
 					Expect(size).To(BeNumerically("==", 1))
 					Expect(unit).To(Equal("GB"))
 				})
+			})
 
+			Context("Connect checking total file size in persist dir", func() {
 				It("Should return total size on disk as EOF with empty size and unit values", func() {
 					size, unit, err := conn.SizeOnDisk()
 					Expect(size).To(BeNumerically("==", 0))
@@ -175,7 +185,6 @@ var _ = Describe("Connection", func() {
 
 				It("Should return total size on disk which matches real total size", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
-					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
 					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 
 					Expect(err).To(BeNil())
@@ -189,9 +198,31 @@ var _ = Describe("Connection", func() {
 					Expect(err).To(BeNil())
 				})
 
+				It("Should return total size on disk from checking disk and then reading from cache", func() {
+					clipsDirPath := "/testroot/clips/TestConnectionInstance"
+					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
+					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
+
+					Expect(err).To(BeNil())
+					defer binFile.Close()
+					err = binFile.Truncate(KB * 9)
+					Expect(err).To(BeNil())
+
+					size, unit, err := conn.SizeOnDisk()
+					Expect(size).To(BeNumerically("==", 9))
+					Expect(unit).To(Equal("KB"))
+					Expect(err).To(BeNil())
+
+					// mockFs.Remove(binFile.Name())
+
+					// size, unit, err = conn.SizeOnDisk()
+					// Expect(size).To(BeNumerically("==", 9))
+					// Expect(unit).To(Equal("KB"))
+					// Expect(err).To(BeNil())
+				})
+
 				It("Should return total size on disk including sub dirs within persist dir", func() {
 					clipsRootDirPath := "/testroot/clips/TestConnectionInstance"
-					mockFs.MkdirAll(clipsRootDirPath, os.ModeDir|os.ModePerm)
 
 					clipsSubDirPath1 := "/testroot/clips/TestConnectionInstance/subdir1"
 					mockFs.MkdirAll(clipsSubDirPath1, os.ModeDir|os.ModePerm)
@@ -225,7 +256,6 @@ var _ = Describe("Connection", func() {
 
 				It("Should return total size of 150 files within root persist dir", func() {
 					clipsDirPath := "/testroot/clips/TestConnectionInstance"
-					mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)
 
 					for i := 0; i < 150; i++ {
 						binFile, err := mockFs.Create(filepath.Join(clipsDirPath, fmt.Sprintf("mock%d.bin", i)))
