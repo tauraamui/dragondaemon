@@ -2,6 +2,7 @@ package data_test
 
 import (
 	"errors"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -78,11 +79,13 @@ var _ = Describe("Data", func() {
 
 	Context("Running setup", func() {
 		var resetFs func() = nil
+		var mockFs afero.Fs = nil
 		var resetPlainPromptReader func()
 		var resetPasswordPromptReader func()
 
 		BeforeEach(func() {
-			resetFs = data.OverloadFS(afero.NewMemMapFs())
+			mockFs = afero.NewMemMapFs()
+			resetFs = data.OverloadFS(mockFs)
 			resetPlainPromptReader = data.OverloadPlainPromptReader(
 				testPlainPromptReader{
 					testUsername: "testadmin",
@@ -96,10 +99,15 @@ var _ = Describe("Data", func() {
 			)
 		})
 
+		JustBeforeEach(func() {
+			mockFs.MkdirAll("/testroot/.cache", os.ModeDir|os.ModePerm)
+		})
+
 		AfterEach(func() {
 			resetFs()
 			resetPlainPromptReader()
 			resetPasswordPromptReader()
+			mockFs = nil
 		})
 
 		It("Should create full file path for DB with single root user entry", func() {
