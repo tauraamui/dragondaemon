@@ -69,7 +69,7 @@ func (s stdinPasswordReader) ReadPassword(promptText string) ([]byte, error) {
 func Setup() error {
 	logging.Info("Creating database file...") //nolint
 
-	if err := createFile(uc, fs); err != nil {
+	if err := createFile(); err != nil {
 		return err
 	}
 
@@ -155,7 +155,7 @@ func resolveDBPath(uc func() (string, error)) (string, error) {
 		databaseFileName), nil
 }
 
-func createFile(uc func() (string, error), fs afero.Fs) error {
+func createFile() error {
 	path, err := resolveDBPath(uc)
 	if err != nil {
 		return err
