@@ -116,6 +116,7 @@ func Connect() (*gorm.DB, error) {
 
 	logging.Debug("Connecting to DB: %s", dbPath) //nolint
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
+	fmt.Printf("DB PATH: %s\n", dbPath)
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
 	if err != nil {
 		return nil, fmt.Errorf("unable to open db connection: %w", err)

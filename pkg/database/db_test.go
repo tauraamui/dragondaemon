@@ -100,7 +100,7 @@ var _ = Describe("Data", func() {
 		})
 
 		JustBeforeEach(func() {
-			mockFs.MkdirAll("/testroot/.cache", os.ModeDir|os.ModePerm)
+			Expect(mockFs.MkdirAll("/testroot/.cache", os.ModeDir|os.ModePerm)).To(BeNil())
 		})
 
 		AfterEach(func() {
