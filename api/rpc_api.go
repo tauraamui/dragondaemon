@@ -19,7 +19,9 @@ import (
 )
 
 func init() {
-	rpc.Register(Session{})
+	if err := rpc.Register(Session{}); err != nil {
+		logging.Error("unable to register session type for RPC") //nolint
+	}
 }
 
 const SIGREMOTE = Signal(0x1)
@@ -151,7 +153,7 @@ func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
 		return err
 	}
 
-	logging.Warn("Received remote reboot connection request...")
+	logging.Warn("Received remote reboot connection request...") //nolint
 	err = m.s.APIRebootConnection(sess.CameraUUID)
 	if err != nil {
 		*resp = false
@@ -169,7 +171,7 @@ func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
 	}
 
 	*resp = true
-	logging.Warn("Received remote shutdown request...")
+	logging.Warn("Received remote shutdown request...") //nolint
 	defer func() {
 		time.Sleep(time.Second * 1)
 		m.interrupt <- SIGREMOTE

@@ -93,7 +93,7 @@ func Setup() error {
 		return fmt.Errorf("%w: %s", ErrConfigAlreadyExists, configPath)
 	}
 
-	logging.Info("Created default config at: %s", configPath)
+	logging.Info("Created default config at: %s", configPath) //nolint
 
 	return nil
 }
@@ -106,7 +106,10 @@ func (c *values) Save(overwrite bool) (string, error) {
 
 	parentDirPath := strings.Replace(path, configFileName, "", -1)
 	if _, err := c.fs.Stat(parentDirPath); errors.Is(err, os.ErrNotExist) {
-		os.MkdirAll(parentDirPath, os.ModeDir|os.ModePerm)
+		err = os.MkdirAll(parentDirPath, os.ModeDir|os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("unable to create parent directory: %w", err)
+		}
 	}
 
 	marshalledConfig, err := json.MarshalIndent(c, "", "  ")
@@ -145,7 +148,7 @@ func (c *values) Load() error {
 		return err
 	}
 
-	logging.Info("Resolved config file location: %s", configPath)
+	logging.Info("Resolved config file location: %s", configPath) //nolint
 
 	file, err := afero.ReadFile(c.fs, configPath)
 	if err != nil {

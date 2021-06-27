@@ -34,7 +34,7 @@ func (u *User) ComparePassword(password string) error {
 func enc(p string) string {
 	h, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
-		logging.Error(fmt.Errorf("unable to generate hash and salt from password: %w", err).Error())
+		logging.Error(fmt.Errorf("unable to generate hash and salt from password: %w", err).Error()) //nolint
 		return p
 	}
 

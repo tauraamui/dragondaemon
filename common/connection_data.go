@@ -1,9 +1,15 @@
 package common
 
-import "net/rpc"
+import (
+	"net/rpc"
+
+	"github.com/tacusci/logging/v2"
+)
 
 func init() {
-	rpc.Register(ConnectionData{})
+	if err := rpc.Register(ConnectionData{}); err != nil {
+		logging.Error("unable to register connection data type for RPC") //nolint
+	}
 }
 
 type ConnectionData struct {

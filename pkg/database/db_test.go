@@ -2,6 +2,7 @@ package data_test
 
 import (
 	"errors"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -60,24 +61,31 @@ var _ = Describe("Data", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 
 	var resetFs func() = nil
+	var resetUC func() = nil
 
 	BeforeEach(func() {
 		logging.CurrentLoggingLevel = logging.SilentLevel
 		resetFs = data.OverloadFS(afero.NewMemMapFs())
+		resetUC = data.OverloadUC(func() (string, error) {
+			return "/testroot/.cache", nil
+		})
 	})
 
 	AfterEach(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
 		resetFs()
+		resetUC()
 	})
 
 	Context("Running setup", func() {
 		var resetFs func() = nil
+		var mockFs afero.Fs = nil
 		var resetPlainPromptReader func()
 		var resetPasswordPromptReader func()
 
 		BeforeEach(func() {
-			resetFs = data.OverloadFS(afero.NewMemMapFs())
+			mockFs = afero.NewMemMapFs()
+			resetFs = data.OverloadFS(mockFs)
 			resetPlainPromptReader = data.OverloadPlainPromptReader(
 				testPlainPromptReader{
 					testUsername: "testadmin",
@@ -91,10 +99,15 @@ var _ = Describe("Data", func() {
 			)
 		})
 
+		JustBeforeEach(func() {
+			Expect(mockFs.MkdirAll("/testroot/.cache", os.ModeDir|os.ModePerm)).To(BeNil())
+		})
+
 		AfterEach(func() {
 			resetFs()
 			resetPlainPromptReader()
 			resetPasswordPromptReader()
+			mockFs = nil
 		})
 
 		It("Should create full file path for DB with single root user entry", func() {
@@ -111,11 +124,6 @@ var _ = Describe("Data", func() {
 		})
 
 		It("Should create file and then be removed on destroy call", func() {
-			resetUC := data.OverloadUC(func() (string, error) {
-				return "/testroot/.cache", nil
-			})
-			defer resetUC()
-
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
@@ -123,15 +131,27 @@ var _ = Describe("Data", func() {
 			Expect(err).To(BeNil())
 
 			err = data.Destroy()
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("remove /testroot/.cache/tacusci/dragondaemon/dd.db: no such file or directory"))
+			Expect(err).To(MatchError("remove /testroot/.cache/tacusci/dragondaemon/dd.db: file does not exist"))
+		})
+
+		It("Should return error from setup due to read only fs", func() {
+			resetFs = data.OverloadFS(afero.NewReadOnlyFs(afero.NewMemMapFs()))
+			err := data.Setup()
+			Expect(err).To(MatchError("unable to create database file: operation not permitted"))
+		})
+
+		It("Should return error from setup due to db already existing", func() {
+			err := data.Setup()
+			Expect(err).To(BeNil())
+
+			err = data.Setup()
+			Expect(err).To(MatchError("database file already exists: /testroot/.cache/tacusci/dragondaemon/dd.db"))
 		})
 
 		It("Should return error from setup due to path resolution failure", func() {
-			reset := data.OverloadUC(func() (string, error) {
+			resetUC = data.OverloadUC(func() (string, error) {
 				return "", errors.New("test cache dir error")
 			})
-			defer reset()
 
 			err := data.Setup()
 
@@ -143,10 +163,9 @@ var _ = Describe("Data", func() {
 			err := data.Setup()
 			Expect(err).To(BeNil())
 
-			reset := data.OverloadUC(func() (string, error) {
+			resetUC = data.OverloadUC(func() (string, error) {
 				return "", errors.New("test cache dir error")
 			})
-			defer reset()
 
 			err = data.Destroy()
 			Expect(err).ToNot(BeNil())

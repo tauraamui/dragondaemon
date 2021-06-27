@@ -10,7 +10,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shibukawa/configdir"
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
@@ -22,7 +21,6 @@ import (
 )
 
 const (
-	configDirType    = configdir.System
 	vendorName       = "tacusci"
 	appName          = "dragondaemon"
 	databaseFileName = "dd.db"
@@ -69,9 +67,9 @@ func (s stdinPasswordReader) ReadPassword(promptText string) ([]byte, error) {
 }
 
 func Setup() error {
-	logging.Info("Creating database file...")
+	logging.Info("Creating database file...") //nolint
 
-	if err := createFile(uc, fs); err != nil {
+	if err := createFile(); err != nil {
 		return err
 	}
 
@@ -96,7 +94,7 @@ func Setup() error {
 		return fmt.Errorf("unable to create root user entry: %w", err)
 	}
 
-	logging.Info("Created root admin user")
+	logging.Info("Created root admin user") //nolint
 
 	return nil
 }
@@ -107,7 +105,7 @@ func Destroy() error {
 		return fmt.Errorf("unable to delete database file: %w", err)
 	}
 
-	return os.Remove(dbFilePath)
+	return fs.Remove(dbFilePath)
 }
 
 func Connect() (*gorm.DB, error) {
@@ -116,7 +114,7 @@ func Connect() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	logging.Debug("Connecting to DB: %s", dbPath)
+	logging.Debug("Connecting to DB: %s", dbPath) //nolint
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
 	if err != nil {
@@ -157,14 +155,15 @@ func resolveDBPath(uc func() (string, error)) (string, error) {
 		databaseFileName), nil
 }
 
-func createFile(uc func() (string, error), fs afero.Fs) error {
+func createFile() error {
 	path, err := resolveDBPath(uc)
 	if err != nil {
 		return err
 	}
 
 	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
-		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm)
+		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm) //nolint
+
 		_, err := fs.Create(path)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)

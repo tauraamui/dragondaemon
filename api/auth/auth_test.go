@@ -49,7 +49,7 @@ var _ = Describe("Auth", func() {
 			Expect(err).To(BeNil())
 
 			testCustomClaims := testCustomClaims{}
-			json.Unmarshal(decodedClaims, &testCustomClaims)
+			Expect(json.Unmarshal(decodedClaims, &testCustomClaims)).To(BeNil())
 
 			Expect(testCustomClaims.UserUUID).To(Equal("testuser"))
 			Expect(testCustomClaims.Audience).To(Equal("dragondaemon"))
