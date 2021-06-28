@@ -10,6 +10,8 @@ import (
 	"github.com/tacusci/logging/v2"
 	data "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type testReader struct {
@@ -80,8 +82,17 @@ var _ = Describe("Data", func() {
 	Context("Running setup", func() {
 		var resetFs func() = nil
 		var mockFs afero.Fs = nil
+		var resetOpenDBConn func()
 		var resetPlainPromptReader func()
 		var resetPasswordPromptReader func()
+
+		BeforeSuite(func() {
+			resetOpenDBConn = data.OverloadOpenDBConnection(
+				func(string) (*gorm.DB, error) {
+					return gorm.Open(sqlite.Open("file::memory:?cache=shared"))
+				},
+			)
+		})
 
 		BeforeEach(func() {
 			mockFs = afero.NewMemMapFs()
@@ -110,6 +121,10 @@ var _ = Describe("Data", func() {
 			mockFs = nil
 		})
 
+		AfterSuite(func() {
+			resetOpenDBConn()
+		})
+
 		It("Should create full file path for DB with single root user entry", func() {
 			err := data.Setup()
 			Expect(err).To(BeNil())
@@ -121,6 +136,16 @@ var _ = Describe("Data", func() {
 			user, err := userRepo.FindByName("testadmin")
 			Expect(err).To(BeNil())
 			Expect(user.Name).To(Equal("testadmin"))
+		})
+
+		It("Should connect without having to run setup first", func() {
+			err := data.Setup()
+			Expect(err).To(BeNil())
+
+			conn, err := data.Connect()
+			Expect(err).To(BeNil())
+
+			Expect(conn).ToNot(BeNil())
 		})
 
 		It("Should create file and then be removed on destroy call", func() {
