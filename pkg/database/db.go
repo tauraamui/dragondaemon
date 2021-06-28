@@ -115,8 +115,7 @@ func Connect() (*gorm.DB, error) {
 	}
 
 	logging.Debug("Connecting to DB: %s", dbPath) //nolint
-	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger})
+	db, err := openDBConnection(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open db connection: %w", err)
 	}
@@ -127,6 +126,11 @@ func Connect() (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+var openDBConnection = func(path string) (*gorm.DB, error) {
+	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
+	return gorm.Open(sqlite.Open(path), &gorm.Config{Logger: logger})
 }
 
 func createRootUser(db *gorm.DB, username, password string) error {
@@ -162,7 +166,7 @@ func createFile() error {
 	}
 
 	if _, err := fs.Stat(path); errors.Is(err, os.ErrNotExist) {
-		os.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm) //nolint
+		fs.MkdirAll(strings.Replace(path, databaseFileName, "", -1), os.ModeDir|os.ModePerm) //nolint
 
 		_, err := fs.Create(path)
 		if err != nil {

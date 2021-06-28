@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/spf13/afero"
+	"gorm.io/gorm"
 )
 
 func NewStdinPlainReader(readFrom io.Reader) stdinPlainReader {
@@ -22,6 +23,12 @@ func OverloadFS(overload afero.Fs) func() {
 	fsRef := fs
 	fs = overload
 	return func() { fs = fsRef }
+}
+
+func OverloadOpenDBConnection(overload func(string) (*gorm.DB, error)) func() {
+	openDBConnectionRef := openDBConnection
+	openDBConnection = overload
+	return func() { openDBConnection = openDBConnectionRef }
 }
 
 func OverloadPlainPromptReader(overload plainReader) func() {
