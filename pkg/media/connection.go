@@ -144,6 +144,10 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
 					wg.Wait()
+					for len(clipsToSave) > 0 {
+						e := <-clipsToSave
+						e.close()
+					}
 					close(clipsToSave)
 					close(stopping)
 				}
@@ -156,7 +160,9 @@ func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
 				// collect enough frames for clip
 				var framesRead uint
 				for framesRead = 0; framesRead < uint(c.sett.FPS*c.sett.SecondsPerClip); framesRead++ {
-					clip.frames = append(clip.frames, <-c.buffer)
+					frameFromBuffer := <-c.buffer
+					clip.frames = append(clip.frames, frameFromBuffer.Clone())
+					frameFromBuffer.Close()
 				}
 
 				clipsToSave <- clip
@@ -182,7 +188,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 			case <-ctx.Done():
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
-					shutdown(c, img, stopping)
+					shutdown(c, &img, stopping)
 				}
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
@@ -190,7 +196,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 					c.attemptToReconnect <- tryReconnect(c)
 				}
 			default:
-				c.attemptToReconnect <- !readFrameIntoBuffer(c, img)
+				c.attemptToReconnect <- !readFrameIntoBuffer(c, &img)
 			}
 		}
 	}(ctx, stopping)
@@ -336,7 +342,13 @@ func (v *videoClip) writeToDisk() error {
 	return nil
 }
 
-func shutdown(c *Connection, img gocv.Mat, stopping chan struct{}) {
+func (v *videoClip) close() {
+	for _, f := range v.frames {
+		f.Close()
+	}
+}
+
+func shutdown(c *Connection, img *gocv.Mat, stopping chan struct{}) {
 	logging.Debug("Stopped stream goroutine") //nolint
 	logging.Debug("Closing root image mat")   //nolint
 	img.Close()
@@ -359,9 +371,9 @@ func tryReconnect(c *Connection) bool {
 	return false
 }
 
-func readFrameIntoBuffer(c *Connection, img gocv.Mat) bool {
+func readFrameIntoBuffer(c *Connection, img *gocv.Mat) bool {
 	if c.vc.IsOpened() {
-		if ok := c.vc.Read(&img); !ok {
+		if ok := c.vc.Read(img); !ok {
 			logging.Warn("Connection for stream at [%s] closed", c.title) //nolint
 			return false
 		}
