@@ -182,44 +182,16 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 			case <-ctx.Done():
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
-					logging.Debug("Stopped stream goroutine") //nolint
-					logging.Debug("Closing root image mat")   //nolint
-					img.Close()
-					logging.Debug("Flushing img mat buffer") //nolint
-					for len(c.buffer) > 0 {
-						e := <-c.buffer
-						e.Close()
-					}
-					close(stopping)
+					shutdown(c, img, stopping)
 				}
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
-					logging.Info("Attempting to reconnect to [%s]", c.title) //nolint
-					err := c.reconnect()
-					if err != nil {
-						logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err) //nolint
-						c.attemptToReconnect <- true
-						continue
-					}
-					logging.Info("Re-connected to [%s]...", c.title) //nolint
-					continue
+					// if unsuccessful send reconnect message to process
+					c.attemptToReconnect <- tryReconnect(c)
 				}
 			default:
-				if c.vc.IsOpened() {
-					if ok := c.vc.Read(&img); !ok {
-						logging.Warn("Connection for stream at [%s] closed", c.title) //nolint
-						c.attemptToReconnect <- true
-						continue
-					}
-
-					imgClone := img.Clone()
-					select {
-					case c.buffer <- imgClone:
-						logging.Debug("Sending read from to buffer...") //nolint
-					default:
-						imgClone.Close()
-						logging.Debug("Buffer full...") //nolint
-					}
+				if !readFrameIntoBuffer(c, img) {
+					c.attemptToReconnect <- true
 				}
 			}
 		}
@@ -364,6 +336,49 @@ func (v *videoClip) writeToDisk() error {
 	}
 	v.frames = nil
 	return nil
+}
+
+func shutdown(c *Connection, img gocv.Mat, stopping chan struct{}) {
+	logging.Debug("Stopped stream goroutine") //nolint
+	logging.Debug("Closing root image mat")   //nolint
+	img.Close()
+	logging.Debug("Flushing img mat buffer") //nolint
+	for len(c.buffer) > 0 {
+		e := <-c.buffer
+		e.Close()
+	}
+	close(stopping)
+}
+
+func tryReconnect(c *Connection) bool {
+	logging.Info("Attempting to reconnect to [%s]", c.title) //nolint
+	err := c.reconnect()
+	if err != nil {
+		logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err) //nolint
+		return true
+	}
+	logging.Info("Re-connected to [%s]...", c.title) //nolint
+	return false
+}
+
+func readFrameIntoBuffer(c *Connection, img gocv.Mat) bool {
+	if c.vc.IsOpened() {
+		if ok := c.vc.Read(&img); !ok {
+			logging.Warn("Connection for stream at [%s] closed", c.title) //nolint
+			return false
+		}
+
+		imgClone := img.Clone()
+		select {
+		case c.buffer <- imgClone:
+			logging.Debug("Sending read from to buffer...") //nolint
+		default:
+			imgClone.Close()
+			logging.Debug("Buffer full...") //nolint
+		}
+		return true
+	}
+	return false
 }
 
 func connectReolinkControl(username, password, addr string) (conn *reolinkapi.Camera, err error) {
