@@ -190,9 +190,7 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 					c.attemptToReconnect <- tryReconnect(c)
 				}
 			default:
-				if !readFrameIntoBuffer(c, img) {
-					c.attemptToReconnect <- true
-				}
+				c.attemptToReconnect <- !readFrameIntoBuffer(c, img)
 			}
 		}
 	}(ctx, stopping)
