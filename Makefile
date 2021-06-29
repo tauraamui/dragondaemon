@@ -3,6 +3,10 @@
 .PHONY: default
 default: build
 
+.PHONY: ci-run
+ci-run: test lint build
+
+
 .PHONY: test
 test:
 	ginkgo ./...
