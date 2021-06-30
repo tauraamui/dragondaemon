@@ -55,7 +55,9 @@ func NewConnection(
 	rtspStream string,
 ) *Connection {
 	control, err := connectReolinkControl(
-		sett.Reolink.Username, sett.Reolink.Password, sett.Reolink.APIAddress,
+		sett.Reolink.Username,
+		sett.Reolink.Password,
+		sett.Reolink.APIAddress,
 	)
 	if err != nil {
 		logging.Error(err.Error()) //nolint
@@ -210,7 +212,11 @@ func (c *Connection) reconnect() error {
 	return nil
 }
 
-func writeClipsToDisk(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
+func writeClipsToDisk(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	clips chan videoClip,
+) {
 	readAndWrite := func(clips chan videoClip) {
 		clip := <-clips
 		if err := clip.writeToDisk(); err != nil {
@@ -235,7 +241,11 @@ func writeClipsToDisk(ctx context.Context, wg *sync.WaitGroup, clips chan videoC
 	}(ctx, wg, clips)
 }
 
-func shutdownStreaming(c *Connection, img *gocv.Mat, stopping chan struct{}) {
+func shutdownStreaming(
+	c *Connection,
+	img *gocv.Mat,
+	stopping chan struct{},
+) {
 	logging.Debug("Stopped stream goroutine") //nolint
 	logging.Debug("Closing root image mat")   //nolint
 	img.Close()
@@ -278,7 +288,11 @@ func readFromStream(c *Connection, img *gocv.Mat) bool {
 	return false
 }
 
-func shutdownWritingStreamToClips(wg *sync.WaitGroup, clipsToSave chan videoClip, stopping chan interface{}) {
+func shutdownWritingStreamToClips(
+	wg *sync.WaitGroup,
+	clipsToSave chan videoClip,
+	stopping chan interface{},
+) {
 	wg.Wait()
 	for len(clipsToSave) > 0 {
 		e := <-clipsToSave
@@ -288,7 +302,10 @@ func shutdownWritingStreamToClips(wg *sync.WaitGroup, clipsToSave chan videoClip
 	close(stopping)
 }
 
-func makeClipFromStream(c *Connection, persistLocation, title string) videoClip {
+func makeClipFromStream(
+	c *Connection,
+	persistLocation, title string,
+) videoClip {
 	clip := videoClip{
 		fileName: fetchClipFilePath(c.sett.PersistLocation, c.title),
 		frames:   []gocv.Mat{},
@@ -304,7 +321,9 @@ func makeClipFromStream(c *Connection, persistLocation, title string) videoClip 
 	return clip
 }
 
-func connectReolinkControl(username, password, addr string) (conn *reolinkapi.Camera, err error) {
+func connectReolinkControl(
+	username, password, addr string,
+) (conn *reolinkapi.Camera, err error) {
 	conn, err = reolinkapi.NewCamera(username, password, addr)
 	if err != nil {
 		err = fmt.Errorf("unable to connect to camera API: %w", err) //nolint
