@@ -16,6 +16,7 @@
 
 .env
 .DS_Store
+.vscode
 dragondaemon
 proofofconcept.go2
 clips/*
@@ -27,3 +28,4 @@ config.json
 dragond
 
 dd.db
+
