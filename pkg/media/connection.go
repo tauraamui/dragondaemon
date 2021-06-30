@@ -229,13 +229,6 @@ func (c *Connection) reconnect() error {
 	return nil
 }
 
-type VideoCapturable interface {
-	SetP(*gocv.VideoCapture)
-	IsOpened() bool
-	Read(*gocv.Mat) bool
-	Close() error
-}
-
 func shutdownStreaming(c *Connection, img *gocv.Mat, stopping chan struct{}) {
 	logging.Debug("Stopped stream goroutine") //nolint
 	logging.Debug("Closing root image mat")   //nolint
