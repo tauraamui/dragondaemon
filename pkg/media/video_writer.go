@@ -23,6 +23,7 @@ func openVideoWriter(
 	frameWidth int,
 	frameHeight int,
 ) (videoWriteable, error) {
+	// basically to locally test without actually writing to disk
 	mockVidWriting, foundEnv := os.LookupEnv("DRAGON_DAEMON_MOCK_VIDEO_WRITING")
 	if foundEnv && mockVidWriting == "1" {
 		return &mockVideoWriter{}, nil
