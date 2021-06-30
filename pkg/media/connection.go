@@ -219,7 +219,7 @@ func writeClipsToDisk(
 ) {
 	readAndWrite := func(clips chan videoClip) {
 		clip := <-clips
-		if err := clip.writeToDisk(); err != nil {
+		if err := clip.flushToDisk(); err != nil {
 			logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err) //nolint
 		}
 	}

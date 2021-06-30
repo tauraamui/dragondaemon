@@ -11,7 +11,7 @@ type videoClip struct {
 	frames   []gocv.Mat
 }
 
-func (v *videoClip) writeToDisk() error {
+func (v *videoClip) flushToDisk() error {
 	if len(v.frames) > 0 {
 		img := v.frames[0]
 		writer, err := openVideoWriter(v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows())
