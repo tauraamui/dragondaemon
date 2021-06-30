@@ -188,15 +188,15 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 			case <-ctx.Done():
 				if !reachedShutdownCase {
 					reachedShutdownCase = true
-					shutdown(c, &img, stopping)
+					shutdownStreaming(c, &img, stopping)
 				}
 			case reconnect := <-c.attemptToReconnect:
 				if reconnect {
 					// if unsuccessful send reconnect message to process
-					c.attemptToReconnect <- tryReconnect(c)
+					c.attemptToReconnect <- tryReconnectStream(c)
 				}
 			default:
-				c.attemptToReconnect <- !readFrameIntoBuffer(c, &img)
+				c.attemptToReconnect <- !readFromStream(c, &img)
 			}
 		}
 	}(ctx, stopping)
@@ -348,7 +348,7 @@ func (v *videoClip) close() {
 	}
 }
 
-func shutdown(c *Connection, img *gocv.Mat, stopping chan struct{}) {
+func shutdownStreaming(c *Connection, img *gocv.Mat, stopping chan struct{}) {
 	logging.Debug("Stopped stream goroutine") //nolint
 	logging.Debug("Closing root image mat")   //nolint
 	img.Close()
@@ -360,7 +360,7 @@ func shutdown(c *Connection, img *gocv.Mat, stopping chan struct{}) {
 	close(stopping)
 }
 
-func tryReconnect(c *Connection) bool {
+func tryReconnectStream(c *Connection) bool {
 	logging.Info("Attempting to reconnect to [%s]", c.title) //nolint
 	err := c.reconnect()
 	if err != nil {
@@ -371,7 +371,7 @@ func tryReconnect(c *Connection) bool {
 	return false
 }
 
-func readFrameIntoBuffer(c *Connection, img *gocv.Mat) bool {
+func readFromStream(c *Connection, img *gocv.Mat) bool {
 	if c.vc.IsOpened() {
 		if ok := c.vc.Read(img); !ok {
 			logging.Warn("Connection for stream at [%s] closed", c.title) //nolint
