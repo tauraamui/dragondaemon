@@ -149,7 +149,7 @@ func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
 func (s *Server) saveStreams(ctx context.Context) []chan interface{} {
 	var stoppedPersisting []chan interface{}
 	for _, conn := range s.activeConnections() {
-		stoppedPersisting = append(stoppedPersisting, conn.persistToDisk(ctx))
+		stoppedPersisting = append(stoppedPersisting, conn.writeStreamToClips(ctx))
 	}
 	return stoppedPersisting
 }

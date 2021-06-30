@@ -55,7 +55,9 @@ func NewConnection(
 	rtspStream string,
 ) *Connection {
 	control, err := connectReolinkControl(
-		sett.Reolink.Username, sett.Reolink.Password, sett.Reolink.APIAddress,
+		sett.Reolink.Username,
+		sett.Reolink.Password,
+		sett.Reolink.APIAddress,
 	)
 	if err != nil {
 		logging.Error(err.Error()) //nolint
@@ -128,51 +130,6 @@ func (c *Connection) Close() error {
 	return c.vc.Close()
 }
 
-func (c *Connection) persistToDisk(ctx context.Context) chan interface{} {
-	stopping := make(chan interface{})
-
-	wg := sync.WaitGroup{}
-	clipsToSave := make(chan videoClip, 3)
-	go writeClipsToDisk(ctx, &wg, clipsToSave)
-
-	go func(ctx context.Context, wg *sync.WaitGroup, stopping chan interface{}) {
-		reachedShutdownCase := false
-		for {
-			time.Sleep(time.Millisecond * 1)
-			select {
-			case <-ctx.Done():
-				if !reachedShutdownCase {
-					reachedShutdownCase = true
-					wg.Wait()
-					for len(clipsToSave) > 0 {
-						e := <-clipsToSave
-						e.close()
-					}
-					close(clipsToSave)
-					close(stopping)
-				}
-			default:
-				clip := videoClip{
-					fileName: fetchClipFilePath(c.sett.PersistLocation, c.title),
-					frames:   []gocv.Mat{},
-					fps:      c.sett.FPS,
-				}
-				// collect enough frames for clip
-				var framesRead uint
-				for framesRead = 0; framesRead < uint(c.sett.FPS*c.sett.SecondsPerClip); framesRead++ {
-					frameFromBuffer := <-c.buffer
-					clip.frames = append(clip.frames, frameFromBuffer.Clone())
-					frameFromBuffer.Close()
-				}
-
-				clipsToSave <- clip
-			}
-		}
-	}(ctx, &wg, stopping)
-
-	return stopping
-}
-
 func (c *Connection) stream(ctx context.Context) chan struct{} {
 	logging.Debug("Opening root image mat") //nolint
 	img := gocv.NewMat()
@@ -204,6 +161,32 @@ func (c *Connection) stream(ctx context.Context) chan struct{} {
 	return stopping
 }
 
+func (c *Connection) writeStreamToClips(ctx context.Context) chan interface{} {
+	stopping := make(chan interface{})
+
+	wg := sync.WaitGroup{}
+	clipsToSave := make(chan videoClip, 3)
+	go writeClipsToDisk(ctx, &wg, clipsToSave)
+
+	go func(ctx context.Context, wg *sync.WaitGroup, stopping chan interface{}) {
+		reachedShutdownCase := false
+		for {
+			time.Sleep(time.Millisecond * 1)
+			select {
+			case <-ctx.Done():
+				if !reachedShutdownCase {
+					reachedShutdownCase = true
+					shutdownWritingStreamToClips(wg, clipsToSave, stopping)
+				}
+			default:
+				clipsToSave <- makeClipFromStream(c, c.sett.PersistLocation, c.title)
+			}
+		}
+	}(ctx, &wg, stopping)
+
+	return stopping
+}
+
 func (c *Connection) reconnect() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -229,7 +212,40 @@ func (c *Connection) reconnect() error {
 	return nil
 }
 
-func shutdownStreaming(c *Connection, img *gocv.Mat, stopping chan struct{}) {
+func writeClipsToDisk(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	clips chan videoClip,
+) {
+	readAndWrite := func(clips chan videoClip) {
+		clip := <-clips
+		if err := clip.flushToDisk(); err != nil {
+			logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err) //nolint
+		}
+	}
+	wg.Add(1)
+	go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
+		defer wg.Done()
+		for {
+			time.Sleep(time.Millisecond * 1)
+			select {
+			case <-ctx.Done():
+				for len(clips) > 0 {
+					readAndWrite(clips)
+				}
+				return
+			default:
+				readAndWrite(clips)
+			}
+		}
+	}(ctx, wg, clips)
+}
+
+func shutdownStreaming(
+	c *Connection,
+	img *gocv.Mat,
+	stopping chan struct{},
+) {
 	logging.Debug("Stopped stream goroutine") //nolint
 	logging.Debug("Closing root image mat")   //nolint
 	img.Close()
@@ -272,7 +288,42 @@ func readFromStream(c *Connection, img *gocv.Mat) bool {
 	return false
 }
 
-func connectReolinkControl(username, password, addr string) (conn *reolinkapi.Camera, err error) {
+func shutdownWritingStreamToClips(
+	wg *sync.WaitGroup,
+	clipsToSave chan videoClip,
+	stopping chan interface{},
+) {
+	wg.Wait()
+	for len(clipsToSave) > 0 {
+		e := <-clipsToSave
+		e.close()
+	}
+	close(clipsToSave)
+	close(stopping)
+}
+
+func makeClipFromStream(
+	c *Connection,
+	persistLocation, title string,
+) videoClip {
+	clip := videoClip{
+		fileName: fetchClipFilePath(c.sett.PersistLocation, c.title),
+		frames:   []gocv.Mat{},
+		fps:      c.sett.FPS,
+	}
+	// collect enough frames for clip
+	var framesRead uint
+	for framesRead = 0; framesRead < uint(c.sett.FPS*c.sett.SecondsPerClip); framesRead++ {
+		frameFromBuffer := <-c.buffer
+		clip.frames = append(clip.frames, frameFromBuffer.Clone())
+		frameFromBuffer.Close()
+	}
+	return clip
+}
+
+func connectReolinkControl(
+	username, password, addr string,
+) (conn *reolinkapi.Camera, err error) {
 	conn, err = reolinkapi.NewCamera(username, password, addr)
 	if err != nil {
 		err = fmt.Errorf("unable to connect to camera API: %w", err) //nolint
@@ -358,31 +409,6 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	}
 
 	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
-}
-
-func writeClipsToDisk(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
-	readAndWrite := func(clips chan videoClip) {
-		clip := <-clips
-		if err := clip.writeToDisk(); err != nil {
-			logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err) //nolint
-		}
-	}
-	wg.Add(1)
-	go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
-		defer wg.Done()
-		for {
-			time.Sleep(time.Millisecond * 1)
-			select {
-			case <-ctx.Done():
-				for len(clips) > 0 {
-					readAndWrite(clips)
-				}
-				return
-			default:
-				readAndWrite(clips)
-			}
-		}
-	}(ctx, wg, clips)
 }
 
 func ensureDirectoryExists(path string) error {
