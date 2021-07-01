@@ -350,6 +350,7 @@ func getDirSize(path string, filePtr afero.File) (int64, error) {
 		return total, err
 	}
 
+	// read up to 100 files in dir of given path
 	files, err := fp.Readdir(100)
 	if len(files) == 0 {
 		return total, err
