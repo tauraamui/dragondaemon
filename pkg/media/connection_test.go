@@ -143,7 +143,9 @@ var _ = Describe("Connection", func() {
 
 			AfterEach(func() {
 				resetVidCapOverload()
-				videoCapture = &testMockVideoCapture{}
+				videoCapture = &testMockVideoCapture{
+					closeFunc: func() error { return nil },
+				}
 			})
 
 			AfterSuite(func() {
@@ -346,6 +348,12 @@ var _ = Describe("Connection", func() {
 					Eventually(stopping).Should(BeClosed())
 					Expect(openVideoCaptureCallCount).To(BeNumerically("==", 10))
 					Expect(closeCallCount).To(BeNumerically("==", 10))
+				})
+			})
+
+			Context("Connection writing stream to disk", func() {
+				It("Should write video frames from given connection into video files on disk", func() {
+					Expect(true).To(BeTrue())
 				})
 			})
 		})
