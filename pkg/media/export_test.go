@@ -30,6 +30,10 @@ func (c *Connection) Stream(ctx context.Context) chan struct{} {
 	return c.stream(ctx)
 }
 
+func (c *Connection) WriteStreamToClips(ctx context.Context) chan interface{} {
+	return c.writeStreamToClips(ctx)
+}
+
 func (c *Connection) Buffer() chan gocv.Mat {
 	return c.buffer
 }

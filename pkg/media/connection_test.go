@@ -367,6 +367,12 @@ var _ = Describe("Connection", func() {
 					ctx, cancelStreaming := context.WithCancel(context.Background())
 					stopping := conn.Stream(ctx)
 
+					ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+					stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+					cancelWriteStreamToClips()
+					Eventually(stoppingWriteStreamIntoClips).Should(BeClosed())
+
 					cancelStreaming()
 					Eventually(stopping).Should(BeClosed())
 				})
