@@ -353,7 +353,22 @@ var _ = Describe("Connection", func() {
 
 			Context("Connection writing stream to disk", func() {
 				It("Should write video frames from given connection into video files on disk", func() {
-					Expect(true).To(BeTrue())
+					// var matSumVal1 float64
+					videoCapture.isOpenedFunc = func() bool { return true }
+					videoCapture.readFunc = func(m *gocv.Mat) bool {
+						mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+						defer mat.Close()
+						mat.AddFloat(3.15)
+						// matSumVal1 = mat.Sum().Val1
+						mat.CopyTo(m)
+						return true
+					}
+
+					ctx, cancelStreaming := context.WithCancel(context.Background())
+					stopping := conn.Stream(ctx)
+
+					cancelStreaming()
+					Eventually(stopping).Should(BeClosed())
 				})
 			})
 		})
