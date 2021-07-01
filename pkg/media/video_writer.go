@@ -6,7 +6,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-type videoWriteable interface {
+type VideoWriteable interface {
 	SetP(*gocv.VideoWriter)
 	IsOpened() bool
 	Write(gocv.Mat) error
@@ -16,13 +16,13 @@ type videoWriter struct {
 	p *gocv.VideoWriter
 }
 
-func openVideoWriter(
+var openVideoWriter = func(
 	fileName string,
 	codec string,
 	fps float64,
 	frameWidth int,
 	frameHeight int,
-) (videoWriteable, error) {
+) (VideoWriteable, error) {
 	// basically to locally test without actually writing to disk
 	mockVidWriting, foundEnv := os.LookupEnv("DRAGON_DAEMON_MOCK_VIDEO_WRITING")
 	if foundEnv && mockVidWriting == "1" {

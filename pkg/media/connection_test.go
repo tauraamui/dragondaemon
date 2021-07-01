@@ -32,7 +32,7 @@ func (tmvc *testMockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
 // IsOpened always returns true.
 func (tmvc *testMockVideoCapture) IsOpened() bool {
-	if tmvc.readFunc != nil {
+	if tmvc.isOpenedFunc != nil {
 		return tmvc.isOpenedFunc()
 	}
 	panic(errors.New("call to missing test mock video capture isOpened function"))
@@ -50,6 +50,35 @@ func (tmvc *testMockVideoCapture) Close() error {
 		return tmvc.closeFunc()
 	}
 	panic(errors.New("call to missing test mock video capture close function"))
+}
+
+type testMockVideoWriter struct {
+	isOpenedFunc func() bool
+	writeFunc    func(m gocv.Mat) error
+	closeFunc    func() error
+}
+
+func (tmvw *testMockVideoWriter) SetP(_ *gocv.VideoWriter) {}
+
+func (tmvw *testMockVideoWriter) IsOpened() bool {
+	if tmvw.isOpenedFunc != nil {
+		return tmvw.isOpenedFunc()
+	}
+	panic(errors.New("call to missing test mock video writer isOpened function"))
+}
+
+func (tmvw *testMockVideoWriter) Write(m gocv.Mat) error {
+	if tmvw.writeFunc != nil {
+		return tmvw.writeFunc(m)
+	}
+	panic(errors.New("call to missing test mock video writer write function"))
+}
+
+func (tmvw *testMockVideoWriter) Close() error {
+	if tmvw.closeFunc != nil {
+		return tmvw.closeFunc()
+	}
+	panic(errors.New("call to missing test mock video writer close function"))
 }
 
 var _ = Describe("Connection", func() {
@@ -352,6 +381,12 @@ var _ = Describe("Connection", func() {
 			})
 
 			Context("Connection writing stream to disk", func() {
+				resetVidWriterOverload := media.OverloadOpenVideoWriter(
+					func(string, string, float64, int, int) (media.VideoWriteable, error) {
+						return nil, nil
+					},
+				)
+				AfterEach(func() { resetVidWriterOverload() })
 				It("Should write video frames from given connection into video files on disk", func() {
 					// var matSumVal1 float64
 					videoCapture.isOpenedFunc = func() bool { return true }

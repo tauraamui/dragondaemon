@@ -26,6 +26,18 @@ func OverloadOpenVideoCapture(overload func(
 	return func() { openVideoCapture = openVidCapRef }
 }
 
+func OverloadOpenVideoWriter(overload func(
+	string,
+	string,
+	float64,
+	int,
+	int,
+) (VideoWriteable, error)) func() {
+	openVideoWriterRef := openVideoWriter
+	openVideoWriter = overload
+	return func() { openVideoWriter = openVideoWriterRef }
+}
+
 func (c *Connection) Stream(ctx context.Context) chan struct{} {
 	return c.stream(ctx)
 }
