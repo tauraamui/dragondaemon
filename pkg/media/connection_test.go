@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -173,6 +174,13 @@ var _ = Describe("Connection", func() {
 			AfterEach(func() {
 				resetVidCapOverload()
 				videoCapture = &testMockVideoCapture{
+					// TODO(tauraamui): Move this to above definition as default
+					/*
+						Will always need to be present so force add always.
+						Some tests will want to not return nil, but it must
+						at least exist as a function def all the time.
+						This should be handled by the mock definition really.
+					*/
 					closeFunc: func() error { return nil },
 				}
 			})
@@ -381,35 +389,63 @@ var _ = Describe("Connection", func() {
 			})
 
 			Context("Connection writing stream to disk", func() {
-				resetVidWriterOverload := media.OverloadOpenVideoWriter(
-					func(string, string, float64, int, int) (media.VideoWriteable, error) {
-						return nil, nil
-					},
-				)
+				var videoWriter testMockVideoWriter
+				var resetVidWriterOverload func()
+
+				BeforeEach(func() {
+					resetVidWriterOverload = media.OverloadOpenVideoWriter(
+						func(string, string, float64, int, int) (media.VideoWriteable, error) {
+							return &videoWriter, nil
+						},
+					)
+				})
+
 				AfterEach(func() { resetVidWriterOverload() })
+
 				It("Should write video frames from given connection into video files on disk", func() {
-					// var matSumVal1 float64
+					// improve behaviour test by verifying frames given to writer
+					// match expected number of clip's total frames to write
+					var sentMatSumVal1 float64
 					videoCapture.isOpenedFunc = func() bool { return true }
 					videoCapture.readFunc = func(m *gocv.Mat) bool {
 						mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
 						defer mat.Close()
 						mat.AddFloat(3.15)
-						// matSumVal1 = mat.Sum().Val1
+						sentMatSumVal1 = mat.Sum().Val1
 						mat.CopyTo(m)
 						return true
 					}
 
+					var readMatSumVal1 float64
+					videoWriter.isOpenedFunc = func() bool { return true }
+					videoWriter.writeFunc = func(m gocv.Mat) error {
+						readMatSumVal1 = m.Sum().Val1
+						return nil
+					}
+					videoWriter.closeFunc = func() error { return nil }
+
 					ctx, cancelStreaming := context.WithCancel(context.Background())
-					stopping := conn.Stream(ctx)
+					stoppingStreaming := conn.Stream(ctx)
 
 					ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
 					stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+					wg := sync.WaitGroup{}
+					wg.Add(1)
+					go func(wg *sync.WaitGroup) {
+						time.Sleep(10 * time.Millisecond)
+						wg.Done()
+					}(&wg)
+
+					wg.Wait()
 
 					cancelWriteStreamToClips()
 					Eventually(stoppingWriteStreamIntoClips).Should(BeClosed())
 
 					cancelStreaming()
-					Eventually(stopping).Should(BeClosed())
+					Eventually(stoppingStreaming).Should(BeClosed())
+
+					Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
 				})
 			})
 		})
