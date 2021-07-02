@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -32,7 +33,7 @@ func (tmvc *testMockVideoCapture) SetP(_ *gocv.VideoCapture) {}
 
 // IsOpened always returns true.
 func (tmvc *testMockVideoCapture) IsOpened() bool {
-	if tmvc.readFunc != nil {
+	if tmvc.isOpenedFunc != nil {
 		return tmvc.isOpenedFunc()
 	}
 	panic(errors.New("call to missing test mock video capture isOpened function"))
@@ -50,6 +51,35 @@ func (tmvc *testMockVideoCapture) Close() error {
 		return tmvc.closeFunc()
 	}
 	panic(errors.New("call to missing test mock video capture close function"))
+}
+
+type testMockVideoWriter struct {
+	isOpenedFunc func() bool
+	writeFunc    func(m gocv.Mat) error
+	closeFunc    func() error
+}
+
+func (tmvw *testMockVideoWriter) SetP(_ *gocv.VideoWriter) {}
+
+func (tmvw *testMockVideoWriter) IsOpened() bool {
+	if tmvw.isOpenedFunc != nil {
+		return tmvw.isOpenedFunc()
+	}
+	panic(errors.New("call to missing test mock video writer isOpened function"))
+}
+
+func (tmvw *testMockVideoWriter) Write(m gocv.Mat) error {
+	if tmvw.writeFunc != nil {
+		return tmvw.writeFunc(m)
+	}
+	panic(errors.New("call to missing test mock video writer write function"))
+}
+
+func (tmvw *testMockVideoWriter) Close() error {
+	if tmvw.closeFunc != nil {
+		return tmvw.closeFunc()
+	}
+	panic(errors.New("call to missing test mock video writer close function"))
 }
 
 var _ = Describe("Connection", func() {
@@ -143,7 +173,16 @@ var _ = Describe("Connection", func() {
 
 			AfterEach(func() {
 				resetVidCapOverload()
-				videoCapture = &testMockVideoCapture{}
+				videoCapture = &testMockVideoCapture{
+					// TODO(tauraamui): Move this to above definition as default
+					/*
+						Will always need to be present so force add always.
+						Some tests will want to not return nil, but it must
+						at least exist as a function def all the time.
+						This should be handled by the mock definition really.
+					*/
+					closeFunc: func() error { return nil },
+				}
 			})
 
 			AfterSuite(func() {
@@ -346,6 +385,67 @@ var _ = Describe("Connection", func() {
 					Eventually(stopping).Should(BeClosed())
 					Expect(openVideoCaptureCallCount).To(BeNumerically("==", 10))
 					Expect(closeCallCount).To(BeNumerically("==", 10))
+				})
+			})
+
+			Context("Connection writing stream to disk", func() {
+				var videoWriter testMockVideoWriter
+				var resetVidWriterOverload func()
+
+				BeforeEach(func() {
+					resetVidWriterOverload = media.OverloadOpenVideoWriter(
+						func(string, string, float64, int, int) (media.VideoWriteable, error) {
+							return &videoWriter, nil
+						},
+					)
+				})
+
+				AfterEach(func() { resetVidWriterOverload() })
+
+				It("Should write video frames from given connection into video files on disk", func() {
+					// improve behaviour test by verifying frames given to writer
+					// match expected number of clip's total frames to write
+					var sentMatSumVal1 float64
+					videoCapture.isOpenedFunc = func() bool { return true }
+					videoCapture.readFunc = func(m *gocv.Mat) bool {
+						mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+						defer mat.Close()
+						mat.AddFloat(3.15)
+						sentMatSumVal1 = mat.Sum().Val1
+						mat.CopyTo(m)
+						return true
+					}
+
+					var readMatSumVal1 float64
+					videoWriter.isOpenedFunc = func() bool { return true }
+					videoWriter.writeFunc = func(m gocv.Mat) error {
+						readMatSumVal1 = m.Sum().Val1
+						return nil
+					}
+					videoWriter.closeFunc = func() error { return nil }
+
+					ctx, cancelStreaming := context.WithCancel(context.Background())
+					stoppingStreaming := conn.Stream(ctx)
+
+					ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+					stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+					wg := sync.WaitGroup{}
+					wg.Add(1)
+					go func(wg *sync.WaitGroup) {
+						time.Sleep(10 * time.Millisecond)
+						wg.Done()
+					}(&wg)
+
+					wg.Wait()
+
+					cancelWriteStreamToClips()
+					Eventually(stoppingWriteStreamIntoClips).Should(BeClosed())
+
+					cancelStreaming()
+					Eventually(stoppingStreaming).Should(BeClosed())
+
+					Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
 				})
 			})
 		})
