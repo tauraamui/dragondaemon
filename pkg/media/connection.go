@@ -24,6 +24,22 @@ const sizeOnDisk string = "sod"
 
 var fs = afero.NewOsFs()
 
+var logConnDebug = func(format string, a ...interface{}) (n int, err error) {
+	return logging.Debug(format, a) //nolint
+}
+
+var logConnInfo = func(format string, a ...interface{}) (n int, err error) {
+	return logging.Info(format, a) //nolint
+}
+
+var logConnWarn = func(format string, a ...interface{}) (n int, err error) {
+	return logging.Warn(format, a) //nolint
+}
+
+var logConnError = func(format string, a ...interface{}) (n int, err error) {
+	return logging.Error(format, a) //nolint
+}
+
 type ConnectonSettings struct {
 	PersistLocation string
 	FPS             int
@@ -60,12 +76,12 @@ func NewConnection(
 		sett.Reolink.APIAddress,
 	)
 	if err != nil {
-		logging.Error(err.Error()) //nolint
+		logConnError(err.Error())
 	}
 
 	cache, err := initCache()
 	if err != nil {
-		logging.Error(err.Error()) //nolint
+		logConnError(err.Error())
 	}
 
 	return &Connection{
@@ -98,14 +114,14 @@ func (c *Connection) SizeOnDisk() (string, error) {
 	if err == nil {
 		return string(s), nil
 	} else {
-		logging.Error("unable to retrieve size from cache: %w", err) //nolint
+		logConnError("unable to retrieve size from cache: %w", err)
 	}
 
 	startTime := time.Now()
 	total, err := getDirSize(filepath.Join(c.sett.PersistLocation, c.title), nil)
 	endTime := time.Now()
 
-	logging.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime)) //nolint
+	logConnDebug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
 
 	if err != nil {
 		size, unit := unitizeSize(0)
@@ -117,7 +133,7 @@ func (c *Connection) SizeOnDisk() (string, error) {
 
 	err = c.cache.Set(sizeOnDisk, []byte(sizeWithUnitSuffix))
 	if err != nil {
-		logging.Error("unable to store disk size in cache: %w", err) //nolint
+		logConnError("unable to store disk size in cache: %w", err)
 	}
 
 	return sizeWithUnitSuffix, nil
@@ -131,7 +147,7 @@ func (c *Connection) Close() error {
 }
 
 func (c *Connection) stream(ctx context.Context) chan struct{} {
-	logging.Debug("Opening root image mat") //nolint
+	logConnDebug("Opening root image mat")
 	img := gocv.NewMat()
 
 	stopping := make(chan struct{})
@@ -193,7 +209,7 @@ func (c *Connection) reconnect() error {
 
 	var err error
 	if err = c.vc.Close(); err != nil {
-		logging.Error("Failed to close connection... ERROR: %v", err) //nolint
+		logConnError("Failed to close connection... ERROR: %v", err)
 	}
 
 	vc, err := openVideoCapture(
@@ -220,7 +236,7 @@ func writeClipsToDisk(
 	readAndWrite := func(clips chan videoClip) {
 		clip := <-clips
 		if err := clip.flushToDisk(); err != nil {
-			logging.Error("Unable to write video clip %s to disk: %v", clip.fileName, err) //nolint
+			logConnError("Unable to write video clip %s to disk: %v", clip.fileName, err)
 		}
 	}
 	wg.Add(1)
@@ -246,10 +262,10 @@ func shutdownStreaming(
 	img *gocv.Mat,
 	stopping chan struct{},
 ) {
-	logging.Debug("Stopped stream goroutine") //nolint
-	logging.Debug("Closing root image mat")   //nolint
+	logConnDebug("Stopped stream goroutine")
+	logConnDebug("Closing root image mat")
 	img.Close()
-	logging.Debug("Flushing img mat buffer") //nolint
+	logConnDebug("Flushing img mat buffer")
 	for len(c.buffer) > 0 {
 		e := <-c.buffer
 		e.Close()
@@ -258,30 +274,30 @@ func shutdownStreaming(
 }
 
 func tryReconnectStream(c *Connection) bool {
-	logging.Info("Attempting to reconnect to [%s]", c.title) //nolint
+	logConnInfo("Attempting to reconnect to [%s]", c.title)
 	err := c.reconnect()
 	if err != nil {
-		logging.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err) //nolint
+		logConnError("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
 		return true
 	}
-	logging.Info("Re-connected to [%s]...", c.title) //nolint
+	logConnInfo("Re-connected to [%s]...", c.title)
 	return false
 }
 
 func readFromStream(c *Connection, img *gocv.Mat) bool {
 	if c.vc.IsOpened() {
 		if ok := c.vc.Read(img); !ok {
-			logging.Warn("Connection for stream at [%s] closed", c.title) //nolint
+			logConnWarn("Connection for stream at [%s] closed", c.title)
 			return false
 		}
 
 		imgClone := img.Clone()
 		select {
 		case c.buffer <- imgClone:
-			logging.Debug("Sending read from to buffer...") //nolint
+			logConnDebug("Sending read from to buffer...")
 		default:
 			imgClone.Close()
-			logging.Debug("Buffer full...") //nolint
+			logConnDebug("Buffer full...")
 		}
 		return true
 	}
@@ -326,7 +342,7 @@ func connectReolinkControl(
 ) (conn *reolinkapi.Camera, err error) {
 	conn, err = reolinkapi.NewCamera(username, password, addr)
 	if err != nil {
-		err = fmt.Errorf("unable to connect to camera API: %w", err) //nolint
+		err = fmt.Errorf("unable to connect to camera API: %w", err)
 	}
 	return
 }
@@ -334,7 +350,7 @@ func connectReolinkControl(
 func initCache() (cache *bigcache.BigCache, err error) {
 	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
 	if err != nil {
-		err = fmt.Errorf("unable to initialise connection cache: %w", err) //nolint
+		err = fmt.Errorf("unable to initialise connection cache: %w", err)
 	}
 	return
 }
@@ -363,7 +379,7 @@ func getDirSize(path string, filePtr afero.File) (int64, error) {
 		go func(d chan interface{}, t *int64) {
 			s, err := getDirSize(filepath.Join(path, f.Name()), nil)
 			if err != nil {
-				logging.Error("Unable to get dirs full size: %v...", err) //nolint
+				logConnError("Unable to get dirs full size: %v...", err)
 			}
 			*t += s
 			close(done)
@@ -387,7 +403,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	if len(rootDir) > 0 {
 		err := ensureDirectoryExists(rootDir)
 		if err != nil {
-			logging.Error("Unable to create directory %s: %v", rootDir, err) //nolint
+			logConnError("Unable to create directory %s: %v", rootDir, err)
 		}
 	} else {
 		rootDir = "."
@@ -399,13 +415,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error("Unable to create directory %s: %v", path, err) //nolint
+			logConnError("Unable to create directory %s: %v", path, err)
 		}
 
 		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
-			logging.Error("Unable to create directory %s: %v", path, err) //nolint
+			logConnError("Unable to create directory %s: %v", path, err)
 		}
 	}
 
