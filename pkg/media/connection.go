@@ -25,19 +25,19 @@ const sizeOnDisk string = "sod"
 var fs = afero.NewOsFs()
 
 var logConnDebug = func(format string, a ...interface{}) {
-	logging.Debug(format, a) //nolint
+	logging.Debug(format, a...) //nolint
 }
 
 var logConnInfo = func(format string, a ...interface{}) {
-	logging.Info(format, a) //nolint
+	logging.Info(format, a...) //nolint
 }
 
 var logConnWarn = func(format string, a ...interface{}) {
-	logging.Warn(format, a) //nolint
+	logging.Warn(format, a...) //nolint
 }
 
 var logConnError = func(format string, a ...interface{}) {
-	logging.Error(format, a) //nolint
+	logging.Error(format, a...) //nolint
 }
 
 type ConnectonSettings struct {
