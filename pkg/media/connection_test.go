@@ -85,22 +85,22 @@ func (tmvw *testMockVideoWriter) Close() error {
 var _ = Describe("Connection", func() {
 	existingLoggingLevel := logging.CurrentLoggingLevel
 
+	var mockFs afero.Fs = nil
+	var resetFs func() = nil
+
+	BeforeEach(func() {
+		logging.CurrentLoggingLevel = logging.SilentLevel
+		mockFs = afero.NewMemMapFs()
+		resetFs = media.OverloadFS(mockFs)
+	})
+
+	AfterEach(func() {
+		logging.CurrentLoggingLevel = existingLoggingLevel
+		resetFs()
+		mockFs = nil
+	})
+
 	Context("NewConnection", func() {
-		var resetFs func() = nil
-		var mockFs afero.Fs = nil
-
-		BeforeEach(func() {
-			logging.CurrentLoggingLevel = logging.SilentLevel
-			mockFs = afero.NewMemMapFs()
-			resetFs = media.OverloadFS(mockFs)
-		})
-
-		AfterEach(func() {
-			logging.CurrentLoggingLevel = existingLoggingLevel
-			resetFs()
-			mockFs = nil
-		})
-
 		It("Should return a new connection instance", func() {
 			Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
 			conn := media.NewConnection(
@@ -142,19 +142,12 @@ var _ = Describe("Connection", func() {
 	})
 
 	Context("Using a connection instance", func() {
-		var resetFs func() = nil
-		var mockFs afero.Fs = nil
-
 		var conn *media.Connection
 		var videoCapture *testMockVideoCapture
 		var resetVidCapOverload func()
 		var openVidCapCallback func()
 
 		BeforeEach(func() {
-			logging.CurrentLoggingLevel = logging.SilentLevel
-			mockFs = afero.NewMemMapFs()
-			resetFs = media.OverloadFS(mockFs)
-
 			videoCapture = &testMockVideoCapture{
 				// TODO(tauraamui): Move this to above definition as default
 				/*
@@ -191,10 +184,6 @@ var _ = Describe("Connection", func() {
 		})
 
 		AfterEach(func() {
-			logging.CurrentLoggingLevel = existingLoggingLevel
-			resetFs()
-			mockFs = nil
-
 			resetVidCapOverload()
 		})
 
