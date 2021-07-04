@@ -8,38 +8,6 @@ import (
 	"gocv.io/x/gocv"
 )
 
-func OverloadLogConnDebug(overload func(
-	format string, a ...interface{},
-)) func() {
-	logDebugRef := logConnDebug
-	logConnDebug = overload
-	return func() { logConnDebug = logDebugRef }
-}
-
-func OverloadLogConnInfo(overload func(
-	format string, a ...interface{},
-)) func() {
-	logInfoRef := logConnInfo
-	logConnInfo = overload
-	return func() { logConnInfo = logInfoRef }
-}
-
-func OverloadLogConnWarn(overload func(
-	format string, a ...interface{},
-)) func() {
-	logWarnRef := logConnWarn
-	logConnWarn = overload
-	return func() { logConnWarn = logWarnRef }
-}
-
-func OverloadLogConnError(overload func(
-	format string, a ...interface{},
-)) func() {
-	logErrorRef := logConnError
-	logConnError = overload
-	return func() { logConnWarn = logErrorRef }
-}
-
 func OverloadFS(overload afero.Fs) func() {
 	fsRef := fs
 	fs = overload
