@@ -5,8 +5,15 @@ import (
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/spf13/afero"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 )
+
+func OverloadLogError(overload func(string, ...interface{})) func() {
+	logErrorRef := log.Error
+	log.Error = overload
+	return func() { log.Error = logErrorRef }
+}
 
 func OverloadFS(overload afero.Fs) func() {
 	fsRef := fs

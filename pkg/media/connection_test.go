@@ -123,6 +123,13 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("Should return connection instance with missing reolink connection", func() {
+			resetErrorLog := media.OverloadLogError(func(format string, _ ...interface{}) {
+				Expect(format).To(ContainSubstring(
+					"unable to connect to camera API: Post \"http://fake-reolink-api/cgi-bin/api.cgi?cmd=Login&token=\":",
+				))
+			})
+			defer resetErrorLog()
+
 			Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
 			conn := media.NewConnection(
 				"TestConnection",
@@ -131,7 +138,10 @@ var _ = Describe("Connection", func() {
 					FPS:             30,
 					SecondsPerClip:  2,
 					Schedule:        schedule.Schedule{},
-					Reolink:         config.ReolinkAdvanced{Enabled: true},
+					Reolink: config.ReolinkAdvanced{
+						APIAddress: "fake-reolink-api",
+						Enabled:    true,
+					},
 				},
 				&testMockVideoCapture{},
 				"fake-stream-addr",
