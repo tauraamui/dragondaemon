@@ -409,7 +409,7 @@ var _ = Describe("Connection", func() {
 
 			AfterEach(func() { resetVidWriterOverload() })
 
-			It("Should write video frames from given connection into video files on disk", func() {
+			It("Should read same frame data from stream as written when calling save", func() {
 				// improve behaviour test by verifying frames given to writer
 				// match expected number of clip's total frames to write
 				var sentMatSumVal1 float64
@@ -417,7 +417,7 @@ var _ = Describe("Connection", func() {
 				videoCapture.readFunc = func(m *gocv.Mat) bool {
 					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
 					defer mat.Close()
-					mat.AddFloat(3.15)
+					mat.AddFloat(11.54)
 					sentMatSumVal1 = mat.Sum().Val1
 					mat.CopyTo(m)
 					return true
