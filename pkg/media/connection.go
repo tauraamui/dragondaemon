@@ -14,31 +14,15 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 )
 
 const sizeOnDisk string = "sod"
 
 var fs = afero.NewOsFs()
-
-var logConnDebug = func(format string, a ...interface{}) {
-	logging.Debug(format, a...) //nolint
-}
-
-var logConnInfo = func(format string, a ...interface{}) {
-	logging.Info(format, a...) //nolint
-}
-
-var logConnWarn = func(format string, a ...interface{}) {
-	logging.Warn(format, a...) //nolint
-}
-
-var logConnError = func(format string, a ...interface{}) {
-	logging.Error(format, a...) //nolint
-}
 
 type ConnectonSettings struct {
 	PersistLocation string
@@ -76,12 +60,12 @@ func NewConnection(
 		sett.Reolink.APIAddress,
 	)
 	if err != nil {
-		logConnError(err.Error())
+		log.Error(err.Error())
 	}
 
 	cache, err := initCache()
 	if err != nil {
-		logConnError(err.Error())
+		log.Error(err.Error())
 	}
 
 	return &Connection{
@@ -114,14 +98,14 @@ func (c *Connection) SizeOnDisk() (string, error) {
 	if err == nil {
 		return string(s), nil
 	} else {
-		logConnError("unable to retrieve size from cache: %w", err)
+		log.Error("unable to retrieve size from cache: %w", err)
 	}
 
 	startTime := time.Now()
 	total, err := getDirSize(filepath.Join(c.sett.PersistLocation, c.title), nil)
 	endTime := time.Now()
 
-	logConnDebug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
+	log.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
 
 	if err != nil {
 		size, unit := unitizeSize(0)
@@ -133,7 +117,7 @@ func (c *Connection) SizeOnDisk() (string, error) {
 
 	err = c.cache.Set(sizeOnDisk, []byte(sizeWithUnitSuffix))
 	if err != nil {
-		logConnError("unable to store disk size in cache: %w", err)
+		log.Error("unable to store disk size in cache: %w", err)
 	}
 
 	return sizeWithUnitSuffix, nil
@@ -147,7 +131,7 @@ func (c *Connection) Close() error {
 }
 
 func (c *Connection) stream(ctx context.Context) chan struct{} {
-	logConnDebug("Opening root image mat")
+	log.Debug("Opening root image mat")
 	img := gocv.NewMat()
 
 	stopping := make(chan struct{})
@@ -209,7 +193,7 @@ func (c *Connection) reconnect() error {
 
 	var err error
 	if err = c.vc.Close(); err != nil {
-		logConnError("Failed to close connection... ERROR: %v", err)
+		log.Error("Failed to close connection... ERROR: %v", err)
 	}
 
 	vc, err := openVideoCapture(
@@ -236,7 +220,7 @@ func writeClipsToDisk(
 	readAndWrite := func(clips chan videoClip) {
 		clip := <-clips
 		if err := clip.flushToDisk(); err != nil {
-			logConnError("Unable to write video clip %s to disk: %v", clip.fileName, err)
+			log.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
 		}
 	}
 	wg.Add(1)
@@ -262,10 +246,10 @@ func shutdownStreaming(
 	img *gocv.Mat,
 	stopping chan struct{},
 ) {
-	logConnDebug("Stopped stream goroutine")
-	logConnDebug("Closing root image mat")
+	log.Debug("Stopped stream goroutine")
+	log.Debug("Closing root image mat")
 	img.Close()
-	logConnDebug("Flushing img mat buffer")
+	log.Debug("Flushing img mat buffer")
 	for len(c.buffer) > 0 {
 		e := <-c.buffer
 		e.Close()
@@ -274,30 +258,30 @@ func shutdownStreaming(
 }
 
 func tryReconnectStream(c *Connection) bool {
-	logConnInfo("Attempting to reconnect to [%s]", c.title)
+	log.Info("Attempting to reconnect to [%s]", c.title)
 	err := c.reconnect()
 	if err != nil {
-		logConnError("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
+		log.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
 		return true
 	}
-	logConnInfo("Re-connected to [%s]...", c.title)
+	log.Info("Re-connected to [%s]...", c.title)
 	return false
 }
 
 func readFromStream(c *Connection, img *gocv.Mat) bool {
 	if c.vc.IsOpened() {
 		if ok := c.vc.Read(img); !ok {
-			logConnWarn("Connection for stream at [%s] closed", c.title)
+			log.Warn("Connection for stream at [%s] closed", c.title)
 			return false
 		}
 
 		imgClone := img.Clone()
 		select {
 		case c.buffer <- imgClone:
-			logConnDebug("Sending read from to buffer...")
+			log.Debug("Sending read from to buffer...")
 		default:
 			imgClone.Close()
-			logConnDebug("Buffer full...")
+			log.Debug("Buffer full...")
 		}
 		return true
 	}
@@ -379,7 +363,7 @@ func getDirSize(path string, filePtr afero.File) (int64, error) {
 		go func(d chan interface{}, t *int64) {
 			s, err := getDirSize(filepath.Join(path, f.Name()), nil)
 			if err != nil {
-				logConnError("Unable to get dirs full size: %v...", err)
+				log.Error("Unable to get dirs full size: %v...", err)
 			}
 			*t += s
 			close(done)
@@ -403,7 +387,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	if len(rootDir) > 0 {
 		err := ensureDirectoryExists(rootDir)
 		if err != nil {
-			logConnError("Unable to create directory %s: %v", rootDir, err)
+			log.Error("Unable to create directory %s: %v", rootDir, err)
 		}
 	} else {
 		rootDir = "."
@@ -415,13 +399,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
-			logConnError("Unable to create directory %s: %v", path, err)
+			log.Error("Unable to create directory %s: %v", path, err)
 		}
 
 		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
-			logConnError("Unable to create directory %s: %v", path, err)
+			log.Error("Unable to create directory %s: %v", path, err)
 		}
 	}
 
