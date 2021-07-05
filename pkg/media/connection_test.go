@@ -360,13 +360,6 @@ var _ = Describe("Connection", func() {
 			})
 
 			It("Should attempt to reconnect until read eventually returns ok", func() {
-				const retriesMax = 10
-				infoLogs := []string{}
-				resetInfoLog := media.OverloadLogInfo(func(format string, args ...interface{}) {
-					infoLogs = append(infoLogs, fmt.Sprintf(format, args...))
-				})
-				defer resetInfoLog()
-
 				videoCapture.isOpenedFunc = func() bool { return true }
 
 				openVideoCaptureCallCount := 0
@@ -381,7 +374,7 @@ var _ = Describe("Connection", func() {
 				readCallCount := 0
 				videoCapture.readFunc = func(m *gocv.Mat) bool {
 					readCallCount++
-					return readCallCount > retriesMax
+					return readCallCount > 10
 				}
 
 				ctx, cancelStreaming := context.WithCancel(context.Background())
@@ -389,27 +382,16 @@ var _ = Describe("Connection", func() {
 
 				go func() {
 					defer cancelStreaming()
-					resetVidCapOverload = media.OverloadOpenVideoCapture(
-						func(string, string, int, bool, string) (media.VideoCapturable, error) {
-							return nil, errors.New("TEST: unable to open video connection")
-						},
-					)
 					for {
-						if openVideoCaptureCallCount >= retriesMax && closeCallCount >= retriesMax {
-							resetVidCapOverload()
+						if openVideoCaptureCallCount >= 10 && closeCallCount >= 10 {
 							break
 						}
 					}
 				}()
 
 				Eventually(stopping).Should(BeClosed())
-				Expect(openVideoCaptureCallCount).To(BeNumerically("==", retriesMax))
-				Expect(closeCallCount).To(BeNumerically("==", retriesMax))
-				Expect(infoLogs).NotTo(BeEmpty())
-				Expect(infoLogs).To(ConsistOf(
-					"Attempting to reconnect to [TestConnectionInstance]",
-					"Re-connected to [TestConnectionInstance]...",
-				))
+				Expect(openVideoCaptureCallCount).To(BeNumerically("==", 10))
+				Expect(closeCallCount).To(BeNumerically("==", 10))
 			})
 		})
 
