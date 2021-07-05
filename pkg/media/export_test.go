@@ -9,6 +9,12 @@ import (
 	"gocv.io/x/gocv"
 )
 
+func OverloadLogInfo(overload func(string, ...interface{})) func() {
+	logInfoRef := log.Info
+	log.Info = overload
+	return func() { log.Error = logInfoRef }
+}
+
 func OverloadLogError(overload func(string, ...interface{})) func() {
 	logErrorRef := log.Error
 	log.Error = overload
