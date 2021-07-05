@@ -360,38 +360,16 @@ var _ = Describe("Connection", func() {
 			})
 
 			It("Should attempt to reconnect until read eventually returns ok", func() {
-				videoCapture.isOpenedFunc = func() bool { return true }
+				infoLogs := []string{}
+				resetLogInfo := media.OverloadLogInfo(func(format string, args ...interface{}) {
+					infoLogs = append(infoLogs, fmt.Sprintf(format, args))
+				})
+				defer resetLogInfo()
 
-				openVideoCaptureCallCount := 0
-				openVidCapCallback = func() { openVideoCaptureCallCount++ }
-
-				closeCallCount := 0
-				videoCapture.closeFunc = func() error {
-					closeCallCount++
-					return nil
-				}
-
-				readCallCount := 0
-				videoCapture.readFunc = func(m *gocv.Mat) bool {
-					readCallCount++
-					return readCallCount > 10
-				}
-
-				ctx, cancelStreaming := context.WithCancel(context.Background())
-				stopping := conn.Stream(ctx)
-
-				go func() {
-					defer cancelStreaming()
-					for {
-						if openVideoCaptureCallCount >= 10 && closeCallCount >= 10 {
-							break
-						}
-					}
-				}()
-
-				Eventually(stopping).Should(BeClosed())
-				Expect(openVideoCaptureCallCount).To(BeNumerically("==", 10))
-				Expect(closeCallCount).To(BeNumerically("==", 10))
+				Expect(infoLogs).To(ConsistOf(
+					ContainSubstring("Attempting to reconnect to"),
+					ContainSubstring("Re-connected to"),
+				))
 			})
 		})
 
