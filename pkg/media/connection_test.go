@@ -166,7 +166,8 @@ var _ = Describe("Connection", func() {
 					at least exist as a function def all the time.
 					This should be handled by the mock definition really.
 				*/
-				closeFunc: func() error { return nil },
+				isOpenedFunc: func() bool { return true },
+				closeFunc:    func() error { return nil },
 			}
 
 			Expect(mockFs.MkdirAll("/testroot/clips/TestConnectionInstance", os.ModeDir|os.ModePerm)).To(BeNil())
@@ -326,7 +327,6 @@ var _ = Describe("Connection", func() {
 		Context("Connection streaming frames to channel", func() {
 			It("Should read video frames from given connection into buffer channel", func() {
 				var matSumVal1 float64
-				videoCapture.isOpenedFunc = func() bool { return true }
 				videoCapture.readFunc = func(m *gocv.Mat) bool {
 					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
 					defer mat.Close()
@@ -362,10 +362,70 @@ var _ = Describe("Connection", func() {
 			It("Should attempt to reconnect until read eventually returns ok", func() {
 				infoLogs := []string{}
 				resetLogInfo := media.OverloadLogInfo(func(format string, args ...interface{}) {
+					fmt.Printf("INFO LOG FORMAT: %s\n", format)
 					infoLogs = append(infoLogs, fmt.Sprintf(format, args))
 				})
 				defer resetLogInfo()
 
+				processCallCount := 0
+				ableToRead := true
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					processCallCount++
+					return ableToRead
+				}
+
+				makeVidCapReturnFalseFromRead := func() func() { ableToRead = false; return func() { ableToRead = true } }
+				makeOpenVidCapReturnError := func() func() {
+					return media.OverloadOpenVideoCapture(
+						func(string, string, int, bool, string) (media.VideoCapturable, error) {
+							processCallCount++
+							return nil, errors.New("test unable to open video connection")
+						},
+					)
+				}
+
+				ctx, cancelStreaming := context.WithCancel(context.Background())
+				stopping := conn.Stream(ctx)
+
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					madeVidCapReturnFalse := false
+					madeOpenVidCapReturnError := false
+
+					var resetMakeVidCapReturnFalse, resetMakeOpenVidCapReturnError func()
+					defer func() {
+						if resetMakeVidCapReturnFalse != nil {
+							resetMakeVidCapReturnFalse()
+						}
+						if resetMakeOpenVidCapReturnError != nil {
+							resetMakeOpenVidCapReturnError()
+						}
+						wg.Done()
+					}()
+
+					for processCallCount < 30 {
+						fmt.Printf("PROCESS CALL COUNT: %d\n", processCallCount)
+						// initial 10 reads read as normal
+
+						// after 10 reads and less than 20 reads make read fail
+						if processCallCount > 10 && processCallCount < 20 {
+							if !madeVidCapReturnFalse {
+								resetMakeVidCapReturnFalse = makeVidCapReturnFalseFromRead()
+								madeVidCapReturnFalse = true
+							}
+
+							if !madeOpenVidCapReturnError {
+								resetMakeOpenVidCapReturnError = makeOpenVidCapReturnError()
+								madeOpenVidCapReturnError = true
+							}
+						}
+					}
+					cancelStreaming()
+				}(&wg)
+
+				wg.Wait()
+				Eventually(stopping).Should(BeClosed())
 				Expect(infoLogs).To(ConsistOf(
 					ContainSubstring("Attempting to reconnect to"),
 					ContainSubstring("Re-connected to"),
