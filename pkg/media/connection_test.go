@@ -394,22 +394,13 @@ var _ = Describe("Connection", func() {
 					madeOpenVidCapReturnError := false
 
 					var resetMakeVidCapReturnFalse, resetMakeOpenVidCapReturnError func()
-					defer func() {
-						if resetMakeVidCapReturnFalse != nil {
-							resetMakeVidCapReturnFalse()
-						}
-						if resetMakeOpenVidCapReturnError != nil {
-							resetMakeOpenVidCapReturnError()
-						}
-						wg.Done()
-					}()
+					defer wg.Done()
 
-					for processCallCount < 30 {
-						fmt.Printf("PROCESS CALL COUNT: %d\n", processCallCount)
-						// initial 10 reads read as normal
+					for processCallCount < 50 {
+						// initial 20 reads read as normal
 
-						// after 10 reads and less than 20 reads make read fail
-						if processCallCount > 10 && processCallCount < 20 {
+						// after 20 reads and less than 30 reads make read fail
+						if processCallCount > 20 && processCallCount < 30 {
 							if !madeVidCapReturnFalse {
 								resetMakeVidCapReturnFalse = makeVidCapReturnFalseFromRead()
 								madeVidCapReturnFalse = true
@@ -418,6 +409,17 @@ var _ = Describe("Connection", func() {
 							if !madeOpenVidCapReturnError {
 								resetMakeOpenVidCapReturnError = makeOpenVidCapReturnError()
 								madeOpenVidCapReturnError = true
+							}
+						}
+
+						if processCallCount > 30 {
+							if madeVidCapReturnFalse && resetMakeVidCapReturnFalse != nil {
+								resetMakeVidCapReturnFalse()
+								madeVidCapReturnFalse = false
+							}
+							if madeOpenVidCapReturnError && resetMakeOpenVidCapReturnError != nil {
+								resetMakeOpenVidCapReturnError()
+								madeOpenVidCapReturnError = false
 							}
 						}
 					}
