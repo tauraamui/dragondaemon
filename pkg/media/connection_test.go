@@ -362,8 +362,7 @@ var _ = Describe("Connection", func() {
 			It("Should attempt to reconnect until read eventually returns ok", func() {
 				infoLogs := []string{}
 				resetLogInfo := media.OverloadLogInfo(func(format string, args ...interface{}) {
-					// fmt.Printf("INFO LOG FORMAT: %s\n", format)
-					infoLogs = append(infoLogs, fmt.Sprintf(format, args))
+					infoLogs = append(infoLogs, fmt.Sprintf(format, args...))
 				})
 				defer resetLogInfo()
 
@@ -431,10 +430,9 @@ var _ = Describe("Connection", func() {
 				Expect(infoLogs).To(HaveLen(11))
 				Expect(infoLogs).To(HaveCap(16))
 				for i := 0; i < 10; i++ {
-					Expect(infoLogs[i]).To(Equal("Attempting to reconnect to [[TestConnectionInstance]]"))
+					Expect(infoLogs[i]).To(Equal("Attempting to reconnect to [TestConnectionInstance]"))
 				}
-				Expect(infoLogs[10]).To(Equal("Re-connected to [[TestConnectionInstance]]..."))
-				// Expect(infoLogs).To(ContainElements(logsToMatch))
+				Expect(infoLogs[10]).To(Equal("Re-connected to [TestConnectionInstance]..."))
 			})
 		})
 
