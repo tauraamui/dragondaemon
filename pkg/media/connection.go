@@ -212,6 +212,37 @@ func (c *Connection) reconnect() error {
 	return nil
 }
 
+func tryReconnectStream(c *Connection) bool {
+	log.Info("Attempting to reconnect to [%s]", c.title)
+	err := c.reconnect()
+	if err != nil {
+		log.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
+		return true
+	}
+	log.Info("Re-connected to [%s]...", c.title)
+	return false
+}
+
+func readFromStream(c *Connection, img *gocv.Mat) bool {
+	if c.vc.IsOpened() {
+		if ok := c.vc.Read(img); !ok {
+			log.Warn("Connection for stream at [%s] closed", c.title)
+			return false
+		}
+
+		imgClone := img.Clone()
+		select {
+		case c.buffer <- imgClone:
+			log.Debug("Sending read from to buffer...")
+		default:
+			imgClone.Close()
+			log.Debug("Buffer full...")
+		}
+		return true
+	}
+	return false
+}
+
 func writeClipsToDisk(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -255,37 +286,6 @@ func shutdownStreaming(
 		e.Close()
 	}
 	close(stopping)
-}
-
-func tryReconnectStream(c *Connection) bool {
-	log.Info("Attempting to reconnect to [%s]", c.title)
-	err := c.reconnect()
-	if err != nil {
-		log.Error("Unable to reconnect to [%s]... ERROR: %v", c.title, err)
-		return true
-	}
-	log.Info("Re-connected to [%s]...", c.title)
-	return false
-}
-
-func readFromStream(c *Connection, img *gocv.Mat) bool {
-	if c.vc.IsOpened() {
-		if ok := c.vc.Read(img); !ok {
-			log.Warn("Connection for stream at [%s] closed", c.title)
-			return false
-		}
-
-		imgClone := img.Clone()
-		select {
-		case c.buffer <- imgClone:
-			log.Debug("Sending read from to buffer...")
-		default:
-			imgClone.Close()
-			log.Debug("Buffer full...")
-		}
-		return true
-	}
-	return false
 }
 
 func shutdownWritingStreamToClips(
