@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/allegro/bigcache/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
@@ -148,6 +149,37 @@ var _ = Describe("Connection", func() {
 			)
 
 			Expect(conn.ReolinkControl()).To(BeNil())
+		})
+
+		It("Should return connection instance with missing cache", func() {
+			var errorLogs []string
+			resetErrorLog := media.OverloadLogError(func(format string, args ...interface{}) {
+				errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+			})
+			defer resetErrorLog()
+
+			resetInitCache := media.OverloadInitCache(func() (*bigcache.BigCache, error) {
+				return nil, errors.New("test error: unable to init cache")
+			})
+			defer resetInitCache()
+
+			conn := media.NewConnection(
+				"TestConnection",
+				media.ConnectonSettings{
+					PersistLocation: "/testroot/clips",
+					FPS:             30,
+					SecondsPerClip:  2,
+					Schedule:        schedule.Schedule{},
+					Reolink: config.ReolinkAdvanced{
+						Enabled: false,
+					},
+				},
+				&testMockVideoCapture{},
+				"fake-stream-addr",
+			)
+			Expect(conn.Cache()).To(BeNil())
+			Expect(errorLogs).To(HaveLen(1))
+			Expect(errorLogs[0]).To(Equal("test error: unable to init cache"))
 		})
 	})
 

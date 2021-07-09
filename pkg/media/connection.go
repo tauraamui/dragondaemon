@@ -54,13 +54,17 @@ func NewConnection(
 	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
-	control, err := connectReolinkControl(
-		sett.Reolink.Username,
-		sett.Reolink.Password,
-		sett.Reolink.APIAddress,
-	)
-	if err != nil {
-		log.Error(err.Error())
+	var control *reolinkapi.Camera
+	if sett.Reolink.Enabled {
+		controlPtr, err := connectReolinkControl(
+			sett.Reolink.Username,
+			sett.Reolink.Password,
+			sett.Reolink.APIAddress,
+		)
+		if err != nil {
+			log.Error(err.Error())
+		}
+		control = controlPtr
 	}
 
 	cache, err := initCache()
@@ -331,7 +335,7 @@ func connectReolinkControl(
 	return
 }
 
-func initCache() (cache *bigcache.BigCache, err error) {
+var initCache = func() (cache *bigcache.BigCache, err error) {
 	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
 	if err != nil {
 		err = fmt.Errorf("unable to initialise connection cache: %w", err)
