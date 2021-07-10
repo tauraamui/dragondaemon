@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -54,13 +55,17 @@ func NewConnection(
 	vc VideoCapturable,
 	rtspStream string,
 ) *Connection {
-	control, err := connectReolinkControl(
-		sett.Reolink.Username,
-		sett.Reolink.Password,
-		sett.Reolink.APIAddress,
-	)
-	if err != nil {
-		log.Error(err.Error())
+	var control *reolinkapi.Camera
+	if sett.Reolink.Enabled {
+		controlPtr, err := connectReolinkControl(
+			sett.Reolink.Username,
+			sett.Reolink.Password,
+			sett.Reolink.APIAddress,
+		)
+		if err != nil {
+			log.Error(err.Error())
+		}
+		control = controlPtr
 	}
 
 	cache, err := initCache()
@@ -90,37 +95,7 @@ func (c *Connection) Title() string {
 }
 
 func (c *Connection) SizeOnDisk() (string, error) {
-	var size int64
-	var unit string
-	var sizeWithUnitSuffix string
-
-	s, err := c.cache.Get(sizeOnDisk)
-	if err == nil {
-		return string(s), nil
-	} else {
-		log.Error("unable to retrieve size from cache: %w", err)
-	}
-
-	startTime := time.Now()
-	total, err := getDirSize(filepath.Join(c.sett.PersistLocation, c.title), nil)
-	endTime := time.Now()
-
-	log.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
-
-	if err != nil {
-		size, unit := unitizeSize(0)
-		return fmt.Sprintf("%d%s", size, unit), err
-	}
-
-	size, unit = unitizeSize(total)
-	sizeWithUnitSuffix = fmt.Sprintf("%d%s", size, unit)
-
-	err = c.cache.Set(sizeOnDisk, []byte(sizeWithUnitSuffix))
-	if err != nil {
-		log.Error("unable to store disk size in cache: %w", err)
-	}
-
-	return sizeWithUnitSuffix, nil
+	return c.resolveSizeOnDisk()
 }
 
 func (c *Connection) Close() error {
@@ -210,6 +185,54 @@ func (c *Connection) reconnect() error {
 	c.vc = vc
 
 	return nil
+}
+
+func (c *Connection) resolveSizeOnDisk() (s string, err error) {
+	if s, err = loadSizeOnDiskFromCache(c.cache); err == nil {
+		return
+	}
+
+	log.Error(fmt.Errorf("unable to load disk size from cache: %w", err).Error())
+
+	if s, err = calcSizeOnDisk(filepath.Join(c.sett.PersistLocation, c.title)); err == nil {
+		err = cacheSizeOnDisk(c.cache, s)
+		return
+	}
+	return
+}
+
+func cacheSizeOnDisk(cache *bigcache.BigCache, size string) error {
+	if cache == nil {
+		return errors.New("nil pointer to cache")
+	}
+	return cache.Set(sizeOnDisk, []byte(size))
+}
+
+func loadSizeOnDiskFromCache(cache *bigcache.BigCache) (string, error) {
+	if cache == nil {
+		return "", errors.New("nil pointer to cache")
+	}
+	s, err := cache.Get(sizeOnDisk)
+	if err != nil {
+		return "", fmt.Errorf("unable to retrieve size from cache: %w", err)
+	}
+	return string(s), nil
+}
+
+func calcSizeOnDisk(path string) (string, error) {
+	startTime := time.Now()
+	total, err := getDirSize(path, nil)
+	endTime := time.Now()
+
+	log.Debug("FILE SIZE CHECK TOOK: %s", endTime.Sub(startTime))
+
+	if err != nil {
+		size, unit := unitizeSize(0)
+		return fmt.Sprintf("%d%s", size, unit), err
+	}
+
+	size, unit := unitizeSize(total)
+	return fmt.Sprintf("%d%s", size, unit), nil
 }
 
 func tryReconnectStream(c *Connection) bool {
@@ -331,7 +354,7 @@ func connectReolinkControl(
 	return
 }
 
-func initCache() (cache *bigcache.BigCache, err error) {
+var initCache = func() (cache *bigcache.BigCache, err error) {
 	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
 	if err != nil {
 		err = fmt.Errorf("unable to initialise connection cache: %w", err)

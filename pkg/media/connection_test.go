@@ -7,9 +7,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/allegro/bigcache/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
@@ -148,6 +150,52 @@ var _ = Describe("Connection", func() {
 			)
 
 			Expect(conn.ReolinkControl()).To(BeNil())
+		})
+
+		It("Should return connection instance with missing cache", func() {
+			var errorLogs []string
+			resetErrorLog := media.OverloadLogError(func(format string, args ...interface{}) {
+				errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+			})
+			defer resetErrorLog()
+
+			resetInitCache := media.OverloadInitCache(func() (*bigcache.BigCache, error) {
+				return nil, errors.New("test error: unable to init cache")
+			})
+			defer resetInitCache()
+
+			clipsDirPath := "/testroot/clips/TestConnection"
+			Expect(mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)).To(BeNil())
+
+			By("Creating file on disk of size 9KB")
+			binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
+			Expect(err).To(BeNil())
+			defer binFile.Close()
+			err = binFile.Truncate(KB * 9)
+			Expect(err).To(BeNil())
+			conn := media.NewConnection(
+				"TestConnection",
+				media.ConnectonSettings{
+					PersistLocation: "/testroot/clips",
+					FPS:             30,
+					SecondsPerClip:  2,
+					Schedule:        schedule.Schedule{},
+					Reolink: config.ReolinkAdvanced{
+						Enabled: false,
+					},
+				},
+				&testMockVideoCapture{},
+				"fake-stream-addr",
+			)
+
+			size, err := conn.SizeOnDisk()
+			Expect(err).To(MatchError("nil pointer to cache"))
+			Expect(size).To(Equal("9KB"))
+
+			Expect(conn.Cache()).To(BeNil())
+			Expect(errorLogs).To(HaveLen(2))
+			Expect(errorLogs[0]).To(Equal("test error: unable to init cache"))
+			Expect(errorLogs[1]).To(ContainSubstring("unable to load disk size from cache"))
 		})
 	})
 
@@ -366,8 +414,29 @@ var _ = Describe("Connection", func() {
 				})
 				defer resetLogInfo()
 
+				failedToCloseErrorLogs := []string{}
+				unableToReconnectErrorLogs := []string{}
+				otherErrorLogs := []string{}
+				resetLogError := media.OverloadLogError(func(format string, args ...interface{}) {
+					errorLog := fmt.Sprintf(format, args...)
+					if strings.Contains(
+						errorLog, "Failed to close connection... ERROR: test connection close error",
+					) {
+						failedToCloseErrorLogs = append(failedToCloseErrorLogs, errorLog)
+						return
+					} else if strings.Contains(errorLog, "Unable to reconnect to") {
+						unableToReconnectErrorLogs = append(unableToReconnectErrorLogs, errorLog)
+						return
+					}
+					otherErrorLogs = append(otherErrorLogs, errorLog)
+				})
+				defer resetLogError()
+
 				processCallCount := 0
 				ableToRead := true
+				videoCapture.closeFunc = func() error {
+					return errors.New("test connection close error")
+				}
 				videoCapture.readFunc = func(m *gocv.Mat) bool {
 					processCallCount++
 					return ableToRead
@@ -427,6 +496,10 @@ var _ = Describe("Connection", func() {
 
 				wg.Wait()
 				Eventually(stopping).Should(BeClosed())
+				Expect(failedToCloseErrorLogs).To(HaveLen(10))
+				Expect(failedToCloseErrorLogs).To(HaveCap(16))
+				Expect(unableToReconnectErrorLogs).To(HaveLen(9))
+				Expect(unableToReconnectErrorLogs).To(HaveCap(16))
 				Expect(infoLogs).To(HaveLen(11))
 				Expect(infoLogs).To(HaveCap(16))
 				for i := 0; i < 10; i++ {

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
+	"github.com/allegro/bigcache/v3"
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
@@ -25,6 +26,12 @@ func OverloadFS(overload afero.Fs) func() {
 	fsRef := fs
 	fs = overload
 	return func() { fs = fsRef }
+}
+
+func OverloadInitCache(overload func() (*bigcache.BigCache, error)) func() {
+	initCacheRef := initCache
+	initCache = overload
+	return func() { initCache = initCacheRef }
 }
 
 func OverloadOpenVideoCapture(overload func(
@@ -61,6 +68,10 @@ func (c *Connection) WriteStreamToClips(ctx context.Context) chan interface{} {
 
 func (c *Connection) Buffer() chan gocv.Mat {
 	return c.buffer
+}
+
+func (c *Connection) Cache() *bigcache.BigCache {
+	return c.cache
 }
 
 func (c *Connection) ReolinkControl() *reolinkapi.Camera {
