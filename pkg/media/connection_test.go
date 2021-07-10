@@ -164,6 +164,15 @@ var _ = Describe("Connection", func() {
 			})
 			defer resetInitCache()
 
+			clipsDirPath := "/testroot/clips/TestConnection"
+			Expect(mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)).To(BeNil())
+
+			By("Creating file on disk of size 9KB")
+			binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
+			Expect(err).To(BeNil())
+			defer binFile.Close()
+			err = binFile.Truncate(KB * 9)
+			Expect(err).To(BeNil())
 			conn := media.NewConnection(
 				"TestConnection",
 				media.ConnectonSettings{
@@ -178,9 +187,15 @@ var _ = Describe("Connection", func() {
 				&testMockVideoCapture{},
 				"fake-stream-addr",
 			)
+
+			size, err := conn.SizeOnDisk()
+			Expect(err).To(MatchError("nil pointer to cache"))
+			Expect(size).To(Equal("9KB"))
+
 			Expect(conn.Cache()).To(BeNil())
-			Expect(errorLogs).To(HaveLen(1))
+			Expect(errorLogs).To(HaveLen(2))
 			Expect(errorLogs[0]).To(Equal("test error: unable to init cache"))
+			Expect(errorLogs[1]).To(ContainSubstring("unable to load disk size from cache"))
 		})
 	})
 
