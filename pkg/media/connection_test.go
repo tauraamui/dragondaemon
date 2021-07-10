@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -398,8 +399,29 @@ var _ = Describe("Connection", func() {
 				})
 				defer resetLogInfo()
 
+				failedToCloseErrorLogs := []string{}
+				unableToReconnectErrorLogs := []string{}
+				otherErrorLogs := []string{}
+				resetLogError := media.OverloadLogError(func(format string, args ...interface{}) {
+					errorLog := fmt.Sprintf(format, args...)
+					if strings.Contains(
+						errorLog, "Failed to close connection... ERROR: test connection close error",
+					) {
+						failedToCloseErrorLogs = append(failedToCloseErrorLogs, errorLog)
+						return
+					} else if strings.Contains(errorLog, "Unable to reconnect to") {
+						unableToReconnectErrorLogs = append(unableToReconnectErrorLogs, errorLog)
+						return
+					}
+					otherErrorLogs = append(otherErrorLogs, errorLog)
+				})
+				defer resetLogError()
+
 				processCallCount := 0
 				ableToRead := true
+				videoCapture.closeFunc = func() error {
+					return errors.New("test connection close error")
+				}
 				videoCapture.readFunc = func(m *gocv.Mat) bool {
 					processCallCount++
 					return ableToRead
@@ -459,6 +481,10 @@ var _ = Describe("Connection", func() {
 
 				wg.Wait()
 				Eventually(stopping).Should(BeClosed())
+				Expect(failedToCloseErrorLogs).To(HaveLen(10))
+				Expect(failedToCloseErrorLogs).To(HaveCap(16))
+				Expect(unableToReconnectErrorLogs).To(HaveLen(9))
+				Expect(unableToReconnectErrorLogs).To(HaveCap(16))
 				Expect(infoLogs).To(HaveLen(11))
 				Expect(infoLogs).To(HaveCap(16))
 				for i := 0; i < 10; i++ {
