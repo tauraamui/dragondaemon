@@ -159,7 +159,7 @@ var _ = Describe("Connection", func() {
 			})
 			defer resetErrorLog()
 
-			resetInitCache := media.OverloadInitCache(func() (*bigcache.BigCache, error) {
+			resetInitCache := media.OverloadNewCache(func() (*bigcache.BigCache, error) {
 				return nil, errors.New("test error: unable to init cache")
 			})
 			defer resetInitCache()
@@ -194,7 +194,9 @@ var _ = Describe("Connection", func() {
 
 			Expect(conn.Cache()).To(BeNil())
 			Expect(errorLogs).To(HaveLen(2))
-			Expect(errorLogs[0]).To(Equal("test error: unable to init cache"))
+			Expect(errorLogs[0]).To(Equal(
+				"unable to initialise connection cache: test error: unable to init cache",
+			))
 			Expect(errorLogs[1]).To(ContainSubstring("unable to load disk size from cache"))
 		})
 	})

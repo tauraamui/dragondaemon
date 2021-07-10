@@ -28,6 +28,12 @@ func OverloadFS(overload afero.Fs) func() {
 	return func() { fs = fsRef }
 }
 
+func OverloadNewCache(overload func() (*bigcache.BigCache, error)) func() {
+	newCacheRef := newCache
+	newCache = overload
+	return func() { newCache = newCacheRef }
+}
+
 func OverloadInitCache(overload func() (*bigcache.BigCache, error)) func() {
 	initCacheRef := initCache
 	initCache = overload

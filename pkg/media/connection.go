@@ -354,8 +354,12 @@ func connectReolinkControl(
 	return
 }
 
+var newCache = func() (*bigcache.BigCache, error) {
+	return bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
+}
+
 var initCache = func() (cache *bigcache.BigCache, err error) {
-	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
+	cache, err = newCache()
 	if err != nil {
 		err = fmt.Errorf("unable to initialise connection cache: %w", err)
 	}
