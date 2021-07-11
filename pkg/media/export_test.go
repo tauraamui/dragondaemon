@@ -34,12 +34,6 @@ func OverloadNewCache(overload func() (*bigcache.BigCache, error)) func() {
 	return func() { newCache = newCacheRef }
 }
 
-func OverloadInitCache(overload func() (*bigcache.BigCache, error)) func() {
-	initCacheRef := initCache
-	initCache = overload
-	return func() { initCache = initCacheRef }
-}
-
 func OverloadOpenVideoCapture(overload func(
 	string,
 	string,
