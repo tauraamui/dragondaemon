@@ -22,7 +22,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-const KB int64 = 1024
+const KB = 1024
 
 type testMockVideoCapture struct {
 	isOpenedFunc func() bool
