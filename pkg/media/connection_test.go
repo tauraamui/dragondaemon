@@ -570,6 +570,44 @@ var _ = Describe("Connection", func() {
 
 				Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
 			})
+
+			It("Should fail to open video writer and therefore not write to disk", func() {
+				videoCapture.isOpenedFunc = func() bool { return true }
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+					defer mat.Close()
+					mat.CopyTo(m)
+					return true
+				}
+
+				resetVidWriterOverload = media.OverloadOpenVideoWriter(
+					func(string, string, float64, int, int) (media.VideoWriteable, error) {
+						return nil, errors.New("test error: unable to open video writer")
+					},
+				)
+				defer resetVidWriterOverload()
+
+				ctx, cancelStreaming := context.WithCancel(context.Background())
+				stoppingStreaming := conn.Stream(ctx)
+
+				ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+				stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					time.Sleep(1 * time.Millisecond)
+					wg.Done()
+				}(&wg)
+
+				wg.Wait()
+
+				cancelWriteStreamToClips()
+				Eventually(stoppingWriteStreamIntoClips, 2*time.Second).Should(BeClosed())
+
+				cancelStreaming()
+				Eventually(stoppingStreaming).Should(BeClosed())
+			})
 		})
 	})
 })
