@@ -276,6 +276,7 @@ func writeClipsToDisk(
 		if err := clip.flushToDisk(); err != nil {
 			log.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
 		}
+		clip.close()
 	}
 	wg.Add(1)
 	go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
