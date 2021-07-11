@@ -374,6 +374,32 @@ var _ = Describe("Connection", func() {
 			})
 		})
 
+		Context("Calling connection readFromStream directly", func() {
+			It("Should return true from readFromStream", func() {
+				videoCapture.isOpenedFunc = func() bool {
+					return true
+				}
+				readCallCount := 0
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					readCallCount++
+					return true
+				}
+				mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+				defer mat.Close()
+				Expect(media.ReadFromStream(conn, &mat)).To(BeTrue())
+				Expect(readCallCount).To(BeNumerically("==", 1))
+			})
+
+			It("Should return false from readFromStream", func() {
+				videoCapture.isOpenedFunc = func() bool {
+					return false
+				}
+				mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+				defer mat.Close()
+				Expect(media.ReadFromStream(conn, &mat)).To(BeFalse())
+			})
+		})
+
 		Context("Connection streaming frames to channel", func() {
 			It("Should read video frames from given connection into buffer channel", func() {
 				var matSumVal1 float64

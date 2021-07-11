@@ -72,6 +72,10 @@ func (c *Connection) WriteStreamToClips(ctx context.Context) chan interface{} {
 	return c.writeStreamToClips(ctx)
 }
 
+func ReadFromStream(c *Connection, img *gocv.Mat) bool {
+	return readFromStream(c, img)
+}
+
 func (c *Connection) Buffer() chan gocv.Mat {
 	return c.buffer
 }
