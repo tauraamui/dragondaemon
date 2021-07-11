@@ -572,6 +572,12 @@ var _ = Describe("Connection", func() {
 			})
 
 			It("Should fail to open video writer and therefore not write to disk", func() {
+				errorLogs := []string{}
+				resetErrorLog := media.OverloadLogError(func(format string, args ...interface{}) {
+					errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+				})
+				defer resetErrorLog()
+
 				videoCapture.isOpenedFunc = func() bool { return true }
 				videoCapture.readFunc = func(m *gocv.Mat) bool {
 					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
@@ -596,17 +602,26 @@ var _ = Describe("Connection", func() {
 				wg := sync.WaitGroup{}
 				wg.Add(1)
 				go func(wg *sync.WaitGroup) {
-					time.Sleep(1 * time.Millisecond)
+					time.Sleep(3 * time.Millisecond)
 					wg.Done()
 				}(&wg)
 
 				wg.Wait()
 
 				cancelWriteStreamToClips()
-				Eventually(stoppingWriteStreamIntoClips, 2*time.Second).Should(BeClosed())
+				Eventually(stoppingWriteStreamIntoClips, 3*time.Second).Should(BeClosed())
 
 				cancelStreaming()
 				Eventually(stoppingStreaming).Should(BeClosed())
+
+				Expect(errorLogs).To(HaveLen(1))
+				Expect(errorLogs).To(HaveCap(1))
+				Expect(errorLogs[0]).To(ContainSubstring(
+					"Unable to write video clip /testroot/clips/TestConnectionInstance/",
+				))
+				Expect(errorLogs[0]).To(ContainSubstring(
+					".mp4 to disk: test error: unable to open video writer",
+				))
 			})
 		})
 	})

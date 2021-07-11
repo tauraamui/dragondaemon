@@ -423,13 +423,13 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 	todaysDate := time.Now().Format("2006-01-02")
 
 	if len(clipsDir) > 0 {
-		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
+		path := filepath.Join(rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
 			log.Error("Unable to create directory %s: %v", path, err)
 		}
 
-		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
+		path = filepath.Join(rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
 			log.Error("Unable to create directory %s: %v", path, err)
@@ -440,7 +440,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 }
 
 func ensureDirectoryExists(path string) error {
-	err := os.Mkdir(path, os.ModePerm)
+	err := fs.Mkdir(path, os.ModePerm)
 
 	if err == nil || os.IsExist(err) {
 		return nil
