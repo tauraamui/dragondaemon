@@ -597,6 +597,66 @@ var _ = Describe("Connection", func() {
 				Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
 			})
 
+			It("Should use real video writer and save footage into clips in correct dir on disk", func() {
+				os.Setenv("DRAGON_DAEMON_MOCK_VIDEO_STREAM", "1")
+				timeNow, err := time.Parse("2006-01-02 15.04.05", "2021-02-02 10.00.00")
+				resetNowOverload := media.OverloadNow(func() time.Time {
+					return timeNow
+				})
+				defer resetNowOverload()
+
+				Expect(err).To(BeNil())
+				Expect(timeNow).ToNot(BeNil())
+
+				errorLogs := []string{}
+				resetLogError := media.OverloadLogError(func(format string, args ...interface{}) {
+					errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+				})
+				defer resetLogError()
+
+				// make video writer and capturer use real implementation
+				resetVidWriterOverload()
+				resetVidCapOverload()
+
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+					defer mat.Close()
+					// mat.AddFloat(11.54)
+					mat.CopyTo(m)
+					return true
+				}
+
+				ctx, cancelStreaming := context.WithCancel(context.Background())
+				stoppingStreaming := conn.Stream(ctx)
+
+				ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+				stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					time.Sleep(800 * time.Millisecond)
+					wg.Done()
+				}(&wg)
+
+				wg.Wait()
+
+				cancelWriteStreamToClips()
+				Eventually(stoppingWriteStreamIntoClips).Should(BeClosed())
+
+				cancelStreaming()
+				Eventually(stoppingStreaming).Should(BeClosed())
+
+				Expect(errorLogs).To(HaveLen(0))
+				clipsDir, err := mockFs.Open("/testroot/clips/TestConnectionInstance/2021-02-02")
+				Expect(err).To(BeNil())
+				Expect(clipsDir).ToNot(BeNil())
+
+				files, err := clipsDir.Readdir(-1)
+				Expect(err).To(BeNil())
+				Expect(files).To(HaveLen(0))
+			})
+
 			It("Should fail to open video writer and therefore not write to disk", func() {
 				errorLogs := []string{}
 				resetErrorLog := media.OverloadLogError(func(format string, args ...interface{}) {

@@ -25,6 +25,8 @@ const sizeOnDisk string = "sod"
 
 var fs = afero.NewOsFs()
 
+var now = func() time.Time { return time.Now() }
+
 type ConnectonSettings struct {
 	PersistLocation string
 	FPS             int
@@ -421,7 +423,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		rootDir = "."
 	}
 
-	todaysDate := time.Now().Format("2006-01-02")
+	todaysDate := now().Format("2006-01-02")
 
 	if len(clipsDir) > 0 {
 		path := filepath.Join(rootDir, clipsDir)
@@ -437,7 +439,7 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		}
 	}
 
-	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
+	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, now().Format("2006-01-02 15.04.05")))
 }
 
 func ensureDirectoryExists(path string) error {

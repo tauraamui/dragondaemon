@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"time"
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/allegro/bigcache/v3"
@@ -9,6 +10,12 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 )
+
+func OverloadNow(overload func() time.Time) func() {
+	nowRef := now
+	now = overload
+	return func() { now = nowRef }
+}
 
 func OverloadLogInfo(overload func(string, ...interface{})) func() {
 	logInfoRef := log.Info
