@@ -29,6 +29,7 @@ var now = func() time.Time { return time.Now() }
 
 type ConnectonSettings struct {
 	PersistLocation string
+	MockWriter      bool
 	FPS             int
 	SecondsPerClip  int
 	DateTimeLabel   bool
@@ -333,9 +334,10 @@ func makeClipFromStream(
 	persistLocation, title string,
 ) videoClip {
 	clip := videoClip{
-		fileName: fetchClipFilePath(c.sett.PersistLocation, c.title),
-		frames:   []gocv.Mat{},
-		fps:      c.sett.FPS,
+		mockWriter: c.sett.MockWriter,
+		fileName:   fetchClipFilePath(c.sett.PersistLocation, c.title),
+		frames:     []gocv.Mat{},
+		fps:        c.sett.FPS,
 	}
 	// collect enough frames for clip
 	var framesRead uint

@@ -110,6 +110,7 @@ func (service *Service) Manage() (string, error) {
 			c.Address,
 			media.ConnectonSettings{
 				PersistLocation: c.PersistLoc,
+				MockWriter:      c.MockWriter,
 				FPS:             c.FPS,
 				SecondsPerClip:  c.SecondsPerClip,
 				DateTimeLabel:   c.DateTimeLabel,
