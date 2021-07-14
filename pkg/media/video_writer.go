@@ -21,7 +21,12 @@ var openVideoWriter = func(
 	fps float64,
 	frameWidth int,
 	frameHeight int,
+	mock bool,
 ) (VideoWriteable, error) {
+	if mock {
+		return &mockVideoWriter{}, nil
+	}
+
 	vw, err := gocv.VideoWriterFile(fileName, codec, fps, frameWidth, frameHeight, true)
 	if err != nil {
 		return nil, err

@@ -543,7 +543,7 @@ var _ = Describe("Connection", func() {
 
 			BeforeEach(func() {
 				resetVidWriterOverload = media.OverloadOpenVideoWriter(
-					func(string, string, float64, int, int) (media.VideoWriteable, error) {
+					func(string, string, float64, int, int, bool) (media.VideoWriteable, error) {
 						return &videoWriter, nil
 					},
 				)
@@ -673,7 +673,7 @@ var _ = Describe("Connection", func() {
 				}
 
 				resetVidWriterOverload = media.OverloadOpenVideoWriter(
-					func(string, string, float64, int, int) (media.VideoWriteable, error) {
+					func(string, string, float64, int, int, bool) (media.VideoWriteable, error) {
 						return nil, errors.New("test error: unable to open video writer")
 					},
 				)

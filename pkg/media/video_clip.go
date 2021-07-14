@@ -58,11 +58,7 @@ var resolveVideoWriter = func(
 	frameHeight int,
 	mockWriter bool,
 ) (VideoWriteable, error) {
-	if mockWriter {
-		return &mockVideoWriter{}, nil
-	}
-
 	return openVideoWriter(
-		fileName, codec, fps, frameWidth, frameHeight,
+		fileName, codec, fps, frameWidth, frameHeight, mockWriter,
 	)
 }

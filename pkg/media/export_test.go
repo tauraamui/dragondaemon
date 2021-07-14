@@ -59,6 +59,7 @@ func OverloadOpenVideoWriter(overload func(
 	float64,
 	int,
 	int,
+	bool,
 ) (VideoWriteable, error)) func() {
 	openVideoWriterRef := openVideoWriter
 	openVideoWriter = overload
@@ -71,8 +72,9 @@ func OpenVideoWriter(
 	fps float64,
 	frameWidth int,
 	frameHeight int,
+	mock bool,
 ) (VideoWriteable, error) {
-	return openVideoWriter(fileName, codec, fps, frameWidth, frameHeight)
+	return openVideoWriter(fileName, codec, fps, frameWidth, frameHeight, mock)
 }
 
 func (c *Connection) Stream(ctx context.Context) chan struct{} {
