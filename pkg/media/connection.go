@@ -25,6 +25,8 @@ const sizeOnDisk string = "sod"
 
 var fs = afero.NewOsFs()
 
+var now = func() time.Time { return time.Now() }
+
 type ConnectonSettings struct {
 	PersistLocation string
 	FPS             int
@@ -276,6 +278,7 @@ func writeClipsToDisk(
 		if err := clip.flushToDisk(); err != nil {
 			log.Error("Unable to write video clip %s to disk: %v", clip.fileName, err)
 		}
+		clip.close()
 	}
 	wg.Add(1)
 	go func(ctx context.Context, wg *sync.WaitGroup, clips chan videoClip) {
@@ -354,8 +357,12 @@ func connectReolinkControl(
 	return
 }
 
+var newCache = func() (*bigcache.BigCache, error) {
+	return bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
+}
+
 var initCache = func() (cache *bigcache.BigCache, err error) {
-	cache, err = bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
+	cache, err = newCache()
 	if err != nil {
 		err = fmt.Errorf("unable to initialise connection cache: %w", err)
 	}
@@ -416,27 +423,27 @@ func fetchClipFilePath(rootDir string, clipsDir string) string {
 		rootDir = "."
 	}
 
-	todaysDate := time.Now().Format("2006-01-02")
+	todaysDate := now().Format("2006-01-02")
 
 	if len(clipsDir) > 0 {
-		path := fmt.Sprintf("%s/%s", rootDir, clipsDir)
+		path := filepath.Join(rootDir, clipsDir)
 		err := ensureDirectoryExists(path)
 		if err != nil {
 			log.Error("Unable to create directory %s: %v", path, err)
 		}
 
-		path = fmt.Sprintf("%s/%s/%s", rootDir, clipsDir, todaysDate)
+		path = filepath.Join(rootDir, clipsDir, todaysDate)
 		err = ensureDirectoryExists(path)
 		if err != nil {
 			log.Error("Unable to create directory %s: %v", path, err)
 		}
 	}
 
-	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, time.Now().Format("2006-01-02 15.04.05")))
+	return filepath.FromSlash(fmt.Sprintf("%s/%s/%s/%s.mp4", rootDir, clipsDir, todaysDate, now().Format("2006-01-02 15.04.05")))
 }
 
 func ensureDirectoryExists(path string) error {
-	err := os.Mkdir(path, os.ModePerm)
+	err := fs.Mkdir(path, os.ModePerm)
 
 	if err == nil || os.IsExist(err) {
 		return nil

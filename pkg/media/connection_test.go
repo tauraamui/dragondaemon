@@ -22,7 +22,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-const KB int64 = 1024
+const KB = 1024
 
 type testMockVideoCapture struct {
 	isOpenedFunc func() bool
@@ -159,7 +159,7 @@ var _ = Describe("Connection", func() {
 			})
 			defer resetErrorLog()
 
-			resetInitCache := media.OverloadInitCache(func() (*bigcache.BigCache, error) {
+			resetInitCache := media.OverloadNewCache(func() (*bigcache.BigCache, error) {
 				return nil, errors.New("test error: unable to init cache")
 			})
 			defer resetInitCache()
@@ -194,7 +194,9 @@ var _ = Describe("Connection", func() {
 
 			Expect(conn.Cache()).To(BeNil())
 			Expect(errorLogs).To(HaveLen(2))
-			Expect(errorLogs[0]).To(Equal("test error: unable to init cache"))
+			Expect(errorLogs[0]).To(Equal(
+				"unable to initialise connection cache: test error: unable to init cache",
+			))
 			Expect(errorLogs[1]).To(ContainSubstring("unable to load disk size from cache"))
 		})
 	})
@@ -268,107 +270,133 @@ var _ = Describe("Connection", func() {
 				Expect(size).To(BeNumerically("==", 1))
 				Expect(unit).To(Equal("GB"))
 			})
-		})
 
-		Context("Connect checking total file size in persist dir", func() {
-			It("Should return total size on disk as EOF with empty size and unit values", func() {
-				size, err := conn.SizeOnDisk()
-				Expect(size).To(Equal("0KB"))
-				Expect(err).To(MatchError(io.EOF))
-			})
+			Context("Connect checking total file size in persist dir", func() {
+				It("Should return total size on disk as EOF with empty size and unit values", func() {
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("0KB"))
+					Expect(err).To(MatchError(io.EOF))
+				})
 
-			It("Should return total size on disk which matches real total size", func() {
-				clipsDirPath := "/testroot/clips/TestConnectionInstance"
+				It("Should return total size on disk which matches real total size", func() {
+					clipsDirPath := "/testroot/clips/TestConnectionInstance"
 
-				By("Creating file on disk of size 9KB")
-				binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
-				Expect(err).To(BeNil())
-				defer binFile.Close()
-				err = binFile.Truncate(KB * 9)
-				Expect(err).To(BeNil())
-
-				By("Querying disk size with just created file on disk")
-				size, err := conn.SizeOnDisk()
-				Expect(size).To(Equal("9KB"))
-				Expect(err).To(BeNil())
-			})
-
-			It("Should return total size on disk from checking disk and then reading from cache", func() {
-				clipsDirPath := "/testroot/clips/TestConnectionInstance"
-				Expect(mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)).To(BeNil())
-
-				By("Creating file on disk of size 9KB")
-				binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
-				Expect(err).To(BeNil())
-				defer binFile.Close()
-				err = binFile.Truncate(KB * 9)
-				Expect(err).To(BeNil())
-
-				By("Querying disk size with just created file on disk")
-				size, err := conn.SizeOnDisk()
-				Expect(size).To(Equal("9KB"))
-				Expect(err).To(BeNil())
-
-				By("Querying disk size after deleting all files from disk")
-				Expect(mockFs.Remove(binFile.Name())).To(BeNil())
-
-				size, err = conn.SizeOnDisk()
-				Expect(size).To(Equal("9KB"))
-				Expect(err).To(BeNil())
-			})
-
-			It("Should return total size on disk including sub dirs within persist dir", func() {
-				clipsRootDirPath := "/testroot/clips/TestConnectionInstance"
-
-				clipsSubDirPath1 := "/testroot/clips/TestConnectionInstance/subdir1"
-				Expect(mockFs.MkdirAll(clipsSubDirPath1, os.ModeDir|os.ModePerm)).To(BeNil())
-
-				clipsSubDirPath2 := "/testroot/clips/TestConnectionInstance/subdir2"
-				Expect(mockFs.MkdirAll(clipsSubDirPath2, os.ModeDir|os.ModePerm)).To(BeNil())
-
-				By("Creating file on disk within root dir of size 6KB")
-				rootBinFile, err := mockFs.Create(filepath.Join(clipsRootDirPath, "mock.bin"))
-				Expect(err).To(BeNil())
-				defer rootBinFile.Close()
-				err = rootBinFile.Truncate(KB * 6)
-				Expect(err).To(BeNil())
-
-				By("Creating file on disk within sub dir 1 of size 6KB")
-				subBinFile1, err := mockFs.Create(filepath.Join(clipsSubDirPath1, "mock.bin"))
-				Expect(err).To(BeNil())
-				defer subBinFile1.Close()
-				err = subBinFile1.Truncate(KB * 6)
-				Expect(err).To(BeNil())
-
-				By("Creating file on disk within sub dir 2 of size 6KB")
-				subBinFile2, err := mockFs.Create(filepath.Join(clipsSubDirPath2, "mock.bin"))
-				Expect(err).To(BeNil())
-				defer subBinFile2.Close()
-				err = subBinFile2.Truncate(KB * 6)
-				Expect(err).To(BeNil())
-
-				By("Querying disk size with all just created files on disk")
-				size, err := conn.SizeOnDisk()
-				Expect(size).To(Equal("18KB"))
-				Expect(err).To(BeNil())
-			})
-
-			It("Should return total size of 150 files within root persist dir", func() {
-				clipsDirPath := "/testroot/clips/TestConnectionInstance"
-
-				By("Creating 150 files on disk of size 1MB")
-				for i := 0; i < 150; i++ {
-					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, fmt.Sprintf("mock%d.bin", i)))
+					By("Creating file on disk of size 9KB")
+					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
 					Expect(err).To(BeNil())
 					defer binFile.Close()
-					err = binFile.Truncate(KB * KB)
+					err = binFile.Truncate(KB * 9)
 					Expect(err).To(BeNil())
-				}
 
-				By("Querying disk size with all just created files on disk")
-				size, err := conn.SizeOnDisk()
-				Expect(size).To(Equal("150MB"))
-				Expect(err).To(BeNil())
+					By("Querying disk size with just created file on disk")
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("9KB"))
+					Expect(err).To(BeNil())
+				})
+
+				It("Should return total size on disk from checking disk and then reading from cache", func() {
+					clipsDirPath := "/testroot/clips/TestConnectionInstance"
+					Expect(mockFs.MkdirAll(clipsDirPath, os.ModeDir|os.ModePerm)).To(BeNil())
+
+					By("Creating file on disk of size 9KB")
+					binFile, err := mockFs.Create(filepath.Join(clipsDirPath, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer binFile.Close()
+					err = binFile.Truncate(KB * 9)
+					Expect(err).To(BeNil())
+
+					By("Querying disk size with just created file on disk")
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("9KB"))
+					Expect(err).To(BeNil())
+
+					By("Querying disk size after deleting all files from disk")
+					Expect(mockFs.Remove(binFile.Name())).To(BeNil())
+
+					size, err = conn.SizeOnDisk()
+					Expect(size).To(Equal("9KB"))
+					Expect(err).To(BeNil())
+				})
+
+				It("Should return total size on disk including sub dirs within persist dir", func() {
+					clipsRootDirPath := "/testroot/clips/TestConnectionInstance"
+
+					clipsSubDirPath1 := "/testroot/clips/TestConnectionInstance/subdir1"
+					Expect(mockFs.MkdirAll(clipsSubDirPath1, os.ModeDir|os.ModePerm)).To(BeNil())
+
+					clipsSubDirPath2 := "/testroot/clips/TestConnectionInstance/subdir2"
+					Expect(mockFs.MkdirAll(clipsSubDirPath2, os.ModeDir|os.ModePerm)).To(BeNil())
+
+					By("Creating file on disk within root dir of size 6KB")
+					rootBinFile, err := mockFs.Create(filepath.Join(clipsRootDirPath, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer rootBinFile.Close()
+					err = rootBinFile.Truncate(KB * 6)
+					Expect(err).To(BeNil())
+
+					By("Creating file on disk within sub dir 1 of size 6KB")
+					subBinFile1, err := mockFs.Create(filepath.Join(clipsSubDirPath1, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer subBinFile1.Close()
+					err = subBinFile1.Truncate(KB * 6)
+					Expect(err).To(BeNil())
+
+					By("Creating file on disk within sub dir 2 of size 6KB")
+					subBinFile2, err := mockFs.Create(filepath.Join(clipsSubDirPath2, "mock.bin"))
+					Expect(err).To(BeNil())
+					defer subBinFile2.Close()
+					err = subBinFile2.Truncate(KB * 6)
+					Expect(err).To(BeNil())
+
+					By("Querying disk size with all just created files on disk")
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("18KB"))
+					Expect(err).To(BeNil())
+				})
+
+				It("Should return total size of 150 files within root persist dir", func() {
+					clipsDirPath := "/testroot/clips/TestConnectionInstance"
+
+					By("Creating 150 files on disk of size 1MB")
+					for i := 0; i < 150; i++ {
+						binFile, err := mockFs.Create(filepath.Join(clipsDirPath, fmt.Sprintf("mock%d.bin", i)))
+						Expect(err).To(BeNil())
+						defer binFile.Close()
+						err = binFile.Truncate(KB * KB)
+						Expect(err).To(BeNil())
+					}
+
+					By("Querying disk size with all just created files on disk")
+					size, err := conn.SizeOnDisk()
+					Expect(size).To(Equal("150MB"))
+					Expect(err).To(BeNil())
+				})
+			})
+		})
+
+		Context("Calling connection readFromStream directly", func() {
+			It("Should return true from readFromStream", func() {
+				videoCapture.isOpenedFunc = func() bool {
+					return true
+				}
+				readCallCount := 0
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					readCallCount++
+					return true
+				}
+				mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+				defer mat.Close()
+				Expect(media.ReadFromStream(conn, &mat)).To(BeTrue())
+				Expect(readCallCount).To(BeNumerically("==", 1))
+			})
+
+			It("Should return false from readFromStream", func() {
+				videoCapture.isOpenedFunc = func() bool {
+					return false
+				}
+				mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+				defer mat.Close()
+				Expect(media.ReadFromStream(conn, &mat)).To(BeFalse())
 			})
 		})
 
@@ -567,6 +595,119 @@ var _ = Describe("Connection", func() {
 				Eventually(stoppingStreaming).Should(BeClosed())
 
 				Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
+			})
+
+			It("Should use real video writer and save footage into clips in correct dir on disk", func() {
+				os.Setenv("DRAGON_DAEMON_MOCK_VIDEO_STREAM", "1")
+				timeNow, err := time.Parse("2006-01-02 15.04.05", "2021-02-02 10.00.00")
+				resetNowOverload := media.OverloadNow(func() time.Time {
+					return timeNow
+				})
+				defer resetNowOverload()
+
+				Expect(err).To(BeNil())
+				Expect(timeNow).ToNot(BeNil())
+
+				errorLogs := []string{}
+				resetLogError := media.OverloadLogError(func(format string, args ...interface{}) {
+					errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+				})
+				defer resetLogError()
+
+				// make video writer and capturer use real implementation
+				resetVidWriterOverload()
+				resetVidCapOverload()
+
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+					defer mat.Close()
+					// mat.AddFloat(11.54)
+					mat.CopyTo(m)
+					return true
+				}
+
+				ctx, cancelStreaming := context.WithCancel(context.Background())
+				stoppingStreaming := conn.Stream(ctx)
+
+				ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+				stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					time.Sleep(800 * time.Millisecond)
+					wg.Done()
+				}(&wg)
+
+				wg.Wait()
+
+				cancelWriteStreamToClips()
+				Eventually(stoppingWriteStreamIntoClips).Should(BeClosed())
+
+				cancelStreaming()
+				Eventually(stoppingStreaming).Should(BeClosed())
+
+				Expect(errorLogs).To(HaveLen(0))
+				clipsDir, err := mockFs.Open("/testroot/clips/TestConnectionInstance/2021-02-02")
+				Expect(err).To(BeNil())
+				Expect(clipsDir).ToNot(BeNil())
+
+				files, err := clipsDir.Readdir(-1)
+				Expect(err).To(BeNil())
+				Expect(files).To(HaveLen(0))
+			})
+
+			It("Should fail to open video writer and therefore not write to disk", func() {
+				errorLogs := []string{}
+				resetErrorLog := media.OverloadLogError(func(format string, args ...interface{}) {
+					errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+				})
+				defer resetErrorLog()
+
+				videoCapture.isOpenedFunc = func() bool { return true }
+				videoCapture.readFunc = func(m *gocv.Mat) bool {
+					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+					defer mat.Close()
+					mat.CopyTo(m)
+					return true
+				}
+
+				resetVidWriterOverload = media.OverloadOpenVideoWriter(
+					func(string, string, float64, int, int) (media.VideoWriteable, error) {
+						return nil, errors.New("test error: unable to open video writer")
+					},
+				)
+				defer resetVidWriterOverload()
+
+				ctx, cancelStreaming := context.WithCancel(context.Background())
+				stoppingStreaming := conn.Stream(ctx)
+
+				ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+				stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					time.Sleep(3 * time.Millisecond)
+					wg.Done()
+				}(&wg)
+
+				wg.Wait()
+
+				cancelWriteStreamToClips()
+				Eventually(stoppingWriteStreamIntoClips, 3*time.Second).Should(BeClosed())
+
+				cancelStreaming()
+				Eventually(stoppingStreaming).Should(BeClosed())
+
+				Expect(errorLogs).To(HaveLen(1))
+				Expect(errorLogs).To(HaveCap(1))
+				Expect(errorLogs[0]).To(ContainSubstring(
+					"Unable to write video clip /testroot/clips/TestConnectionInstance/",
+				))
+				Expect(errorLogs[0]).To(ContainSubstring(
+					".mp4 to disk: test error: unable to open video writer",
+				))
 			})
 		})
 	})

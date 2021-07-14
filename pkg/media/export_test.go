@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"time"
 
 	"github.com/ReolinkCameraAPI/reolinkapigo/pkg/reolinkapi"
 	"github.com/allegro/bigcache/v3"
@@ -9,6 +10,12 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 )
+
+func OverloadNow(overload func() time.Time) func() {
+	nowRef := now
+	now = overload
+	return func() { now = nowRef }
+}
 
 func OverloadLogInfo(overload func(string, ...interface{})) func() {
 	logInfoRef := log.Info
@@ -28,10 +35,10 @@ func OverloadFS(overload afero.Fs) func() {
 	return func() { fs = fsRef }
 }
 
-func OverloadInitCache(overload func() (*bigcache.BigCache, error)) func() {
-	initCacheRef := initCache
-	initCache = overload
-	return func() { initCache = initCacheRef }
+func OverloadNewCache(overload func() (*bigcache.BigCache, error)) func() {
+	newCacheRef := newCache
+	newCache = overload
+	return func() { newCache = newCacheRef }
 }
 
 func OverloadOpenVideoCapture(overload func(
@@ -64,6 +71,10 @@ func (c *Connection) Stream(ctx context.Context) chan struct{} {
 
 func (c *Connection) WriteStreamToClips(ctx context.Context) chan interface{} {
 	return c.writeStreamToClips(ctx)
+}
+
+func ReadFromStream(c *Connection, img *gocv.Mat) bool {
+	return readFromStream(c, img)
 }
 
 func (c *Connection) Buffer() chan gocv.Mat {
