@@ -1,8 +1,6 @@
 package media_test
 
 import (
-	"os"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
@@ -30,9 +28,12 @@ var _ = Describe("VideoWriter", func() {
 		mockFs = nil
 	})
 
-	Context("", func() {
-		It("Should return a new ", func() {
-			Expect(mockFs.MkdirAll("/testroot/clips/TestConnection", os.ModeDir|os.ModePerm)).To(BeNil())
-		})
+	It("Should return a video writer", func() {
+		videoWriter, err := media.OpenVideoWriter(
+			"testclip.mp4", "avc1.4d001e", 30, 10, 10,
+		)
+
+		Expect(videoWriter).ToNot(BeNil())
+		Expect(err).To(BeNil())
 	})
 })

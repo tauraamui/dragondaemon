@@ -12,6 +12,7 @@ type VideoWriteable interface {
 	Write(gocv.Mat) error
 	Close() error
 }
+
 type videoWriter struct {
 	p *gocv.VideoWriter
 }
