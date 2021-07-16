@@ -601,6 +601,7 @@ var _ = Describe("Connection", func() {
 				Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
 			})
 
+			// TODO(tauraamui): Fix or remove this test
 			It("Should use real video writer and save footage into clips in correct dir on disk", func() {
 				os.Setenv("DRAGON_DAEMON_MOCK_VIDEO_STREAM", "1")
 				timeNow, err := time.Parse("2006-01-02 15.04.05", "2021-02-02 10.00.00")
