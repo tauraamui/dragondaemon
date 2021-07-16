@@ -90,13 +90,20 @@ var _ = Describe("Connection", func() {
 	var mockFs afero.Fs = nil
 	var resetFs func() = nil
 
-	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
+	BeforeSuite(func() {
 		mockFs = afero.NewMemMapFs()
 		resetFs = media.OverloadFS(mockFs)
 	})
 
+	BeforeEach(func() {
+		logging.CurrentLoggingLevel = logging.SilentLevel
+	})
+
 	AfterEach(func() {
+		Expect(mockFs.RemoveAll("*")).To(BeNil())
+	})
+
+	AfterSuite(func() {
 		logging.CurrentLoggingLevel = existingLoggingLevel
 		resetFs()
 		mockFs = nil
