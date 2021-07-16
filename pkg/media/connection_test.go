@@ -95,12 +95,9 @@ var _ = Describe("Connection", func() {
 		resetFs = media.OverloadFS(mockFs)
 	})
 
-	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
-	})
-
 	AfterEach(func() {
 		Expect(mockFs.RemoveAll("*")).To(BeNil())
+		logging.CurrentLoggingLevel = logging.SilentLevel
 	})
 
 	AfterSuite(func() {
@@ -608,6 +605,7 @@ var _ = Describe("Connection", func() {
 				os.Setenv("DRAGON_DAEMON_MOCK_VIDEO_STREAM", "1")
 				timeNow, err := time.Parse("2006-01-02 15.04.05", "2021-02-02 10.00.00")
 				resetNowOverload := media.OverloadNow(func() time.Time {
+					timeNow = timeNow.Add(time.Second * 1)
 					return timeNow
 				})
 				defer resetNowOverload()
