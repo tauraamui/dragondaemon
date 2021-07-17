@@ -181,6 +181,7 @@ func (c *Connection) reconnect() error {
 		c.sett.FPS,
 		c.sett.DateTimeLabel,
 		c.sett.DateTimeFormat,
+		c.sett.MockCapturer,
 	)
 	if err != nil {
 		return err
