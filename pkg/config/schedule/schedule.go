@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
 type Time time.Time
@@ -130,7 +130,7 @@ func (s *Schedule) setupState() {
 	// from today to a week before set each weekday time to have relative date
 	for i := 0; i < 7; i++ {
 		previousDay := TODAY.AddDate(0, 0, i*-1)
-		logging.Debug("Setting relative date from TODAY for %s", previousDay.Weekday().String()) //nolint
+		log.Debug("Setting relative date from TODAY for %s", previousDay.Weekday().String()) //nolint
 		previousDayRef := s.weekdayStringToWeekDay[previousDay.Weekday().String()]
 		if previousDayRef.On != nil {
 			*previousDayRef.On = Time(

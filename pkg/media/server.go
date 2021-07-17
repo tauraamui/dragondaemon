@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
 type Options struct {
@@ -50,11 +50,11 @@ func (s *Server) Connect(
 	)
 
 	if err != nil {
-		logging.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream) //nolint
+		log.Error("Unable to connect to stream [%s] at [%s]", title, rtspStream) //nolint
 		return
 	}
 
-	logging.Info("Connected to stream [%s] at [%s]", title, rtspStream) //nolint
+	log.Info("Connected to stream [%s] at [%s]", title, rtspStream) //nolint
 	if len(sett.PersistLocation) == 0 {
 		sett.PersistLocation = "."
 	}
@@ -66,13 +66,13 @@ func (s *Server) Connect(
 	)
 
 	go func(c *Connection) {
-		logging.Info("Fetching connection size on disk...") //nolint
+		log.Info("Fetching connection size on disk...") //nolint
 		size, err := c.SizeOnDisk()
 		if err != nil {
-			logging.Error("Unable to fetch size on disk: %v", err) //nolint
+			log.Error("Unable to fetch size on disk: %v", err) //nolint
 			return
 		}
-		logging.Info("Connection [%s] size on disk: %s", conn.title, size) //nolint
+		log.Info("Connection [%s] size on disk: %s", conn.title, size) //nolint
 	}(conn)
 
 	s.trackConnection(conn, true)
@@ -99,7 +99,7 @@ func (s *Server) Run(opts Options) {
 		<-ctx.Done()
 
 		cancelSavingClips()
-		logging.Info("Waiting for persist process to finish...") //nolint
+		log.Info("Waiting for persist process to finish...") //nolint
 		// wait for saving streams to stop
 		for _, stoppedPersistSig := range stoppedSavingClips {
 			<-stoppedPersistSig
@@ -108,7 +108,7 @@ func (s *Server) Run(opts Options) {
 		// stopping the streaming process should be done last
 		// stop all streaming
 		cancelStreaming()
-		logging.Info("Waiting for streams to terminate...") //nolint
+		log.Info("Waiting for streams to terminate...") //nolint
 		// wait for all streams to stop
 		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
 		for _, stoppedStreamSig := range stoppedStreaming {
@@ -116,7 +116,7 @@ func (s *Server) Run(opts Options) {
 		}
 
 		cancelRemovingClips()
-		logging.Info("Waiting for removing clips process to finish...") //nolint
+		log.Info("Waiting for removing clips process to finish...") //nolint
 		<-stoppedRemovingClips
 
 		// send signal saying shutdown process has finished
@@ -140,7 +140,7 @@ func (s *Server) Close() error {
 func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
 	var stoppedStreaming []chan struct{}
 	for _, conn := range s.activeConnections() {
-		logging.Info("Reading stream from connection [%s]", conn.title) //nolint
+		log.Info("Reading stream from connection [%s]", conn.title) //nolint
 		stoppedStreaming = append(stoppedStreaming, conn.stream(ctx))
 	}
 	return stoppedStreaming
@@ -177,7 +177,7 @@ func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan 
 					fullPersistLocation := fmt.Sprintf("%s%c%s", conn.sett.PersistLocation, os.PathSeparator, conn.title)
 					files, err := ioutil.ReadDir(fullPersistLocation)
 					if err != nil {
-						logging.Error("Unable to read contents of connection persist location %s: %v", fullPersistLocation, err) //nolint
+						log.Error("Unable to read contents of connection persist location %s: %v", fullPersistLocation, err) //nolint
 					}
 
 					for _, file := range files {
@@ -189,10 +189,10 @@ func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan 
 						oldestAllowedDay := time.Now().AddDate(0, 0, -1*maxClipAgeInDays)
 						if date.Before(oldestAllowedDay) {
 							dirToRemove := fmt.Sprintf("%s%c%s", fullPersistLocation, os.PathSeparator, file.Name())
-							logging.Info("REMOVING DIR %s", dirToRemove) //nolint
+							log.Info("REMOVING DIR %s", dirToRemove) //nolint
 							err := os.RemoveAll(dirToRemove)
 							if err != nil {
-								logging.Error("Failed to RemoveAll %s", dirToRemove) //nolint
+								log.Error("Failed to RemoveAll %s", dirToRemove) //nolint
 							}
 						}
 					}

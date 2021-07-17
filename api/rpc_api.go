@@ -9,18 +9,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/api/auth"
 	"github.com/tauraamui/dragondaemon/common"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/media"
 	"gorm.io/gorm"
 )
 
 func init() {
 	if err := rpc.Register(Session{}); err != nil {
-		logging.Error("unable to register session type for RPC") //nolint
+		log.Error("unable to register session type for RPC") //nolint
 	}
 }
 
@@ -153,7 +153,7 @@ func (m *MediaServer) RebootConnection(sess *Session, resp *bool) error {
 		return err
 	}
 
-	logging.Warn("Received remote reboot connection request...") //nolint
+	log.Warn("Received remote reboot connection request...") //nolint
 	err = m.s.APIRebootConnection(sess.CameraUUID)
 	if err != nil {
 		*resp = false
@@ -171,7 +171,7 @@ func (m *MediaServer) Shutdown(sess *Session, resp *bool) error {
 	}
 
 	*resp = true
-	logging.Warn("Received remote shutdown request...") //nolint
+	log.Warn("Received remote shutdown request...") //nolint
 	defer func() {
 		time.Sleep(time.Second * 1)
 		m.interrupt <- SIGREMOTE

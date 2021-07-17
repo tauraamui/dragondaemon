@@ -11,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/spf13/afero"
-	"github.com/tacusci/logging/v2"
 
 	"github.com/pkg/errors"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gopkg.in/dealancer/validate.v2"
 )
 
@@ -95,7 +95,7 @@ func Setup() error {
 		return fmt.Errorf("%w: %s", ErrConfigAlreadyExists, configPath)
 	}
 
-	logging.Info("Created default config at: %s", configPath) //nolint
+	log.Info("Created default config at: %s", configPath) //nolint
 
 	return nil
 }
@@ -150,7 +150,7 @@ func (c *values) Load() error {
 		return err
 	}
 
-	logging.Info("Resolved config file location: %s", configPath) //nolint
+	log.Info("Resolved config file location: %s", configPath) //nolint
 
 	file, err := afero.ReadFile(c.fs, configPath)
 	if err != nil {
