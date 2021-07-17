@@ -1,7 +1,7 @@
 package media
 
 import (
-	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 )
 
@@ -15,7 +15,7 @@ type videoClip struct {
 func (v *videoClip) flushToDisk() error {
 	if len(v.frames) > 0 {
 		img := v.frames[0]
-		writer, err := resolveVideoWriter(
+		writer, err := openVideoWriter(
 			v.fileName, "avc1.4d001e", float64(v.fps), img.Cols(), img.Rows(), v.mockWriter,
 		)
 		if err != nil {
@@ -24,7 +24,7 @@ func (v *videoClip) flushToDisk() error {
 
 		defer writer.Close()
 
-		logging.Info("Saving to clip file: %s", v.fileName) //nolint
+		log.Info("Saving to clip file: %s", v.fileName) //nolint
 
 		for _, f := range v.frames {
 			if f.Empty() {
@@ -34,7 +34,7 @@ func (v *videoClip) flushToDisk() error {
 
 			if writer.IsOpened() {
 				if err := writer.Write(f); err != nil {
-					logging.Error("Unable to write frame to file: %v", err) //nolint
+					log.Error("Unable to write frame to file: %v", err) //nolint
 				}
 			}
 			f.Close()
@@ -48,17 +48,4 @@ func (v *videoClip) close() {
 	for _, f := range v.frames {
 		f.Close()
 	}
-}
-
-var resolveVideoWriter = func(
-	fileName string,
-	codec string,
-	fps float64,
-	frameWidth int,
-	frameHeight int,
-	mockWriter bool,
-) (VideoWriteable, error) {
-	return openVideoWriter(
-		fileName, codec, fps, frameWidth, frameHeight, mockWriter,
-	)
 }

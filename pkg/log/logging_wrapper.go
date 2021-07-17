@@ -17,3 +17,7 @@ var Warn = func(format string, a ...interface{}) {
 var Error = func(format string, a ...interface{}) {
 	logging.Error(format, a...) //nolint
 }
+
+var Fatal = func(format string, a ...interface{}) {
+	logging.Fatal(format, a...) //nolint
+}

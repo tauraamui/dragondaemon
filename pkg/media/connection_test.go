@@ -205,7 +205,114 @@ var _ = Describe("Connection", func() {
 		})
 	})
 
-	Context("Using a connection instance", func() {
+	Context("Using a connection instance with a real writer and test capturer", func() {
+		var conn *media.Connection
+		var videoCapture *testMockVideoCapture
+
+		BeforeEach(func() {
+			videoCapture = &testMockVideoCapture{
+				isOpenedFunc: func() bool { return true },
+				closeFunc:    func() error { return nil },
+			}
+			Expect(videoCapture).ToNot(BeNil())
+			videoCapture.readFunc = func(m *gocv.Mat) bool {
+				mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
+				defer mat.Close()
+				mat.AddFloat(3.15)
+				mat.CopyTo(m)
+				return true
+			}
+
+			conn = media.NewConnection(
+				"TestConnectionInstanceW&C",
+				media.ConnectonSettings{
+					PersistLocation: "/testroot/clips",
+					FPS:             30,
+					SecondsPerClip:  2,
+					Schedule:        schedule.Schedule{},
+					Reolink:         config.ReolinkAdvanced{Enabled: false},
+				},
+				videoCapture,
+				"test-connection-instance-w&c-addr",
+			)
+		})
+
+		// TODO(tauraamui): Fix or remove this test
+		It("Should use real video writer and save footage into clips in correct dir on disk", func() {
+			const clipsDirPath = "/testroot/clips/TestConnectionInstanceW&C/2021-02-02"
+			timeNow, err := time.Parse("2006-01-02 15.04.05", "2021-02-02 10.00.00")
+			resetNowOverload := media.OverloadNow(func() time.Time {
+				timeNow = timeNow.Add(time.Second * 1)
+				return timeNow
+			})
+			defer resetNowOverload()
+
+			Expect(err).To(BeNil())
+			Expect(timeNow).ToNot(BeNil())
+
+			errorLogs := []string{}
+			resetLogError := media.OverloadLogError(func(format string, args ...interface{}) {
+				errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
+			})
+			defer resetLogError()
+
+			infoLogs := []string{}
+			resetLogInfo := media.OverloadLogInfo(func(format string, args ...interface{}) {
+				infoLogs = append(infoLogs, fmt.Sprintf(format, args...))
+			})
+			defer resetLogInfo()
+
+			ctx, cancelStreaming := context.WithCancel(context.Background())
+			stoppingStreaming := conn.Stream(ctx)
+
+			ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
+			stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				time.Sleep(800 * time.Millisecond)
+				wg.Done()
+			}(&wg)
+
+			wg.Wait()
+
+			cancelWriteStreamToClips()
+			Eventually(stoppingWriteStreamIntoClips, time.Second*10).Should(BeClosed())
+
+			cancelStreaming()
+			Eventually(stoppingStreaming).Should(BeClosed())
+
+			Expect(errorLogs).To(HaveLen(0))
+			clipsDir, err := mockFs.Open(clipsDirPath)
+			Expect(err).To(BeNil())
+			Expect(clipsDir).ToNot(BeNil())
+
+			Expect(len(infoLogs)).To(BeNumerically(">", 3))
+			Expect(infoLogs[0]).To(ContainSubstring(
+				fmt.Sprintf(
+					"Saving to clip file: %s",
+					filepath.Join(clipsDirPath, "2021-02-02 10.00.02.mp4")),
+			))
+			Expect(infoLogs[1]).To(ContainSubstring(
+				fmt.Sprintf(
+					"Saving to clip file: %s",
+					filepath.Join(clipsDirPath, "2021-02-02 10.00.04.mp4")),
+			))
+			Expect(infoLogs[2]).To(ContainSubstring(
+				fmt.Sprintf(
+					"Saving to clip file: %s",
+					filepath.Join(clipsDirPath, "2021-02-02 10.00.06.mp4")),
+			))
+			Expect(infoLogs[3]).To(ContainSubstring(
+				fmt.Sprintf(
+					"Saving to clip file: %s",
+					filepath.Join(clipsDirPath, "2021-02-02 10.00.08.mp4")),
+			))
+		})
+	})
+
+	Context("Using a connection instance with a fake test writer and capturer", func() {
 		var conn *media.Connection
 		var videoCapture *testMockVideoCapture
 		var resetVidCapOverload func()
@@ -599,68 +706,6 @@ var _ = Describe("Connection", func() {
 				Eventually(stoppingStreaming).Should(BeClosed())
 
 				Expect(sentMatSumVal1).To(BeNumerically("==", readMatSumVal1))
-			})
-
-			// TODO(tauraamui): Fix or remove this test
-			It("Should use real video writer and save footage into clips in correct dir on disk", func() {
-				os.Setenv("DRAGON_DAEMON_MOCK_VIDEO_STREAM", "1")
-				timeNow, err := time.Parse("2006-01-02 15.04.05", "2021-02-02 10.00.00")
-				resetNowOverload := media.OverloadNow(func() time.Time {
-					timeNow = timeNow.Add(time.Second * 1)
-					return timeNow
-				})
-				defer resetNowOverload()
-
-				Expect(err).To(BeNil())
-				Expect(timeNow).ToNot(BeNil())
-
-				errorLogs := []string{}
-				resetLogError := media.OverloadLogError(func(format string, args ...interface{}) {
-					errorLogs = append(errorLogs, fmt.Sprintf(format, args...))
-				})
-				defer resetLogError()
-
-				// make video writer and capturer use real implementation
-				resetVidWriterOverload()
-				resetVidCapOverload()
-
-				videoCapture.readFunc = func(m *gocv.Mat) bool {
-					mat := gocv.NewMatWithSize(10, 10, gocv.MatTypeCV32F)
-					defer mat.Close()
-					// mat.AddFloat(11.54)
-					mat.CopyTo(m)
-					return true
-				}
-
-				ctx, cancelStreaming := context.WithCancel(context.Background())
-				stoppingStreaming := conn.Stream(ctx)
-
-				ctx, cancelWriteStreamToClips := context.WithCancel(context.Background())
-				stoppingWriteStreamIntoClips := conn.WriteStreamToClips(ctx)
-
-				wg := sync.WaitGroup{}
-				wg.Add(1)
-				go func(wg *sync.WaitGroup) {
-					time.Sleep(800 * time.Millisecond)
-					wg.Done()
-				}(&wg)
-
-				wg.Wait()
-
-				cancelWriteStreamToClips()
-				Eventually(stoppingWriteStreamIntoClips).Should(BeClosed())
-
-				cancelStreaming()
-				Eventually(stoppingStreaming).Should(BeClosed())
-
-				Expect(errorLogs).To(HaveLen(0))
-				clipsDir, err := mockFs.Open("/testroot/clips/TestConnectionInstance/2021-02-02")
-				Expect(err).To(BeNil())
-				Expect(clipsDir).ToNot(BeNil())
-
-				files, err := clipsDir.Readdir(-1)
-				Expect(err).To(BeNil())
-				Expect(files).To(HaveLen(0))
 			})
 
 			It("Should fail to open video writer and therefore not write to disk", func() {

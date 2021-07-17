@@ -3,8 +3,8 @@ package media
 import (
 	"errors"
 
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/common"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
 // APIFetchActiveConnections returns list of current active connection titles
@@ -20,7 +20,7 @@ func (s *Server) APIFetchActiveConnections() []common.ConnectionData {
 					if err != nil {
 						return "N/A"
 					}
-					logging.Debug("SIZE -> CONN: %s, SIZE: %s", connPtr.uuid, size) //nolint
+					log.Debug("SIZE -> CONN: %s, SIZE: %s", connPtr.uuid, size) //nolint
 					return size
 				}(connPtr),
 			})

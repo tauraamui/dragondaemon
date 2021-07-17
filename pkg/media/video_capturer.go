@@ -9,7 +9,7 @@ import (
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
@@ -32,6 +32,7 @@ var openVideoCapture = func(
 	mock bool,
 ) (VideoCapturable, error) {
 	if mock {
+		println("OPENING MOCK CAPTURER")
 		return &mockVideoCapture{title: title}, nil
 	}
 
@@ -133,20 +134,20 @@ func (mvc *mockVideoCapture) Read(m *gocv.Mat) bool {
 	baseClone := cloneImage(mvc.baseImage)
 	err := drawText(baseClone, 5, 50, "DD_OFFLINE_STREAM")
 	if err != nil {
-		logging.Error("unable to draw text onto in-mem image for offline stream: %w", err) //nolint
+		log.Error("unable to draw text onto in-mem image for offline stream: %w", err) //nolint
 	}
 	err = drawText(baseClone, 5, 180, mvc.title)
 	if err != nil {
-		logging.Error("unable to draw text onto in-mem image for offline stream: %w", err) //nolint
+		log.Error("unable to draw text onto in-mem image for offline stream: %w", err) //nolint
 	}
 	err = drawText(baseClone, 5, 310, time.Now().Format("2006-01-02 15:04:05.999999999"))
 	if err != nil {
-		logging.Error("unable to draw text onto in-mem image for offline stream: %w", err) //nolint
+		log.Error("unable to draw text onto in-mem image for offline stream: %w", err) //nolint
 	}
 
 	mat, err := gocv.ImageToMatRGB(baseClone)
 	if err != nil {
-		logging.Fatal("Unable to convert Go image into OpenCV mat") //nolint
+		log.Fatal("Unable to convert Go image into OpenCV mat") //nolint
 	}
 	defer mat.Close()
 

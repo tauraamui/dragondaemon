@@ -51,7 +51,9 @@ func OverloadOpenVideoCapture(overload func(
 ) (VideoCapturable, error)) func() {
 	openVidCapRef := openVideoCapture
 	openVideoCapture = overload
-	return func() { openVideoCapture = openVidCapRef }
+	return func() {
+		openVideoCapture = openVidCapRef
+	}
 }
 
 func OverloadOpenVideoWriter(overload func(

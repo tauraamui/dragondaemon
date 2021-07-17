@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -34,7 +34,7 @@ func (u *User) ComparePassword(password string) error {
 func enc(p string) string {
 	h, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
-		logging.Error(fmt.Errorf("unable to generate hash and salt from password: %w", err).Error()) //nolint
+		log.Error(fmt.Errorf("unable to generate hash and salt from password: %w", err).Error()) //nolint
 		return p
 	}
 

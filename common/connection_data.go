@@ -3,12 +3,12 @@ package common
 import (
 	"net/rpc"
 
-	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
 func init() {
 	if err := rpc.Register(ConnectionData{}); err != nil {
-		logging.Error("unable to register connection data type for RPC") //nolint
+		log.Error("unable to register connection data type for RPC") //nolint
 	}
 }
 

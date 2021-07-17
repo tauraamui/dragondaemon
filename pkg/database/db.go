@@ -14,6 +14,7 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"golang.org/x/term"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -67,7 +68,7 @@ func (s stdinPasswordReader) ReadPassword(promptText string) ([]byte, error) {
 }
 
 func Setup() error {
-	logging.Info("Creating database file...") //nolint
+	log.Info("Creating database file...") //nolint
 
 	if err := createFile(); err != nil {
 		return err
@@ -94,7 +95,7 @@ func Setup() error {
 		return fmt.Errorf("unable to create root user entry: %w", err)
 	}
 
-	logging.Info("Created root admin user") //nolint
+	log.Info("Created root admin user") //nolint
 
 	return nil
 }
@@ -114,7 +115,7 @@ func Connect() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	logging.Debug("Connecting to DB: %s", dbPath) //nolint
+	log.Debug("Connecting to DB: %s", dbPath) //nolint
 	db, err := openDBConnection(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open db connection: %w", err)
