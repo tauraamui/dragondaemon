@@ -239,7 +239,7 @@ var _ = Describe("Connection", func() {
 			)
 
 			resetVidCapOverload = media.OverloadOpenVideoCapture(
-				func(string, string, int, bool, string) (media.VideoCapturable, error) {
+				func(string, string, int, bool, string, bool) (media.VideoCapturable, error) {
 					if openVidCapCallback != nil {
 						openVidCapCallback()
 					}
@@ -477,7 +477,7 @@ var _ = Describe("Connection", func() {
 				makeVidCapReturnFalseFromRead := func() func() { ableToRead = false; return func() { ableToRead = true } }
 				makeOpenVidCapReturnError := func() func() {
 					return media.OverloadOpenVideoCapture(
-						func(string, string, int, bool, string) (media.VideoCapturable, error) {
+						func(string, string, int, bool, string, bool) (media.VideoCapturable, error) {
 							processCallCount++
 							return nil, errors.New("test unable to open video connection")
 						},
