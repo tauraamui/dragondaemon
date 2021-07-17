@@ -46,7 +46,7 @@ func (s *Server) Connect(
 	sett ConnectonSettings,
 ) {
 	vc, err := openVideoCapture(
-		rtspStream, title, sett.FPS, sett.DateTimeLabel, sett.DateTimeFormat,
+		rtspStream, title, sett.FPS, sett.DateTimeLabel, sett.DateTimeFormat, sett.MockCapturer,
 	)
 
 	if err != nil {

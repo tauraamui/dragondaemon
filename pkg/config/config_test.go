@@ -45,6 +45,7 @@ var _ = Describe("Config", func() {
 						"fps": 1,
 						"persist_location": "/testroot/clips/Test Cam 1",
 						"mock_writer": true,
+						"mock_capturer": true,
 						"seconds_per_clip": 2,
 						"disabled": false,
 						"schedule": {
@@ -113,6 +114,7 @@ var _ = Describe("Config", func() {
 							DateTimeFormat: "2006/01/02 15:04:05.999999999",
 							PersistLoc:     "/testroot/clips/Test Cam 1",
 							MockWriter:     true,
+							MockCapturer:   true,
 							SecondsPerClip: 2,
 							Disabled:       false,
 							Schedule: schedule.Schedule{

@@ -47,6 +47,7 @@ func OverloadOpenVideoCapture(overload func(
 	int,
 	bool,
 	string,
+	bool,
 ) (VideoCapturable, error)) func() {
 	openVidCapRef := openVideoCapture
 	openVideoCapture = overload

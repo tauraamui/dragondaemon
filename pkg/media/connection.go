@@ -30,6 +30,7 @@ var now = func() time.Time { return time.Now() }
 type ConnectonSettings struct {
 	PersistLocation string
 	MockWriter      bool
+	MockCapturer    bool
 	FPS             int
 	SecondsPerClip  int
 	DateTimeLabel   bool
@@ -180,6 +181,7 @@ func (c *Connection) reconnect() error {
 		c.sett.FPS,
 		c.sett.DateTimeLabel,
 		c.sett.DateTimeFormat,
+		c.sett.MockCapturer,
 	)
 	if err != nil {
 		return err

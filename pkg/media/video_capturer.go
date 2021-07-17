@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
-	"os"
 	"time"
 
 	"github.com/golang/freetype"
@@ -30,9 +29,9 @@ var openVideoCapture = func(
 	fps int,
 	dateTimeLabel bool,
 	dateTimeFormat string,
+	mock bool,
 ) (VideoCapturable, error) {
-	mockVidStream, foundEnv := os.LookupEnv("DRAGON_DAEMON_MOCK_VIDEO_STREAM")
-	if foundEnv && mockVidStream == "1" {
+	if mock {
 		return &mockVideoCapture{title: title}, nil
 	}
 
