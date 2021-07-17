@@ -80,17 +80,6 @@ func OpenVideoWriter(
 	return openVideoWriter(fileName, codec, fps, frameWidth, frameHeight, mock)
 }
 
-func OpenVideoCapture(
-	rtspStream string,
-	title string,
-	fps int,
-	dateTimeLabel bool,
-	dateTimeFormat string,
-	mock bool,
-) (VideoCapturable, error) {
-	return openVideoCapture(rtspStream, title, fps, dateTimeLabel, dateTimeFormat, mock)
-}
-
 func (c *Connection) Stream(ctx context.Context) chan struct{} {
 	return c.stream(ctx)
 }
