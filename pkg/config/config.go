@@ -48,6 +48,7 @@ type Camera struct {
 	Address         string            `json:"address"`
 	PersistLoc      string            `json:"persist_location"`
 	MockWriter      bool              `json:"mock_writer"`
+	MockCapturer    bool              `json:"mock_capturer"`
 	FPS             int               `json:"fps" validate:"gte=1 & lte=30"`
 	DateTimeLabel   bool              `json:"date_time_label"`
 	DateTimeFormat  string            `json:"date_time_format"`
