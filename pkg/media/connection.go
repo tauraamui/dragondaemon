@@ -30,6 +30,7 @@ var now = func() time.Time { return time.Now() }
 type ConnectonSettings struct {
 	PersistLocation string
 	MockWriter      bool
+	MockCapturer    bool
 	FPS             int
 	SecondsPerClip  int
 	DateTimeLabel   bool
