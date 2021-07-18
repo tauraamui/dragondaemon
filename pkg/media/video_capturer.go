@@ -32,7 +32,6 @@ var openVideoCapture = func(
 	mock bool,
 ) (VideoCapturable, error) {
 	if mock {
-		println("OPENING MOCK CAPTURER")
 		return &mockVideoCapture{title: title}, nil
 	}
 
