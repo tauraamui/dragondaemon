@@ -39,6 +39,15 @@ type ConnectonSettings struct {
 	Reolink         config.ReolinkAdvanced
 }
 
+// Validate will fix some settings or return an error
+// if unable to auto fix
+func (s *ConnectonSettings) Validate() (err error) {
+	if len(s.PersistLocation) == 0 {
+		s.PersistLocation = "."
+	}
+	return
+}
+
 type Connection struct {
 	sett               ConnectonSettings
 	cache              *bigcache.BigCache

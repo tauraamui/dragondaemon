@@ -55,9 +55,6 @@ func (s *Server) Connect(
 	}
 
 	log.Info("Connected to stream [%s] at [%s]", title, rtspStream) //nolint
-	if len(sett.PersistLocation) == 0 {
-		sett.PersistLocation = "."
-	}
 	conn := NewConnection(
 		title,
 		sett,

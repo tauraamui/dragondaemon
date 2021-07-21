@@ -105,20 +105,26 @@ func (service *Service) Manage() (string, error) {
 			continue
 		}
 
+		settings := media.ConnectonSettings{
+			PersistLocation: c.PersistLoc,
+			MockWriter:      c.MockWriter,
+			MockCapturer:    c.MockCapturer,
+			FPS:             c.FPS,
+			SecondsPerClip:  c.SecondsPerClip,
+			DateTimeLabel:   c.DateTimeLabel,
+			DateTimeFormat:  c.DateTimeFormat,
+			Schedule:        c.Schedule,
+			Reolink:         c.ReolinkAdvanced,
+		}
+
+		if err := settings.Validate(); err != nil {
+			logging.Fatal(fmt.Errorf("settings validation failed: %w", err).Error())
+		}
+
 		mediaServer.Connect(
 			c.Title,
 			c.Address,
-			media.ConnectonSettings{
-				PersistLocation: c.PersistLoc,
-				MockWriter:      c.MockWriter,
-				MockCapturer:    c.MockCapturer,
-				FPS:             c.FPS,
-				SecondsPerClip:  c.SecondsPerClip,
-				DateTimeLabel:   c.DateTimeLabel,
-				DateTimeFormat:  c.DateTimeFormat,
-				Schedule:        c.Schedule,
-				Reolink:         c.ReolinkAdvanced,
-			},
+			settings,
 		)
 	}
 
