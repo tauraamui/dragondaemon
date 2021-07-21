@@ -65,15 +65,7 @@ func (s *Server) Connect(
 		rtspStream,
 	)
 
-	go func(c *Connection) {
-		log.Info("Fetching connection size on disk...") //nolint
-		size, err := c.SizeOnDisk()
-		if err != nil {
-			log.Error("Unable to fetch size on disk: %v", err) //nolint
-			return
-		}
-		log.Info("Connection [%s] size on disk: %s", conn.title, size) //nolint
-	}(conn)
+	go outputConnectionSizeOnDisk(conn)
 
 	s.trackConnection(conn, true)
 }
@@ -255,4 +247,14 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
+}
+
+func outputConnectionSizeOnDisk(c *Connection) {
+	log.Info("Fetching connection size on disk...") //nolint
+	size, err := c.SizeOnDisk()
+	if err != nil {
+		log.Error("Unable to fetch size on disk: %v", err) //nolint
+		return
+	}
+	log.Info("Connection [%s] size on disk: %s", c.title, size) //nolint
 }
