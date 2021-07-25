@@ -741,7 +741,7 @@ var _ = Describe("Connection", func() {
 				wg.Wait()
 
 				cancelWriteStreamToClips()
-				Eventually(stoppingWriteStreamIntoClips, 3*time.Second).Should(BeClosed())
+				Eventually(stoppingWriteStreamIntoClips, 5*time.Second).Should(BeClosed())
 
 				cancelStreaming()
 				Eventually(stoppingStreaming).Should(BeClosed())
