@@ -259,15 +259,17 @@ var beginProcesses = func(ctx context.Context, opts Options, s *Server) []proces
 	stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
 
 	return []process{
+		// persist process should be terminated first
 		{
 			waitForShutdownMsg: "Waiting for persist process to finish...",
-			canceller:          cancelStreaming,
-			signals:            stoppedStreaming,
-		},
-		{
-			waitForShutdownMsg: "Waiting for streams to terminate...",
 			canceller:          cancelSavingClips,
 			signals:            stoppedSavingClips,
+		},
+		// streaming process should be terminated second
+		{
+			waitForShutdownMsg: "Waiting for streams to terminate...",
+			canceller:          cancelStreaming,
+			signals:            stoppedStreaming,
 		},
 		{
 			waitForShutdownMsg: "Waiting for removing clips process to finish...",
