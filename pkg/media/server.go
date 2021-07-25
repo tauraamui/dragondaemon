@@ -75,38 +75,31 @@ func (s *Server) Run(opts Options) {
 	s.stoppedAll = make(chan struct{})
 
 	go func(ctx context.Context, stopped chan struct{}) {
-		streamingCtx, cancelStreaming := context.WithCancel(context.Background())
-		savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
-		removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
-
-		// streaming connections is core and is the dependancy to all subsequent processes
-		stoppedStreaming := s.beginStreaming(streamingCtx)
-		stoppedSavingClips := s.saveStreams(savingClipsCtx)
-		stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
+		cancellers, checkers := s.beginProcesses(ctx, opts)
 
 		// wait for shutdown signal
 		<-ctx.Done()
 
-		cancelSavingClips()
+		cancellers.cancelSavingClips()
 		log.Info("Waiting for persist process to finish...") //nolint
 		// wait for saving streams to stop
-		for _, stoppedPersistSig := range stoppedSavingClips {
+		for _, stoppedPersistSig := range checkers.stoppedSavingClips {
 			<-stoppedPersistSig
 		}
 
 		// stopping the streaming process should be done last
 		// stop all streaming
-		cancelStreaming()
+		cancellers.cancelStreaming()
 		log.Info("Waiting for streams to terminate...") //nolint
 		// wait for all streams to stop
 		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
-		for _, stoppedStreamSig := range stoppedStreaming {
+		for _, stoppedStreamSig := range checkers.stoppedStreaming {
 			<-stoppedStreamSig
 		}
 
-		cancelRemovingClips()
+		cancellers.cancelRemovingclips()
 		log.Info("Waiting for removing clips process to finish...") //nolint
-		<-stoppedRemovingClips
+		<-checkers.stoppedRemovingClips
 
 		// send signal saying shutdown process has finished
 		close(stopped)
@@ -124,6 +117,10 @@ func (s *Server) Shutdown() chan struct{} {
 // Close closes all open/active video stream connections.
 func (s *Server) Close() error {
 	return s.closeConnectionsLocked()
+}
+
+func (s *Server) beginProcesses(ctx context.Context, opts Options) (procContextCancellers, procStoppedCheckers) {
+	return beginProcesses(ctx, opts, s)
 }
 
 func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
@@ -244,6 +241,39 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
+}
+
+type procContextCancellers struct {
+	cancelStreaming,
+	cancelSavingClips,
+	cancelRemovingclips context.CancelFunc
+}
+
+type procStoppedCheckers struct {
+	stoppedStreaming     []chan struct{}
+	stoppedSavingClips   []chan interface{}
+	stoppedRemovingClips chan struct{}
+}
+
+var beginProcesses = func(ctx context.Context, opts Options, s *Server) (procContextCancellers, procStoppedCheckers) {
+	streamingCtx, cancelStreaming := context.WithCancel(context.Background())
+	savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
+	removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
+
+	// streaming connections is core and is the dependancy to all subsequent processes
+	stoppedStreaming := s.beginStreaming(streamingCtx)
+	stoppedSavingClips := s.saveStreams(savingClipsCtx)
+	stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
+
+	return procContextCancellers{
+			cancelStreaming:     cancelStreaming,
+			cancelSavingClips:   cancelSavingClips,
+			cancelRemovingclips: cancelRemovingClips,
+		}, procStoppedCheckers{
+			stoppedStreaming:     stoppedStreaming,
+			stoppedSavingClips:   stoppedSavingClips,
+			stoppedRemovingClips: stoppedRemovingClips,
+		}
 }
 
 func outputConnectionSizeOnDisk(c *Connection) {
