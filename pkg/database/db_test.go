@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
-	"github.com/tacusci/logging/v2"
 	data "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"gorm.io/driver/sqlite"
@@ -60,13 +59,11 @@ func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, erro
 }
 
 var _ = Describe("Data", func() {
-	existingLoggingLevel := logging.CurrentLoggingLevel
 
 	var resetFs func() = nil
 	var resetUC func() = nil
 
 	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
 		resetFs = data.OverloadFS(afero.NewMemMapFs())
 		resetUC = data.OverloadUC(func() (string, error) {
 			return "/testroot/.cache", nil
@@ -74,7 +71,6 @@ var _ = Describe("Data", func() {
 	})
 
 	AfterEach(func() {
-		logging.CurrentLoggingLevel = existingLoggingLevel
 		resetFs()
 		resetUC()
 	})

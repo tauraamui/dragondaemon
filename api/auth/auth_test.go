@@ -8,7 +8,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/api/auth"
 )
 
@@ -21,15 +20,6 @@ type testCustomClaims struct {
 var _ = Describe("Auth", func() {
 
 	const TESTING_SECRET = "testsecret"
-	existingLoggingLevel := logging.CurrentLoggingLevel
-
-	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
-	})
-
-	AfterEach(func() {
-		logging.CurrentLoggingLevel = existingLoggingLevel
-	})
 
 	Context("GenToken", func() {
 		It("Should return a JWT which contains payload data with given username and is signed correctly", func() {

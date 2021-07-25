@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/media"
@@ -85,8 +84,6 @@ func (tmvw *testMockVideoWriter) Close() error {
 }
 
 var _ = Describe("Connection", func() {
-	existingLoggingLevel := logging.CurrentLoggingLevel
-
 	var mockFs afero.Fs = nil
 	var resetFs func() = nil
 
@@ -97,11 +94,9 @@ var _ = Describe("Connection", func() {
 
 	AfterEach(func() {
 		Expect(mockFs.RemoveAll("*")).To(BeNil())
-		logging.CurrentLoggingLevel = logging.SilentLevel
 	})
 
 	AfterSuite(func() {
-		logging.CurrentLoggingLevel = existingLoggingLevel
 		resetFs()
 		mockFs = nil
 	})

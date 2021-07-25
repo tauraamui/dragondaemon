@@ -5,19 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/tacusci/logging/v2"
 )
 
 var _ = Describe("Schedule", func() {
-	existingLoggingLevel := logging.CurrentLoggingLevel
-
-	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
-	})
-
-	AfterEach(func() {
-		logging.CurrentLoggingLevel = existingLoggingLevel
-	})
 
 	Context("Current time is after nil/unspecified time", func() {
 		It("Should return on", func() {

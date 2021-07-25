@@ -3,7 +3,6 @@ package repos_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"gorm.io/driver/sqlite"
@@ -11,14 +10,9 @@ import (
 )
 
 var _ = Describe("UserRepo", func() {
-	existingLoggingLevel := logging.CurrentLoggingLevel
-	var (
-		mockDBConn *gorm.DB
-	)
+	var mockDBConn *gorm.DB
 
 	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
-
 		// handy "hack" to create temp testible DB, open empty SQLite DB in memory
 		db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 		Expect(err).To(BeNil())
@@ -29,8 +23,6 @@ var _ = Describe("UserRepo", func() {
 	})
 
 	AfterEach(func() {
-		logging.CurrentLoggingLevel = existingLoggingLevel
-
 		db, err := mockDBConn.DB()
 		Expect(err).To(BeNil())
 		err = db.Close()

@@ -7,12 +7,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 )
 
 var _ = Describe("Config", func() {
-	existingLoggingLevel := logging.CurrentLoggingLevel
 	var (
 		mockValidConfigContent                []byte
 		mockInvalidJSONConfigContent          []byte
@@ -22,14 +20,9 @@ var _ = Describe("Config", func() {
 	var testCfg values
 
 	BeforeEach(func() {
-		logging.CurrentLoggingLevel = logging.SilentLevel
 		testCfg = values{
 			fs: afero.NewMemMapFs(),
 		}
-	})
-
-	AfterEach(func() {
-		logging.CurrentLoggingLevel = existingLoggingLevel
 	})
 
 	Describe("Loading into struct", func() {
