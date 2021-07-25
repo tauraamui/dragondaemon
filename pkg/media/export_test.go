@@ -80,7 +80,7 @@ func OpenVideoWriter(
 	return openVideoWriter(fileName, codec, fps, frameWidth, frameHeight, mock)
 }
 
-func (c *Connection) Stream(ctx context.Context) chan struct{} {
+func (c *Connection) Stream(ctx context.Context) chan interface{} {
 	return c.stream(ctx)
 }
 
