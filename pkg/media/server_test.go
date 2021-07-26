@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -14,6 +15,22 @@ var _ = Describe("Server", func() {
 		BeforeEach(func() {
 			server = NewServer(false)
 			Expect(server).ToNot(BeNil())
+		})
+
+		Context("Calling server run directly", func() {
+			It("Should call beginProcesses method", func() {
+				var passedServer *Server
+				resetBeginProcesses := OverloadBeginProcesses(func(c context.Context, o Options, s *Server) []process {
+					passedServer = s
+					return []process{}
+				})
+				defer resetBeginProcesses()
+
+				server.Run(Options{})
+				<-server.Shutdown()
+
+				Expect(passedServer).To(Equal(server))
+			})
 		})
 
 		Context("Server connect opens a connection and tracks it", func() {

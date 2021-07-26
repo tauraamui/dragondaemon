@@ -69,6 +69,12 @@ func OverloadOpenVideoWriter(overload func(
 	return func() { openVideoWriter = openVideoWriterRef }
 }
 
+func OverloadBeginProcesses(overload func(context.Context, Options, *Server) []process) func() {
+	beginProcessesRef := beginProcesses
+	beginProcesses = overload
+	return func() { beginProcesses = beginProcessesRef }
+}
+
 func OpenVideoWriter(
 	fileName string,
 	codec string,
