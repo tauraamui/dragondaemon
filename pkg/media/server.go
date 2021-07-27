@@ -103,7 +103,7 @@ func (s *Server) Close() error {
 	return s.closeConnectionsLocked()
 }
 
-func (s *Server) beginProcesses(ctx context.Context, opts Options) []process {
+func (s *Server) beginProcesses(ctx context.Context, opts Options) []processable {
 	return beginProcesses(ctx, opts, s)
 }
 
@@ -227,28 +227,33 @@ func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
 
+type processable interface {
+	stop()
+	wait()
+}
+
 type process struct {
 	waitForShutdownMsg string
 	canceller          context.CancelFunc
 	signals            []chan interface{}
 }
 
-func (p *process) logShutdown() {
+func (p process) logShutdown() {
 	log.Info(p.waitForShutdownMsg) //nolint
 }
 
-func (p *process) stop() {
+func (p process) stop() {
 	p.logShutdown()
 	p.canceller()
 }
 
-func (p *process) wait() {
+func (p process) wait() {
 	for _, sig := range p.signals {
 		<-sig
 	}
 }
 
-var beginProcesses = func(ctx context.Context, opts Options, s *Server) []process {
+var beginProcesses = func(ctx context.Context, opts Options, s *Server) []processable {
 	streamingCtx, cancelStreaming := context.WithCancel(context.Background())
 	savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
 	removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
@@ -258,20 +263,20 @@ var beginProcesses = func(ctx context.Context, opts Options, s *Server) []proces
 	stoppedSavingClips := s.saveStreams(savingClipsCtx)
 	stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
 
-	return []process{
+	return []processable{
 		// persist process should be terminated first
-		{
+		process{
 			waitForShutdownMsg: "Waiting for persist process to finish...",
 			canceller:          cancelSavingClips,
 			signals:            stoppedSavingClips,
 		},
 		// streaming process should be terminated second
-		{
+		process{
 			waitForShutdownMsg: "Waiting for streams to terminate...",
 			canceller:          cancelStreaming,
 			signals:            stoppedStreaming,
 		},
-		{
+		process{
 			waitForShutdownMsg: "Waiting for removing clips process to finish...",
 			canceller:          cancelRemovingClips,
 			signals:            []chan interface{}{stoppedRemovingClips},

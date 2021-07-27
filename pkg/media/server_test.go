@@ -9,6 +9,19 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+type testMockProcess struct {
+	stopCallback func()
+	waitCallback func()
+}
+
+func (t *testMockProcess) stop() {
+	t.stopCallback()
+}
+
+func (t *testMockProcess) wait() {
+	t.waitCallback()
+}
+
 var _ = Describe("Server", func() {
 	Describe("Unit tests for instance methods", func() {
 		var server *Server
@@ -20,9 +33,9 @@ var _ = Describe("Server", func() {
 		Context("Calling server run directly", func() {
 			It("Should call beginProcesses method", func() {
 				var passedServer *Server
-				resetBeginProcesses := OverloadBeginProcesses(func(c context.Context, o Options, s *Server) []process {
+				resetBeginProcesses := OverloadBeginProcesses(func(c context.Context, o Options, s *Server) []processable {
 					passedServer = s
-					return []process{}
+					return []processable{}
 				})
 				defer resetBeginProcesses()
 
@@ -30,6 +43,27 @@ var _ = Describe("Server", func() {
 				<-server.Shutdown()
 
 				Expect(passedServer).To(Equal(server))
+			})
+
+			It("Should call stop and wait in that order on processes returned from beginProcess", func() {
+				var stopCalled bool
+				var waitCalled bool
+
+				resetBeginProcesses := OverloadBeginProcesses(func(c context.Context, o Options, s *Server) []processable {
+					return []processable{
+						&testMockProcess{
+							stopCallback: func() { stopCalled = !waitCalled },
+							waitCallback: func() { waitCalled = stopCalled },
+						},
+					}
+				})
+				defer resetBeginProcesses()
+
+				server.Run(Options{})
+				<-server.Shutdown()
+
+				Expect(stopCalled).To(BeTrue())
+				Expect(waitCalled).To(BeTrue())
 			})
 		})
 
