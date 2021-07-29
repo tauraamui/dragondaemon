@@ -69,6 +69,12 @@ func OverloadOpenVideoWriter(overload func(
 	return func() { openVideoWriter = openVideoWriterRef }
 }
 
+func OverloadBeginProcesses(overload func(context.Context, Options, *Server) []processable) func() {
+	beginProcessesRef := beginProcesses
+	beginProcesses = overload
+	return func() { beginProcesses = beginProcessesRef }
+}
+
 func OpenVideoWriter(
 	fileName string,
 	codec string,
@@ -80,7 +86,7 @@ func OpenVideoWriter(
 	return openVideoWriter(fileName, codec, fps, frameWidth, frameHeight, mock)
 }
 
-func (c *Connection) Stream(ctx context.Context) chan struct{} {
+func (c *Connection) Stream(ctx context.Context) chan interface{} {
 	return c.stream(ctx)
 }
 

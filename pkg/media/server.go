@@ -55,9 +55,6 @@ func (s *Server) Connect(
 	}
 
 	log.Info("Connected to stream [%s] at [%s]", title, rtspStream) //nolint
-	if len(sett.PersistLocation) == 0 {
-		sett.PersistLocation = "."
-	}
 	conn := NewConnection(
 		title,
 		sett,
@@ -65,15 +62,7 @@ func (s *Server) Connect(
 		rtspStream,
 	)
 
-	go func(c *Connection) {
-		log.Info("Fetching connection size on disk...") //nolint
-		size, err := c.SizeOnDisk()
-		if err != nil {
-			log.Error("Unable to fetch size on disk: %v", err) //nolint
-			return
-		}
-		log.Info("Connection [%s] size on disk: %s", conn.title, size) //nolint
-	}(conn)
+	go outputConnectionSizeOnDisk(conn)
 
 	s.trackConnection(conn, true)
 }
@@ -86,38 +75,15 @@ func (s *Server) Run(opts Options) {
 	s.stoppedAll = make(chan struct{})
 
 	go func(ctx context.Context, stopped chan struct{}) {
-		streamingCtx, cancelStreaming := context.WithCancel(context.Background())
-		savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
-		removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
-
-		// streaming connections is core and is the dependancy to all subsequent processes
-		stoppedStreaming := s.beginStreaming(streamingCtx)
-		stoppedSavingClips := s.saveStreams(savingClipsCtx)
-		stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
+		processes := s.beginProcesses(ctx, opts)
 
 		// wait for shutdown signal
 		<-ctx.Done()
 
-		cancelSavingClips()
-		log.Info("Waiting for persist process to finish...") //nolint
-		// wait for saving streams to stop
-		for _, stoppedPersistSig := range stoppedSavingClips {
-			<-stoppedPersistSig
+		for _, proc := range processes {
+			proc.stop()
+			proc.wait()
 		}
-
-		// stopping the streaming process should be done last
-		// stop all streaming
-		cancelStreaming()
-		log.Info("Waiting for streams to terminate...") //nolint
-		// wait for all streams to stop
-		// TODO(:tauraamui) Move each stream stop signal wait onto separate goroutine
-		for _, stoppedStreamSig := range stoppedStreaming {
-			<-stoppedStreamSig
-		}
-
-		cancelRemovingClips()
-		log.Info("Waiting for removing clips process to finish...") //nolint
-		<-stoppedRemovingClips
 
 		// send signal saying shutdown process has finished
 		close(stopped)
@@ -137,8 +103,12 @@ func (s *Server) Close() error {
 	return s.closeConnectionsLocked()
 }
 
-func (s *Server) beginStreaming(ctx context.Context) []chan struct{} {
-	var stoppedStreaming []chan struct{}
+func (s *Server) beginProcesses(ctx context.Context, opts Options) []processable {
+	return beginProcesses(ctx, opts, s)
+}
+
+func (s *Server) beginStreaming(ctx context.Context) []chan interface{} {
+	var stoppedStreaming []chan interface{}
 	for _, conn := range s.activeConnections() {
 		log.Info("Reading stream from connection [%s]", conn.title) //nolint
 		stoppedStreaming = append(stoppedStreaming, conn.stream(ctx))
@@ -154,12 +124,12 @@ func (s *Server) saveStreams(ctx context.Context) []chan interface{} {
 	return stoppedPersisting
 }
 
-func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan struct{} {
-	stopping := make(chan struct{})
+func (s *Server) removeOldClips(ctx context.Context, maxClipAgeInDays int) chan interface{} {
+	stopping := make(chan interface{})
 
 	ticker := time.NewTicker(5 * time.Second)
 
-	go func(ctx context.Context, stopping chan struct{}) {
+	go func(ctx context.Context, stopping chan interface{}) {
 		var currentConnection int
 		for {
 			time.Sleep(time.Millisecond * 10)
@@ -255,4 +225,71 @@ func (s *Server) closeConnectionsLocked() error {
 
 func (s *Server) shuttingDown() bool {
 	return atomic.LoadInt32(&s.inShutdown) != 0
+}
+
+type processable interface {
+	stop()
+	wait()
+}
+
+type process struct {
+	waitForShutdownMsg string
+	canceller          context.CancelFunc
+	signals            []chan interface{}
+}
+
+func (p process) logShutdown() {
+	log.Info(p.waitForShutdownMsg) //nolint
+}
+
+func (p process) stop() {
+	p.logShutdown()
+	p.canceller()
+}
+
+func (p process) wait() {
+	for _, sig := range p.signals {
+		<-sig
+	}
+}
+
+var beginProcesses = func(ctx context.Context, opts Options, s *Server) []processable {
+	streamingCtx, cancelStreaming := context.WithCancel(context.Background())
+	savingClipsCtx, cancelSavingClips := context.WithCancel(context.Background())
+	removingClipsCtx, cancelRemovingClips := context.WithCancel(context.Background())
+
+	// streaming connections is core and is the dependancy to all subsequent processes
+	stoppedStreaming := s.beginStreaming(streamingCtx)
+	stoppedSavingClips := s.saveStreams(savingClipsCtx)
+	stoppedRemovingClips := s.removeOldClips(removingClipsCtx, opts.MaxClipAgeInDays)
+
+	return []processable{
+		// persist process should be terminated first
+		process{
+			waitForShutdownMsg: "Waiting for persist process to finish...",
+			canceller:          cancelSavingClips,
+			signals:            stoppedSavingClips,
+		},
+		// streaming process should be terminated second
+		process{
+			waitForShutdownMsg: "Waiting for streams to terminate...",
+			canceller:          cancelStreaming,
+			signals:            stoppedStreaming,
+		},
+		process{
+			waitForShutdownMsg: "Waiting for removing clips process to finish...",
+			canceller:          cancelRemovingClips,
+			signals:            []chan interface{}{stoppedRemovingClips},
+		},
+	}
+}
+
+func outputConnectionSizeOnDisk(c *Connection) {
+	log.Info("Fetching connection size on disk...") //nolint
+	size, err := c.SizeOnDisk()
+	if err != nil {
+		log.Error("Unable to fetch size on disk: %v", err) //nolint
+		return
+	}
+	log.Info("Connection [%s] size on disk: %s", c.title, size) //nolint
 }

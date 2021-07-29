@@ -39,6 +39,15 @@ type ConnectonSettings struct {
 	Reolink         config.ReolinkAdvanced
 }
 
+// Validate will fix some settings or return an error
+// if unable to auto fix
+func (s *ConnectonSettings) Validate() (err error) {
+	if len(s.PersistLocation) == 0 {
+		s.PersistLocation = "."
+	}
+	return
+}
+
 type Connection struct {
 	sett               ConnectonSettings
 	cache              *bigcache.BigCache
@@ -109,14 +118,14 @@ func (c *Connection) Close() error {
 	return c.vc.Close()
 }
 
-func (c *Connection) stream(ctx context.Context) chan struct{} {
+func (c *Connection) stream(ctx context.Context) chan interface{} {
 	log.Debug("Opening root image mat")
 	img := gocv.NewMat()
 
-	stopping := make(chan struct{})
+	stopping := make(chan interface{})
 
 	reachedShutdownCase := false
-	go func(ctx context.Context, stopping chan struct{}) {
+	go func(ctx context.Context, stopping chan interface{}) {
 		for {
 			// throttle CPU usage
 			time.Sleep(time.Millisecond * 1)
@@ -304,7 +313,7 @@ func writeClipsToDisk(
 func shutdownStreaming(
 	c *Connection,
 	img *gocv.Mat,
-	stopping chan struct{},
+	stopping chan interface{},
 ) {
 	log.Debug("Stopped stream goroutine")
 	log.Debug("Closing root image mat")
