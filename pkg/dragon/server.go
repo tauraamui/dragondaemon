@@ -3,11 +3,12 @@ package dragon
 import (
 	"github.com/tauraamui/dragondaemon/internal/config"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
 type Server interface {
 	ConnectToCameras() []error
-	LoadConfiguration()
+	LoadConfiguration() error
 	Shutdown() error
 }
 
@@ -24,6 +25,10 @@ func (s *server) ConnectToCameras() []error {
 	var errs []error
 
 	for _, cam := range s.config.Cameras {
+		if cam.Disabled {
+			log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
+			continue
+		}
 		conn, err := connectToCamera(cam.Title, cam.Address, camera.Settings{})
 		if err != nil {
 			errs = append(errs, err)
@@ -37,11 +42,18 @@ func (s *server) ConnectToCameras() []error {
 }
 
 func connectToCamera(title, addr string, sett camera.Settings) (camera.Connection, error) {
+	log.Debug("connecting to camera: %s", title)
 	return camera.Connect(title, addr, sett)
 }
 
-func (s *server) LoadConfiguration() {
-	s.config = config.Load()
+func (s *server) LoadConfiguration() error {
+	config, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	s.config = config
+	return nil
 }
 
 func (s *server) Shutdown() error { return nil }

@@ -95,7 +95,10 @@ func (service *Service) Manage() (string, error) {
 	mediaServer := media.NewServer(debugMode)
 
 	server := dragon.NewServer()
-	server.LoadConfiguration()
+	err := server.LoadConfiguration()
+	if err != nil {
+		log.Fatal("unable to load config: %v", err)
+	}
 	errs := server.ConnectToCameras()
 	for _, err := range errs {
 		log.Error(err.Error())
@@ -103,7 +106,7 @@ func (service *Service) Manage() (string, error) {
 
 	cfg := config.New()
 	logging.Info("Loading configuration") //nolint
-	err := cfg.Load()
+	err = cfg.Load()
 	if err != nil {
 		logging.Fatal("Error loading configuration: %v", err) //nolint
 	}

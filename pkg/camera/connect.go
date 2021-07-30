@@ -2,6 +2,7 @@ package camera
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -32,7 +33,7 @@ type connector struct {
 func (c connector) connect(ctx context.Context, title, addr string, settings Settings) (Connection, error) {
 	vc, err := video.Connect(addr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to connect to camera: %w", err)
 	}
 	return &connection{
 		vc: vc,
