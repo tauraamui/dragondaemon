@@ -15,8 +15,8 @@ type connection struct {
 	vc *gocv.VideoCapture
 }
 
-func (c *connection) connect(device interface{}) error {
-	vc, err := gocv.OpenVideoCapture(device)
+func (c *connection) connect(addr string) error {
+	vc, err := gocv.OpenVideoCapture(addr)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func (c *connection) connect(device interface{}) error {
 }
 
 func (c *connection) Read(frame Frame) error {
-	ok := c.vc.Read(frame.mat)
+	ok := c.vc.Read(&frame.mat)
 	if !ok {
 		return errors.New("unable to read from video connection")
 	}
@@ -40,16 +40,16 @@ type connector struct {
 	Cancel <-chan interface{}
 }
 
-func (c connector) connect(device interface{}) (Connection, error) {
+func (c connector) connect(addr string) (Connection, error) {
 	conn := connection{}
-	err := conn.connect(device)
+	err := conn.connect(addr)
 	if err != nil {
 		return nil, err
 	}
 	return &conn, nil
 }
 
-func Connect(device interface{}) (Connection, error) {
+func Connect(addr string) (Connection, error) {
 	c := connector{}
-	return c.connect(device)
+	return c.connect(addr)
 }

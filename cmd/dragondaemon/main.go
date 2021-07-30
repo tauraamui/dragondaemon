@@ -12,8 +12,11 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/api"
+	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
+	"github.com/tauraamui/dragondaemon/pkg/dragon"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/media"
 )
 
@@ -91,6 +94,13 @@ func (service *Service) Manage() (string, error) {
 
 	mediaServer := media.NewServer(debugMode)
 
+	server := dragon.NewServer()
+	server.LoadConfiguration()
+	errs := server.ConnectToCameras()
+	for _, err := range errs {
+		log.Error(err.Error())
+	}
+
 	cfg := config.New()
 	logging.Info("Loading configuration") //nolint
 	err := cfg.Load()
@@ -104,6 +114,13 @@ func (service *Service) Manage() (string, error) {
 			logging.Warn("Connection %s is disabled, skipping...", c.Title) //nolint
 			continue
 		}
+
+		cameraConn, err := camera.Connect("Test", c.Address, camera.Settings{})
+		if err != nil {
+			logging.Fatal("error connecting to camera: %v", err)
+		}
+		cameraConn.Read()
+		cameraConn.Close()
 
 		settings := media.ConnectonSettings{
 			PersistLocation: c.PersistLoc,
@@ -184,7 +201,7 @@ func (service *Service) Manage() (string, error) {
 var debugMode bool
 
 func init() {
-	logging.CallbackLabelLevel = 4
+	logging.CallbackLabelLevel = 5
 	logging.ColorLogLevelLabelOnly = true
 	loggingLevel := os.Getenv("DRAGON_LOGGING_LEVEL")
 
