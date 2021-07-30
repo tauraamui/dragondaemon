@@ -29,7 +29,14 @@ func (s *server) ConnectToCameras() []error {
 			log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
 			continue
 		}
-		conn, err := connectToCamera(cam.Title, cam.Address, camera.Settings{})
+		settings := camera.Settings{
+			DateTimeFormat:  cam.DateTimeFormat,
+			DateTimeLabel:   cam.DateTimeLabel,
+			FPS:             cam.FPS,
+			PersistLocation: cam.PersistLoc,
+			Reolink:         cam.ReolinkAdvanced,
+		}
+		conn, err := connectToCamera(cam.Title, cam.Address, settings)
 		if err != nil {
 			errs = append(errs, err)
 		}
