@@ -42,12 +42,8 @@ type connectResult struct {
 
 func (s *server) connect(cancel context.Context) []error {
 	s.shutdownDone = make(chan interface{})
+
 	connAndError := make(chan connectResult)
-	var errs []error
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.config.Cameras))
 	for _, cam := range s.config.Cameras {
@@ -65,11 +61,19 @@ func (s *server) connect(cancel context.Context) []error {
 		}(cancel, &wg, cam, connAndError)
 	}
 
-	go func(wg *sync.WaitGroup, c chan connectResult) {
+	go func(c chan connectResult, wg *sync.WaitGroup) {
 		wg.Wait()
 		close(c)
-	}(&wg, connAndError)
+	}(connAndError, &wg)
 
+	return s.recieveConnsToTrack(connAndError)
+}
+
+func (s *server) recieveConnsToTrack(connAndError chan connectResult) []error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var errs []error
 	for r := range connAndError {
 		if r.err != nil {
 			errs = append(errs, r.err)
