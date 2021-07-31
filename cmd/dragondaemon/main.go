@@ -90,7 +90,7 @@ func (service *Service) Manage() (string, error) {
 
 	logging.Info("Starting dragon daemon...") //nolint
 
-	server := dragon.NewServer()
+	server := dragon.NewServer(dragon.DefaultConfigResolver())
 	err := server.LoadConfiguration()
 	if err != nil {
 		log.Fatal("unable to load config: %v", err)

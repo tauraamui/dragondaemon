@@ -9,6 +9,20 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
+type ConfigResolver interface {
+	Load() (config.Values, error)
+}
+
+func DefaultConfigResolver() ConfigResolver {
+	return defaultConfigResolver{}
+}
+
+type defaultConfigResolver struct{}
+
+func (d defaultConfigResolver) Load() (config.Values, error) {
+	return config.Load()
+}
+
 type Server interface {
 	Connect() []error
 	ConnectWithCancel(context.Context) []error
@@ -16,15 +30,16 @@ type Server interface {
 	Shutdown() chan interface{}
 }
 
-func NewServer() Server {
-	return &server{}
+func NewServer(cr ConfigResolver) Server {
+	return &server{configResolver: cr}
 }
 
 type server struct {
-	shutdownDone chan interface{}
-	config       config.Values
-	mu           sync.Mutex
-	cameras      []camera.Connection
+	configResolver ConfigResolver
+	shutdownDone   chan interface{}
+	config         config.Values
+	mu             sync.Mutex
+	cameras        []camera.Connection
 }
 
 func (s *server) Connect() []error {
@@ -113,7 +128,7 @@ func connectToCamera(ctx context.Context, title, addr string, sett camera.Settin
 }
 
 func (s *server) LoadConfiguration() error {
-	config, err := config.Load()
+	config, err := s.configResolver.Load()
 	if err != nil {
 		return err
 	}
