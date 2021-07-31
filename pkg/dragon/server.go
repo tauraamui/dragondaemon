@@ -49,8 +49,8 @@ func (s *server) connect(cancel context.Context) []error {
 	defer s.mu.Unlock()
 
 	wg := sync.WaitGroup{}
+	wg.Add(len(s.config.Cameras))
 	for _, cam := range s.config.Cameras {
-		wg.Add(1)
 		go func(cancel context.Context, wg *sync.WaitGroup, cam config.Camera, connAndError chan connectResult) {
 			defer wg.Done()
 			select {
@@ -69,15 +69,10 @@ func (s *server) connect(cancel context.Context) []error {
 					Reolink:         cam.ReolinkAdvanced,
 				}
 				conn, err := connectToCamera(cancel, cam.Title, cam.Address, settings)
-				r := connectResult{
+				connAndError <- connectResult{
 					cam: conn,
 					err: err,
 				}
-
-				if conn != nil {
-					log.Info("Connected successfully to camera: [%s]", cam.Title)
-				}
-				connAndError <- r
 			}
 		}(cancel, &wg, cam, connAndError)
 	}
@@ -87,15 +82,16 @@ func (s *server) connect(cancel context.Context) []error {
 		close(c)
 	}(&wg, connAndError)
 
-	r := <-connAndError
-	if r.err != nil {
-		errs = append(errs, r.err)
-	}
+	for r := range connAndError {
+		if r.err != nil {
+			errs = append(errs, r.err)
+		}
 
-	if r.cam != nil {
-		s.cameras = append(s.cameras, r.cam)
+		if r.cam != nil {
+			log.Info("Connected successfully to camera: [%s]", r.cam.Title())
+			s.cameras = append(s.cameras, r.cam)
+		}
 	}
-
 	return errs
 }
 
