@@ -1,6 +1,7 @@
 package video
 
 import (
+	"context"
 	"errors"
 
 	"gocv.io/x/gocv"
@@ -12,16 +13,34 @@ type Connection interface {
 }
 
 type connection struct {
+	// will eventually hide this behind an interface
 	vc *gocv.VideoCapture
 }
 
-func (c *connection) connect(addr string) error {
-	vc, err := gocv.OpenVideoCapture(addr)
-	if err != nil {
-		return err
+func (c *connection) connect(cancel context.Context, addr string) error {
+	connAndError := make(chan openVideoStreamResult)
+	go openVideoStream(addr, connAndError)
+	select {
+	case r := <-connAndError:
+		if r.err != nil {
+			return r.err
+		}
+		c.vc = r.vc
+		return nil
+	case <-cancel.Done():
+		return errors.New("connection cancelled")
 	}
-	c.vc = vc
-	return nil
+}
+
+type openVideoStreamResult struct {
+	vc  *gocv.VideoCapture
+	err error
+}
+
+func openVideoStream(addr string, d chan openVideoStreamResult) {
+	vc, err := gocv.OpenVideoCapture(addr)
+	result := openVideoStreamResult{vc: vc, err: err}
+	d <- result
 }
 
 func (c *connection) Read(frame Frame) error {
@@ -36,13 +55,9 @@ func (c *connection) Close() error {
 	return c.vc.Close()
 }
 
-type connector struct {
-	Cancel <-chan interface{}
-}
-
-func (c connector) connect(addr string) (Connection, error) {
+func connect(cancel context.Context, addr string) (Connection, error) {
 	conn := connection{}
-	err := conn.connect(addr)
+	err := conn.connect(cancel, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +65,9 @@ func (c connector) connect(addr string) (Connection, error) {
 }
 
 func Connect(addr string) (Connection, error) {
-	c := connector{}
-	return c.connect(addr)
+	return connect(context.Background(), addr)
+}
+
+func ConnectWithCancel(cancel context.Context, addr string) (Connection, error) {
+	return connect(cancel, addr)
 }

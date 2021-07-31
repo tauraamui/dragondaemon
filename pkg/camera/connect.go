@@ -9,12 +9,15 @@ import (
 
 type Connection interface {
 	Read()
+	Title() string
 	Close()
 }
 
 type connection struct {
-	vc video.Connection
-	f  video.Frame
+	title string
+	sett  Settings
+	vc    video.Connection
+	f     video.Frame
 }
 
 func (c *connection) Read() {
@@ -22,25 +25,30 @@ func (c *connection) Read() {
 	c.vc.Read(c.f)
 }
 
+func (c *connection) Title() string {
+	return c.title
+}
+
 func (c *connection) Close() {
 	c.f.Close()
 }
 
-type connector struct {
-	Cancel <-chan interface{}
-}
-
-func (c connector) connect(ctx context.Context, title, addr string, settings Settings) (Connection, error) {
-	vc, err := video.Connect(addr)
+func connect(ctx context.Context, title, addr string, settings Settings) (Connection, error) {
+	vc, err := video.ConnectWithCancel(ctx, addr)
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect to camera: %w", err)
+		return nil, fmt.Errorf("Unable to connect to camera [%s]: %w", title, err)
 	}
 	return &connection{
-		vc: vc,
+		title: title,
+		vc:    vc,
+		sett:  settings,
 	}, nil
 }
 
 func Connect(title, addr string, settings Settings) (Connection, error) {
-	var connector = connector{}
-	return connector.connect(context.Background(), title, addr, settings)
+	return connect(context.Background(), title, addr, settings)
+}
+
+func ConnectWithCancel(cancel context.Context, title, addr string, settings Settings) (Connection, error) {
+	return connect(cancel, title, addr, settings)
 }
