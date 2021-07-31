@@ -57,21 +57,9 @@ func (s *server) connect(cancel context.Context) []error {
 			case <-cancel.Done():
 				return
 			default:
-				if cam.Disabled {
-					log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
-					return
-				}
-				settings := camera.Settings{
-					DateTimeFormat:  cam.DateTimeFormat,
-					DateTimeLabel:   cam.DateTimeLabel,
-					FPS:             cam.FPS,
-					PersistLocation: cam.PersistLoc,
-					Reolink:         cam.ReolinkAdvanced,
-				}
-				conn, err := connectToCamera(cancel, cam.Title, cam.Address, settings)
-				connAndError <- connectResult{
-					cam: conn,
-					err: err,
+				r := connect(cancel, cam)
+				if r != nil {
+					connAndError <- *r
 				}
 			}
 		}(cancel, &wg, cam, connAndError)
@@ -93,6 +81,26 @@ func (s *server) connect(cancel context.Context) []error {
 		}
 	}
 	return errs
+}
+
+func connect(cancel context.Context, cam config.Camera) *connectResult {
+	if cam.Disabled {
+		log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
+		return nil
+	}
+	settings := camera.Settings{
+		DateTimeFormat:  cam.DateTimeFormat,
+		DateTimeLabel:   cam.DateTimeLabel,
+		FPS:             cam.FPS,
+		PersistLocation: cam.PersistLoc,
+		Reolink:         cam.ReolinkAdvanced,
+	}
+
+	conn, err := connectToCamera(cancel, cam.Title, cam.Address, settings)
+	return &connectResult{
+		cam: conn,
+		err: err,
+	}
 }
 
 func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings) (camera.Connection, error) {
