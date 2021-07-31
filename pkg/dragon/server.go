@@ -47,11 +47,8 @@ func (s *server) connect(cancel context.Context) []error {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	wg := sync.WaitGroup{}
-	wg.Add(len(s.config.Cameras) + 1)
 	for _, cam := range s.config.Cameras {
-		go func(wg sync.WaitGroup, cancel context.Context, cam config.Camera, connAndError chan connectResult) {
-			defer wg.Done()
+		go func(cancel context.Context, cam config.Camera, connAndError chan connectResult) {
 			select {
 			case <-cancel.Done():
 				return
@@ -78,7 +75,7 @@ func (s *server) connect(cancel context.Context) []error {
 				}
 				connAndError <- r
 			}
-		}(wg, cancel, cam, connAndError)
+		}(cancel, cam, connAndError)
 	}
 
 	r := <-connAndError
