@@ -4,24 +4,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/tauraamui/dragondaemon/internal/config"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
+	"github.com/tauraamui/dragondaemon/pkg/config"
+	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
-
-type ConfigResolver interface {
-	Load() (config.Values, error)
-}
-
-func DefaultConfigResolver() ConfigResolver {
-	return defaultConfigResolver{}
-}
-
-type defaultConfigResolver struct{}
-
-func (d defaultConfigResolver) Load() (config.Values, error) {
-	return config.Load()
-}
 
 type Server interface {
 	Connect() []error
@@ -30,14 +17,14 @@ type Server interface {
 	Shutdown() chan interface{}
 }
 
-func NewServer(cr ConfigResolver) Server {
+func NewServer(cr config.Resolver) Server {
 	return &server{configResolver: cr}
 }
 
 type server struct {
-	configResolver ConfigResolver
+	configResolver config.Resolver
 	shutdownDone   chan interface{}
-	config         config.Values
+	config         configdef.Values
 	mu             sync.Mutex
 	cameras        []camera.Connection
 }
@@ -62,7 +49,7 @@ func (s *server) connect(cancel context.Context) []error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.config.Cameras))
 	for _, cam := range s.config.Cameras {
-		go func(cancel context.Context, wg *sync.WaitGroup, cam config.Camera, connAndError chan connectResult) {
+		go func(cancel context.Context, wg *sync.WaitGroup, cam configdef.Camera, connAndError chan connectResult) {
 			defer wg.Done()
 			select {
 			case <-cancel.Done():
@@ -102,7 +89,7 @@ func (s *server) recieveConnsToTrack(connAndError chan connectResult) []error {
 	return errs
 }
 
-func connect(cancel context.Context, cam config.Camera) *connectResult {
+func connect(cancel context.Context, cam configdef.Camera) *connectResult {
 	if cam.Disabled {
 		log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
 		return nil
