@@ -115,7 +115,7 @@ func connectToCamera(ctx context.Context, title, addr string, sett camera.Settin
 }
 
 func (s *server) LoadConfiguration() error {
-	config, err := s.configResolver.Load()
+	config, err := s.configResolver.Resolve()
 	if err != nil {
 		return err
 	}

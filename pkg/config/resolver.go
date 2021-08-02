@@ -6,7 +6,7 @@ import (
 )
 
 type Resolver interface {
-	Load() (configdef.Values, error)
+	Resolve() (configdef.Values, error)
 }
 
 func DefaultResolver() Resolver {
@@ -15,6 +15,6 @@ func DefaultResolver() Resolver {
 
 type defaultResolver struct{}
 
-func (d defaultResolver) Load() (configdef.Values, error) {
+func (d defaultResolver) Resolve() (configdef.Values, error) {
 	return config.Load()
 }
