@@ -15,8 +15,8 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
-	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gocv.io/x/gocv"
 )
@@ -36,7 +36,7 @@ type ConnectonSettings struct {
 	DateTimeLabel   bool
 	DateTimeFormat  string
 	Schedule        schedule.Schedule
-	Reolink         config.ReolinkAdvanced
+	Reolink         configdef.ReolinkAdvanced
 }
 
 // Validate will fix some settings or return an error

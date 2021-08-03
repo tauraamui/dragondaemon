@@ -49,7 +49,7 @@ var readConfigFile = func(path string) ([]byte, error) {
 func unmarshal(content []byte, values *configdef.Values) error {
 	err := json.Unmarshal(content, values)
 	if err != nil {
-		return errors.Errorf("parsing configuration error: %w", err)
+		return errors.Errorf("parsing configuration error: %v", err)
 	}
 	return nil
 }

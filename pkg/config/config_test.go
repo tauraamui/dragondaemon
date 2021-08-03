@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/configdef"
 )
 
 var _ = Describe("Config", func() {
@@ -98,7 +99,7 @@ var _ = Describe("Config", func() {
 					Expect(err).To(BeNil())
 					Expect(testCfg.Secret).To(Equal("test-secret"))
 					Expect(testCfg.MaxClipAgeInDays).To(Equal(7))
-					Expect(testCfg.Cameras).To(Equal([]Camera{
+					Expect(testCfg.Cameras).To(Equal([]configdef.Camera{
 						{
 							Title:          "Test Cam 1",
 							Address:        "camera-network-addr",
@@ -223,7 +224,7 @@ var _ = Describe("Config", func() {
 
 			It("Should write to file", func() {
 				testCfg.MaxClipAgeInDays = 9
-				testCfg.Cameras = []Camera{}
+				testCfg.Cameras = []configdef.Camera{}
 				path, err := testCfg.Save(false)
 
 				Expect(path).To(Equal("test/tacusci/dragondaemon/config.json"))

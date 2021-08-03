@@ -16,6 +16,7 @@ import (
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
 const (
@@ -90,7 +91,7 @@ func (service *Service) Manage() (string, error) {
 
 	logging.Info("Starting dragon daemon...") //nolint
 
-	server := dragon.NewServer(config.DefaultResolver())
+	server := dragon.NewServer(config.DefaultResolver(), video.DefaultBackend())
 	err := server.LoadConfiguration()
 	if err != nil {
 		log.Fatal("unable to load config: %v", err)
