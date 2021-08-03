@@ -1,6 +1,7 @@
 package dragon_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -36,6 +37,37 @@ func (tcc testConfigResolver) Resolve() (configdef.Values, error) {
 	}, nil
 }
 
+type testVideoBackend struct {
+}
+
+func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
+	return testVideoConnection{}, nil
+}
+
+func (tvb testVideoBackend) NewFrame() video.Frame {
+	return testVideoFrame{}
+}
+
+type testVideoFrame struct {
+}
+
+func (tvf testVideoFrame) DataRef() interface{} {
+	return nil
+}
+
+func (tvf testVideoFrame) Close() {}
+
+type testVideoConnection struct {
+}
+
+func (tvc testVideoConnection) Read(frame video.Frame) error {
+	return nil
+}
+
+func (tvc testVideoConnection) Close() error {
+	return nil
+}
+
 func TestNewServer(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
 	assert.NotNil(t, s, "new server's response cannot be nil pointer")
@@ -46,7 +78,7 @@ func TestServerLoadConfig(t *testing.T) {
 	cb := func() {
 		configResolved = true
 	}
-	s := dragon.NewServer(testConfigResolver{resolveCallback: cb}, video.DefaultBackend())
+	s := dragon.NewServer(testConfigResolver{resolveCallback: cb}, testVideoBackend{})
 	err := s.LoadConfiguration()
 
 	require.NoError(t, err, "Resolve returned error when this should be impossible")
@@ -56,13 +88,13 @@ func TestServerLoadConfig(t *testing.T) {
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{
 		resolveError: errors.New("test unable to resolve config"),
-	}, video.DefaultBackend())
+	}, testVideoBackend{})
 	err := s.LoadConfiguration()
 	require.EqualError(t, err, "test unable to resolve config")
 }
 
 func TestServerConnect(t *testing.T) {
-	s := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
+	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
 	err := s.LoadConfiguration()
 	require.NoError(t, err)
 	errs := s.Connect()

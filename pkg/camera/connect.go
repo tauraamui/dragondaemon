@@ -22,6 +22,9 @@ type connection struct {
 }
 
 func (c *connection) Read() {
+	if c.f != nil {
+		c.f.Close()
+	}
 	c.f = c.backend.NewFrame()
 	c.vc.Read(c.f)
 }
@@ -31,7 +34,9 @@ func (c *connection) Title() string {
 }
 
 func (c *connection) Close() {
-	c.f.Close()
+	if c.f != nil {
+		c.f.Close()
+	}
 }
 
 func connect(ctx context.Context, title, addr string, settings Settings, backend video.Backend) (Connection, error) {
@@ -41,6 +46,7 @@ func connect(ctx context.Context, title, addr string, settings Settings, backend
 	}
 	return &connection{
 		backend: backend,
+		f:       backend.NewFrame(),
 		title:   title,
 		vc:      vc,
 		sett:    settings,
