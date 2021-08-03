@@ -34,7 +34,7 @@ func (c *connection) Close() {
 }
 
 func connect(ctx context.Context, title, addr string, settings Settings) (Connection, error) {
-	vc, err := video.ConnectWithCancel(ctx, addr)
+	vc, err := video.ConnectWithCancel(ctx, addr, video.DefaultBackend())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to camera [%s]: %w", title, err)
 	}

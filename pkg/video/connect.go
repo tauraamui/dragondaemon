@@ -7,17 +7,38 @@ import (
 	"gocv.io/x/gocv"
 )
 
+type Backend interface {
+	Connect(context.Context, string) (Connection, error)
+}
+
+func DefaultBackend() Backend {
+	return openCVBackend{}
+}
+
+type openCVBackend struct {
+	conn openCVConnection
+}
+
+func (b openCVBackend) Connect(cancel context.Context, addr string) (Connection, error) {
+	err := b.conn.connect(cancel, addr)
+	if err != nil {
+		return &openCVConnection{}, err
+	}
+
+	return &b.conn, nil
+}
+
 type Connection interface {
 	Read(Frame) error
 	Close() error
 }
 
-type connection struct {
+type openCVConnection struct {
 	// will eventually hide this behind an interface
 	vc *gocv.VideoCapture
 }
 
-func (c *connection) connect(cancel context.Context, addr string) error {
+func (c *openCVConnection) connect(cancel context.Context, addr string) error {
 	connAndError := make(chan openVideoStreamResult)
 	go openVideoStream(addr, connAndError)
 	select {
@@ -43,7 +64,7 @@ func openVideoStream(addr string, d chan openVideoStreamResult) {
 	d <- result
 }
 
-func (c *connection) Read(frame Frame) error {
+func (c *openCVConnection) Read(frame Frame) error {
 	ok := c.vc.Read(&frame.mat)
 	if !ok {
 		return errors.New("unable to read from video connection")
@@ -51,23 +72,18 @@ func (c *connection) Read(frame Frame) error {
 	return nil
 }
 
-func (c *connection) Close() error {
+func (c *openCVConnection) Close() error {
 	return c.vc.Close()
 }
 
-func connect(cancel context.Context, addr string) (Connection, error) {
-	conn := connection{}
-	err := conn.connect(cancel, addr)
-	if err != nil {
-		return nil, err
-	}
-	return &conn, nil
+func connect(cancel context.Context, addr string, backend Backend) (Connection, error) {
+	return backend.Connect(cancel, addr)
 }
 
-func Connect(addr string) (Connection, error) {
-	return connect(context.Background(), addr)
+func Connect(addr string, backend Backend) (Connection, error) {
+	return connect(context.Background(), addr, backend)
 }
 
-func ConnectWithCancel(cancel context.Context, addr string) (Connection, error) {
-	return connect(cancel, addr)
+func ConnectWithCancel(cancel context.Context, addr string, backend Backend) (Connection, error) {
+	return connect(cancel, addr, backend)
 }
