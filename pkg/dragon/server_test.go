@@ -101,7 +101,6 @@ func TestServerConnect(t *testing.T) {
 	require.NoError(t, err)
 	errs := s.Connect()
 	assert.Len(t, errs, 0)
-
 }
 
 func TestServerShutdown(t *testing.T) {
