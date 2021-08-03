@@ -3,6 +3,7 @@ package dragon_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -94,6 +96,11 @@ func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 }
 
 func TestServerConnect(t *testing.T) {
+	var warnLogs []string
+	log.Warn = func(format string, a ...interface{}) {
+		warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
+	}
+
 	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
 	err := s.LoadConfiguration()
 	require.NoError(t, err)
@@ -112,4 +119,6 @@ func TestServerConnect(t *testing.T) {
 		t.Fatal("Timeout exceeded. Shutdown is blocking for too long...")
 	case <-done:
 	}
+
+	assert.Contains(t, warnLogs, "Closing camera connection: [Test camera]...")
 }
