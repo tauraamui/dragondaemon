@@ -96,16 +96,23 @@ func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 }
 
 func TestServerConnect(t *testing.T) {
+	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
+	err := s.LoadConfiguration()
+	require.NoError(t, err)
+	errs := s.Connect()
+	assert.Len(t, errs, 0)
+
+}
+
+func TestServerShutdown(t *testing.T) {
 	var warnLogs []string
 	log.Warn = func(format string, a ...interface{}) {
 		warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
 	}
 
 	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
-	err := s.LoadConfiguration()
-	require.NoError(t, err)
-	errs := s.Connect()
-	assert.Len(t, errs, 0)
+	s.LoadConfiguration()
+	s.Connect()
 
 	timeout := time.After(3 * time.Second)
 	done := make(chan interface{})
