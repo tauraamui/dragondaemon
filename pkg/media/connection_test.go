@@ -15,8 +15,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
-	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/media"
 	"gocv.io/x/gocv"
 )
@@ -111,7 +111,7 @@ var _ = Describe("Connection", func() {
 					FPS:             30,
 					SecondsPerClip:  2,
 					Schedule:        schedule.Schedule{},
-					Reolink:         config.ReolinkAdvanced{Enabled: false},
+					Reolink:         configdef.ReolinkAdvanced{Enabled: false},
 				},
 				&testMockVideoCapture{
 					closeFunc: func() error { return nil },
@@ -139,7 +139,7 @@ var _ = Describe("Connection", func() {
 					FPS:             30,
 					SecondsPerClip:  2,
 					Schedule:        schedule.Schedule{},
-					Reolink: config.ReolinkAdvanced{
+					Reolink: configdef.ReolinkAdvanced{
 						APIAddress: "fake-reolink-api",
 						Enabled:    true,
 					},
@@ -179,7 +179,7 @@ var _ = Describe("Connection", func() {
 					FPS:             30,
 					SecondsPerClip:  2,
 					Schedule:        schedule.Schedule{},
-					Reolink: config.ReolinkAdvanced{
+					Reolink: configdef.ReolinkAdvanced{
 						Enabled: false,
 					},
 				},
@@ -225,7 +225,7 @@ var _ = Describe("Connection", func() {
 					FPS:             30,
 					SecondsPerClip:  2,
 					Schedule:        schedule.Schedule{},
-					Reolink:         config.ReolinkAdvanced{Enabled: false},
+					Reolink:         configdef.ReolinkAdvanced{Enabled: false},
 				},
 				videoCapture,
 				"test-connection-instance-w&c-addr",
@@ -334,7 +334,7 @@ var _ = Describe("Connection", func() {
 					FPS:             15,
 					SecondsPerClip:  3,
 					Schedule:        schedule.Schedule{},
-					Reolink:         config.ReolinkAdvanced{Enabled: false},
+					Reolink:         configdef.ReolinkAdvanced{Enabled: false},
 				},
 				videoCapture,
 				"test-connection-instance-addr",
