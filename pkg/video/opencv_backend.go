@@ -19,11 +19,11 @@ func (frame openCVFrame) Close() {
 	frame.mat.Close()
 }
 
-type OpenCVBackend struct {
+type openCVBackend struct {
 	conn openCVConnection
 }
 
-func (b OpenCVBackend) Connect(cancel context.Context, addr string) (Connection, error) {
+func (b openCVBackend) Connect(cancel context.Context, addr string) (Connection, error) {
 	err := b.conn.connect(cancel, addr)
 	if err != nil {
 		return &openCVConnection{}, err
@@ -32,7 +32,7 @@ func (b OpenCVBackend) Connect(cancel context.Context, addr string) (Connection,
 	return &b.conn, nil
 }
 
-func (b OpenCVBackend) NewFrame() Frame {
+func (b openCVBackend) NewFrame() Frame {
 	return openCVFrame{mat: gocv.NewMat()}
 }
 

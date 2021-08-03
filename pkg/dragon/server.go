@@ -8,6 +8,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
 type Server interface {
@@ -17,12 +18,13 @@ type Server interface {
 	Shutdown() chan interface{}
 }
 
-func NewServer(cr config.Resolver) Server {
-	return &server{configResolver: cr}
+func NewServer(cr config.Resolver, vb video.Backend) Server {
+	return &server{configResolver: cr, videoBackend: vb}
 }
 
 type server struct {
 	configResolver config.Resolver
+	videoBackend   video.Backend
 	shutdownDone   chan interface{}
 	config         configdef.Values
 	mu             sync.Mutex
@@ -55,7 +57,7 @@ func (s *server) connect(cancel context.Context) []error {
 			case <-cancel.Done():
 				return
 			default:
-				r := connect(cancel, cam)
+				r := connect(cancel, cam, s.videoBackend)
 				if r != nil {
 					connAndError <- *r
 				}
@@ -89,7 +91,7 @@ func (s *server) recieveConnsToTrack(connAndError chan connectResult) []error {
 	return errs
 }
 
-func connect(cancel context.Context, cam configdef.Camera) *connectResult {
+func connect(cancel context.Context, cam configdef.Camera, backend video.Backend) *connectResult {
 	if cam.Disabled {
 		log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
 		return nil
@@ -102,16 +104,16 @@ func connect(cancel context.Context, cam configdef.Camera) *connectResult {
 		Reolink:         cam.ReolinkAdvanced,
 	}
 
-	conn, err := connectToCamera(cancel, cam.Title, cam.Address, settings)
+	conn, err := connectToCamera(cancel, cam.Title, cam.Address, settings, backend)
 	return &connectResult{
 		cam: conn,
 		err: err,
 	}
 }
 
-func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings) (camera.Connection, error) {
+func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings, backend video.Backend) (camera.Connection, error) {
 	log.Info("Connecting to camera: [%s]...", title)
-	return camera.ConnectWithCancel(ctx, title, addr, sett)
+	return camera.ConnectWithCancel(ctx, title, addr, sett, backend)
 }
 
 func (s *server) LoadConfiguration() error {
