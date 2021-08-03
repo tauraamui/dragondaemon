@@ -13,7 +13,6 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
 	"github.com/tauraamui/dragondaemon/pkg/config"
-	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -61,10 +60,6 @@ func (service *Service) RemoveSetup() (string, error) {
 	return "Removing setup successful...", nil
 }
 
-type customConfigResolver struct{}
-
-func (c customConfigResolver) Resolve() (configdef.Values, error)
-
 func (service *Service) Manage() (string, error) {
 	usage := "Usage: dragond setup | remove-setup | install | remove | start | stop | status"
 
@@ -95,7 +90,7 @@ func (service *Service) Manage() (string, error) {
 
 	logging.Info("Starting dragon daemon...") //nolint
 
-	server := dragon.NewServer(customConfigResolver{})
+	server := dragon.NewServer(config.DefaultResolver())
 	err := server.LoadConfiguration()
 	if err != nil {
 		log.Fatal("unable to load config: %v", err)

@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/pkg/errors"
+	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"gopkg.in/dealancer/validate.v2"
 )
@@ -36,7 +37,7 @@ var (
 	ErrConfigAlreadyExists = errors.New("config file already exists")
 	defaultSettings        = map[defaultSettingKey]interface{}{
 		MAXCLIPAGEINDAYS: 30,
-		CAMERAS:          []Camera{},
+		CAMERAS:          []configdef.Camera{},
 		DATETIMEFORMAT:   "2006/01/02 15:04:05.999999999",
 	}
 )
@@ -46,10 +47,10 @@ type values struct {
 	fs               afero.Fs
 	uc               func() (string, error)
 	w                func(string, []byte, fs.FileMode) error
-	Debug            bool     `json:"debug"`
-	Secret           string   `json:"secret"`
-	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
-	Cameras          []Camera `json:"cameras"`
+	Debug            bool               `json:"debug"`
+	Secret           string             `json:"secret"`
+	MaxClipAgeInDays int                `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
+	Cameras          []configdef.Camera `json:"cameras"`
 }
 
 func New() *values {
@@ -156,7 +157,7 @@ func (c *values) loadDefaultCameraDateLabelFormats() {
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(c.Cameras); i++ {
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, camera *Camera) {
+		go func(wg *sync.WaitGroup, camera *configdef.Camera) {
 			defer wg.Done()
 			if len(camera.DateTimeFormat) == 0 {
 				camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT].(string)
@@ -168,7 +169,7 @@ func (c *values) loadDefaultCameraDateLabelFormats() {
 
 func (c *values) loadDefaults() {
 	c.MaxClipAgeInDays = defaultSettings[MAXCLIPAGEINDAYS].(int)
-	c.Cameras = defaultSettings[CAMERAS].([]Camera)
+	c.Cameras = defaultSettings[CAMERAS].([]configdef.Camera)
 }
 
 func resolveConfigPath(uc func() (string, error)) (string, error) {
