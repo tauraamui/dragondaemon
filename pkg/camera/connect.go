@@ -14,14 +14,15 @@ type Connection interface {
 }
 
 type connection struct {
-	title string
-	sett  Settings
-	vc    video.Connection
-	f     video.Frame
+	backend video.Backend
+	title   string
+	sett    Settings
+	vc      video.Connection
+	f       video.Frame
 }
 
 func (c *connection) Read() {
-	c.f = video.NewFrame()
+	c.f = c.backend.NewFrame()
 	c.vc.Read(c.f)
 }
 
@@ -34,14 +35,16 @@ func (c *connection) Close() {
 }
 
 func connect(ctx context.Context, title, addr string, settings Settings) (Connection, error) {
-	vc, err := video.ConnectWithCancel(ctx, addr, video.DefaultBackend())
+	videoBackend := video.DefaultBackend()
+	vc, err := video.ConnectWithCancel(ctx, addr, videoBackend)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to camera [%s]: %w", title, err)
 	}
 	return &connection{
-		title: title,
-		vc:    vc,
-		sett:  settings,
+		backend: videoBackend,
+		title:   title,
+		vc:      vc,
+		sett:    settings,
 	}, nil
 }
 
