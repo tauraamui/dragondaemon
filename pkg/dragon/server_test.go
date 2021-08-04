@@ -87,6 +87,30 @@ func TestServerLoadConfig(t *testing.T) {
 	assert.True(t, configResolved)
 }
 
+func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
+	var warnLogs []string
+	log.Warn = func(format string, a ...interface{}) {
+		warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
+	}
+	s := dragon.NewServer(
+		testConfigResolver{
+			resolveConfigs: func() configdef.Values {
+				return configdef.Values{
+					Cameras: []configdef.Camera{
+						{Title: "Disabled camera", Disabled: true},
+					},
+				}
+			},
+		},
+		testVideoBackend{},
+	)
+	s.LoadConfiguration()
+	s.Connect()
+
+	assert.Len(t, warnLogs, 1)
+	assert.Contains(t, warnLogs, "Camera [Disabled camera] is disabled... skipping...")
+}
+
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{
 		resolveError: errors.New("test unable to resolve config"),
@@ -172,5 +196,6 @@ func TestServerShutdown(t *testing.T) {
 	case <-done:
 	}
 
+	assert.Len(t, warnLogs, 1)
 	assert.Contains(t, warnLogs, "Closing camera connection: [Test camera]...")
 }
