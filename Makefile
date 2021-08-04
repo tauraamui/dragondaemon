@@ -11,6 +11,10 @@ ci-run: test lint build
 test:
 	gotestsum ./...
 
+.PHONY: test-verbose
+test-verbose:
+	gotestsum --format standard-verbose ./...
+
 .PHONY: coverage
 coverage:
 	go test -coverpkg=./... -coverprofile=profile.cov ./... && go tool cover -func profile.cov && rm profile.cov
