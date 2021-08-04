@@ -107,7 +107,10 @@ type testWaitsOnCancelVideoBackend struct {
 }
 
 func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string) (video.Connection, error) {
-	return nil, nil
+	println("Waiting for cancel")
+	<-ctx.Done()
+	println("Cancel was called")
+	return testVideoConnection{}, errors.New("test unable to connect, context cancelled")
 }
 
 func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
@@ -117,9 +120,20 @@ func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 func TestServerConnectWithCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	s.LoadConfiguration()
+
 	ctx, cancel := context.WithCancel(context.Background())
-	s.ConnectWithCancel(ctx)
+	errs := make(chan []error)
+	go func(ctx context.Context) {
+		errs <- s.ConnectWithCancel(ctx)
+	}(ctx)
+	time.Sleep(1 * time.Millisecond)
 	cancel()
+
+	connErrs := <-errs
+	require.Len(t, connErrs, 1)
+	assert.EqualError(
+		t, connErrs[0], "Unable to connect to camera [Test camera]: test unable to connect, context cancelled",
+	)
 }
 
 func TestServerShutdown(t *testing.T) {
@@ -134,10 +148,10 @@ func TestServerShutdown(t *testing.T) {
 
 	timeout := time.After(3 * time.Second)
 	done := make(chan interface{})
-	go func(t *testing.T, s dragon.Server) {
+	go func(t *testing.T, s dragon.Server, done chan interface{}) {
+		defer close(done)
 		<-s.Shutdown()
-		close(done)
-	}(t, s)
+	}(t, s, done)
 
 	select {
 	case <-timeout:
