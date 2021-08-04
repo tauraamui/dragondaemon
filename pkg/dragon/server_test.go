@@ -139,6 +139,7 @@ func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 	return testVideoFrame{}
 }
 
+// TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	s.LoadConfiguration()
@@ -154,6 +155,7 @@ func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 	require.Len(t, connErrs, 0)
 }
 
+// TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	s.LoadConfiguration()
