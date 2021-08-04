@@ -9,19 +9,15 @@ ci-run: test lint build
 
 .PHONY: test
 test:
-	ginkgo ./...
-
-.PHONY: vtest
-vtest:
-	ginkgo -v ./...
-
-.PHONY: watch-tests
-watch-tests:
-	ginkgo watch ./...
+	gotestsum ./...
 
 .PHONY: coverage
 coverage:
 	go test -coverpkg=./... -coverprofile=profile.cov ./... && go tool cover -func profile.cov && rm profile.cov
+
+.PHONY: install-gotestsum
+install-gotestsum:
+	go get github.com/gotestyourself/gotestsum
 
 .PHONY: install-linter
 install-linter:
@@ -30,10 +26,6 @@ install-linter:
 .PHONY: lint
 lint:
 	golangci-lint run
-
-.PHONY: watch
-watch:
-	ginkgo watch ./...
 
 .PHONY: build
 build:
