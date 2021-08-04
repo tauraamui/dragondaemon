@@ -115,6 +115,21 @@ func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 	return testVideoFrame{}
 }
 
+func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
+	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
+	s.LoadConfiguration()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errs := make(chan []error)
+	go func(ctx context.Context) {
+		errs <- s.ConnectWithCancel(ctx)
+	}(ctx)
+	cancel()
+
+	connErrs := <-errs
+	require.Len(t, connErrs, 0)
+}
+
 func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	s.LoadConfiguration()
