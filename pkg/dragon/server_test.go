@@ -103,6 +103,25 @@ func TestServerConnect(t *testing.T) {
 	assert.Len(t, errs, 0)
 }
 
+type testWaitsOnCancelVideoBackend struct {
+}
+
+func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string) (video.Connection, error) {
+	return nil, nil
+}
+
+func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
+	return testVideoFrame{}
+}
+
+func TestServerConnectWithCancelInvoke(t *testing.T) {
+	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
+	s.LoadConfiguration()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.ConnectWithCancel(ctx)
+	cancel()
+}
+
 func TestServerShutdown(t *testing.T) {
 	var warnLogs []string
 	log.Warn = func(format string, a ...interface{}) {
