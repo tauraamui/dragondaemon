@@ -62,9 +62,13 @@ type openVideoStreamResult struct {
 }
 
 func openVideoStream(addr string, d chan openVideoStreamResult) {
-	vc, err := gocv.OpenVideoCapture(addr)
+	vc, err := openVideoCapture(addr)
 	result := openVideoStreamResult{vc: vc, err: err}
 	d <- result
+}
+
+var openVideoCapture = func(addr string) (*gocv.VideoCapture, error) {
+	return gocv.OpenVideoCapture(addr)
 }
 
 func (c *openCVConnection) Read(frame Frame) error {
