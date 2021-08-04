@@ -89,7 +89,7 @@ func (service *Service) Manage() (string, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	logging.Info("Starting dragon daemon...") //nolint
+	log.Info("Starting dragon daemon...")
 
 	server := dragon.NewServer(config.DefaultResolver(), video.DefaultBackend())
 	err := server.LoadConfiguration()
