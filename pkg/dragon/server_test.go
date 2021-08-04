@@ -107,9 +107,7 @@ type testWaitsOnCancelVideoBackend struct {
 }
 
 func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string) (video.Connection, error) {
-	println("Waiting for cancel")
 	<-ctx.Done()
-	println("Cancel was called")
 	return testVideoConnection{}, errors.New("test unable to connect, context cancelled")
 }
 
@@ -117,7 +115,7 @@ func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 	return testVideoFrame{}
 }
 
-func TestServerConnectWithCancelInvoke(t *testing.T) {
+func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	s.LoadConfiguration()
 
