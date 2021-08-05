@@ -63,3 +63,26 @@ func TestOpenAndReadFromVideoStream(t *testing.T) {
 	err = conn.Read(frame)
 	require.NoError(t, err)
 }
+
+func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
+	mp4Dir := os.TempDir()
+	err := RestoreAsset(mp4Dir, "small.mp4")
+	require.NoError(t, err)
+
+	mp4FilePath := filepath.Join(mp4Dir, "small.mp4")
+	defer os.Remove(mp4FilePath)
+
+	conn := openCVConnection{}
+	err = conn.connect(context.TODO(), mp4FilePath)
+	require.NoError(t, err)
+
+	frame := openCVFrame{
+		mat: gocv.NewMat(),
+	}
+	defer frame.Close()
+
+	assert.Zero(t, frame.mat.Total())
+	err = conn.Read(frame)
+	require.NoError(t, err)
+	assert.Greater(t, frame.mat.Total(), 0)
+}
