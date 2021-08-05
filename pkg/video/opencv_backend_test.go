@@ -31,7 +31,7 @@ func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 	assert.EqualError(t, err, "test connect error")
 }
 
-func TestOpenVideoStream(t *testing.T) {
+func TestOpenAndCloseVideoStream(t *testing.T) {
 	mp4Dir := os.TempDir()
 	err := RestoreAsset(mp4Dir, "small.mp4")
 	require.NoError(t, err)
@@ -41,5 +41,25 @@ func TestOpenVideoStream(t *testing.T) {
 
 	conn := openCVConnection{}
 	err = conn.connect(context.TODO(), mp4FilePath)
+	require.NoError(t, err)
+
+	err = conn.Close()
+	require.NoError(t, err)
+}
+
+func TestOpenAndReadFromVideoStream(t *testing.T) {
+	mp4Dir := os.TempDir()
+	err := RestoreAsset(mp4Dir, "small.mp4")
+	require.NoError(t, err)
+
+	mp4FilePath := filepath.Join(mp4Dir, "small.mp4")
+	defer os.Remove(mp4FilePath)
+
+	conn := openCVConnection{}
+	err = conn.connect(context.TODO(), mp4FilePath)
+	require.NoError(t, err)
+
+	frame := DefaultBackend().NewFrame()
+	err = conn.Read(frame)
 	require.NoError(t, err)
 }
