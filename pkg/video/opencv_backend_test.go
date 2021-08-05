@@ -18,6 +18,12 @@ func overloadOpenVidCap(overload func(addr string) (*gocv.VideoCapture, error)) 
 	return func() { openVideoCapture = openVidCapRef }
 }
 
+func overloadReadFromVidCap(overload func(vc *gocv.VideoCapture, mat *gocv.Mat) bool) func() {
+	readFromVidCapRef := readFromVideoConnection
+	readFromVideoConnection = overload
+	return func() { readFromVideoConnection = readFromVidCapRef }
+}
+
 func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 	resetOpenVidCap := overloadOpenVidCap(
 		func(addr string) (*gocv.VideoCapture, error) {
@@ -108,4 +114,29 @@ func TestOpenAndReadWithIncorrectFrameDataReturnsError(t *testing.T) {
 	frame := invalidFrame{}
 	err = conn.Read(frame)
 	assert.EqualError(t, err, "must pass OpenCV frame to OpenCV connection read")
+}
+
+func TestOpenAndReadFailToReadFromConnectionReturnsError(t *testing.T) {
+	resetReadFromVidCap := overloadReadFromVidCap(
+		func(*gocv.VideoCapture, *gocv.Mat) bool {
+			return false
+		},
+	)
+	defer resetReadFromVidCap()
+
+	mp4FilePath, err := restoreMp4File()
+	require.NoError(t, err)
+	defer func() { os.Remove(mp4FilePath) }()
+
+	conn := openCVConnection{}
+	err = conn.connect(context.TODO(), mp4FilePath)
+	require.NoError(t, err)
+
+	frame := openCVFrame{
+		mat: gocv.NewMat(),
+	}
+	defer frame.Close()
+
+	err = conn.Read(frame)
+	assert.EqualError(t, err, "unable to read from video connection")
 }

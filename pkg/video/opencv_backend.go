@@ -71,12 +71,16 @@ var openVideoCapture = func(addr string) (*gocv.VideoCapture, error) {
 	return gocv.OpenVideoCapture(addr)
 }
 
+var readFromVideoConnection = func(vc *gocv.VideoCapture, mat *gocv.Mat) bool {
+	return vc.Read(mat)
+}
+
 func (c *openCVConnection) Read(frame Frame) error {
 	mat, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
 		return errors.New("must pass OpenCV frame to OpenCV connection read")
 	}
-	ok = c.vc.Read(mat)
+	ok = readFromVideoConnection(c.vc, mat)
 	if !ok {
 		return errors.New("unable to read from video connection")
 	}
