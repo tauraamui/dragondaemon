@@ -88,6 +88,24 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	assert.Greater(t, frame.mat.Total(), 0)
 }
 
-func TestOpenAndReadWithIncorrectFrameDataReturnsError(t *testing.T) {
+type invalidFrame struct{}
 
+func (frame invalidFrame) DataRef() interface{} {
+	return nil
+}
+
+func (frame invalidFrame) Close() {}
+
+func TestOpenAndReadWithIncorrectFrameDataReturnsError(t *testing.T) {
+	mp4FilePath, err := restoreMp4File()
+	require.NoError(t, err)
+	defer func() { os.Remove(mp4FilePath) }()
+
+	conn := openCVConnection{}
+	err = conn.connect(context.TODO(), mp4FilePath)
+	require.NoError(t, err)
+
+	frame := invalidFrame{}
+	err = conn.Read(frame)
+	assert.EqualError(t, err, "must pass OpenCV frame to OpenCV connection read")
 }
