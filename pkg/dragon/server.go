@@ -3,10 +3,12 @@ package dragon
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/config"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
+	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -15,6 +17,7 @@ type Server interface {
 	Connect() []error
 	ConnectWithCancel(context.Context) []error
 	LoadConfiguration() error
+	RunProcesses()
 	Shutdown() chan interface{}
 }
 
@@ -28,6 +31,7 @@ type server struct {
 	shutdownDone   chan interface{}
 	config         configdef.Values
 	mu             sync.Mutex
+	processes      []process.Processable
 	cameras        []camera.Connection
 }
 
@@ -126,6 +130,40 @@ func (s *server) LoadConfiguration() error {
 	return nil
 }
 
+func (s *server) RunProcesses() {
+	streamProcessSettings := process.Settings{
+		WaitForShutdownMsg: "Stopping stream process",
+		Process: func(cancel context.Context) chan interface{} {
+			stopping := make(chan interface{})
+			go func(cancel context.Context, stopping chan interface{}) {
+				for {
+					time.Sleep(1 * time.Second)
+					select {
+					case <-cancel.Done():
+						close(stopping)
+					default:
+						log.Info("Still streaming")
+					}
+				}
+			}(cancel, stopping)
+			return stopping
+		},
+	}
+
+	s.processes = append(s.processes, process.New(streamProcessSettings))
+
+	for _, proc := range s.processes {
+		proc.Start()
+	}
+}
+
+func (s *server) shutdownProcesses() {
+	for _, proc := range s.processes {
+		proc.Stop()
+		proc.Wait()
+	}
+}
+
 func (s *server) shutdown() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -137,6 +175,7 @@ func (s *server) shutdown() {
 }
 
 func (s *server) Shutdown() chan interface{} {
+	s.shutdownProcesses()
 	s.shutdown()
 	return s.shutdownDone
 }
