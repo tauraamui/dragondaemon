@@ -70,6 +70,12 @@ func (tvc testVideoConnection) Close() error {
 	return nil
 }
 
+func overloadWarnLog(overload func(string, ...interface{})) func() {
+	logWarnRef := log.Warn
+	log.Warn = overload
+	return func() { log.Warn = logWarnRef }
+}
+
 func TestNewServer(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
 	assert.NotNil(t, s, "new server's response cannot be nil pointer")
@@ -89,9 +95,13 @@ func TestServerLoadConfig(t *testing.T) {
 
 func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 	var warnLogs []string
-	log.Warn = func(format string, a ...interface{}) {
-		warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
-	}
+	resetLogWarn := overloadWarnLog(
+		func(format string, a ...interface{}) {
+			warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
+		},
+	)
+	defer resetLogWarn()
+
 	s := dragon.NewServer(
 		testConfigResolver{
 			resolveConfigs: func() configdef.Values {
@@ -177,9 +187,12 @@ func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 
 func TestServerShutdown(t *testing.T) {
 	var warnLogs []string
-	log.Warn = func(format string, a ...interface{}) {
-		warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
-	}
+	resetLogWarn := overloadWarnLog(
+		func(format string, a ...interface{}) {
+			warnLogs = append(warnLogs, fmt.Sprintf(format, a...))
+		},
+	)
+	defer resetLogWarn()
 
 	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
 	s.LoadConfiguration()
