@@ -24,6 +24,34 @@ func overloadReadFromVidCap(overload func(vc *gocv.VideoCapture, mat *gocv.Mat) 
 	return func() { readFromVideoConnection = readFromVidCapRef }
 }
 
+func restoreMp4File() (string, error) {
+	mp4Dir := os.TempDir()
+	err := RestoreAsset(mp4Dir, "small.mp4")
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(mp4Dir, "small.mp4"), nil
+}
+
+func TestConnectWithImmediateCancelInvoke(t *testing.T) {
+	mp4FilePath, err := restoreMp4File()
+	require.NoError(t, err)
+	defer func() { os.Remove(mp4FilePath) }()
+
+	conn := openCVConnection{}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	errChan := make(chan error)
+	go func(ctx context.Context) {
+		errChan <- conn.connect(ctx, mp4FilePath)
+	}(ctx)
+	cancel()
+
+	connErr := <-errChan
+	assert.EqualError(t, connErr, "connection cancelled")
+}
+
 func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 	resetOpenVidCap := overloadOpenVidCap(
 		func(addr string) (*gocv.VideoCapture, error) {
@@ -35,16 +63,6 @@ func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 	conn := openCVConnection{}
 	err := conn.connect(context.TODO(), "TestAddr")
 	assert.EqualError(t, err, "test connect error")
-}
-
-func restoreMp4File() (string, error) {
-	mp4Dir := os.TempDir()
-	err := RestoreAsset(mp4Dir, "small.mp4")
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(mp4Dir, "small.mp4"), nil
 }
 
 func TestOpenAndCloseVideoStream(t *testing.T) {
