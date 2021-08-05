@@ -142,6 +142,11 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	err = conn.Read(frame)
 	require.NoError(t, err)
 	assert.Greater(t, frame.mat.Total(), 0)
+	// make sure as much as possible that the impl
+	// isn't just writing random junk to the frame
+	assert.Equal(t, frame.mat.ToBytes()[:10], []byte{
+		0xe, 0x27, 0x48, 0xe, 0x27, 0x48, 0xe, 0x27, 0x48, 0xe,
+	})
 }
 
 type invalidFrame struct{}
