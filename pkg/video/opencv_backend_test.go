@@ -34,6 +34,38 @@ func restoreMp4File() (string, error) {
 	return filepath.Join(mp4Dir, "small.mp4"), nil
 }
 
+func TestBackendConnect(t *testing.T) {
+	mp4FilePath, err := restoreMp4File()
+	require.NoError(t, err)
+	defer func() { os.Remove(mp4FilePath) }()
+
+	backend := openCVBackend{}
+	conn, err := backend.Connect(context.TODO(), mp4FilePath)
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	err = conn.Close()
+	assert.Nil(t, err)
+}
+
+func TestBackendConnectWithImmediateCancelInvoke(t *testing.T) {
+	mp4FilePath, err := restoreMp4File()
+	require.NoError(t, err)
+	defer func() { os.Remove(mp4FilePath) }()
+
+	backend := openCVBackend{}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	errChan := make(chan error)
+	go func(ctx context.Context) {
+		_, err := backend.Connect(ctx, mp4FilePath)
+		errChan <- err
+	}(ctx)
+	cancel()
+
+	connErr := <-errChan
+	assert.EqualError(t, connErr, "connection cancelled")
+}
+
 func TestConnectWithImmediateCancelInvoke(t *testing.T) {
 	mp4FilePath, err := restoreMp4File()
 	require.NoError(t, err)
