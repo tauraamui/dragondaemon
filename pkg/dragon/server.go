@@ -21,7 +21,11 @@ type Server interface {
 }
 
 func NewServer(cr config.Resolver, vb video.Backend) Server {
-	return &server{configResolver: cr, videoBackend: vb}
+	return &server{
+		configResolver: cr,
+		videoBackend:   vb,
+		shutdownDone:   make(chan interface{}),
+	}
 }
 
 type server struct {
@@ -49,8 +53,6 @@ type connectResult struct {
 }
 
 func (s *server) connect(cancel context.Context) []error {
-	s.shutdownDone = make(chan interface{})
-
 	connAndError := make(chan connectResult)
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.config.Cameras))
