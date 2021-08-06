@@ -133,7 +133,7 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	err = conn.connect(context.TODO(), mp4FilePath)
 	require.NoError(t, err)
 
-	frame := openCVFrame{
+	frame := &openCVFrame{
 		mat: gocv.NewMat(),
 	}
 	defer frame.Close()
@@ -187,7 +187,7 @@ func TestOpenAndReadFailToReadFromConnectionReturnsError(t *testing.T) {
 	err = conn.connect(context.TODO(), mp4FilePath)
 	require.NoError(t, err)
 
-	frame := openCVFrame{
+	frame := &openCVFrame{
 		mat: gocv.NewMat(),
 	}
 	defer frame.Close()
