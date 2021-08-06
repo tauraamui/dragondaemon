@@ -8,15 +8,19 @@ import (
 )
 
 type openCVFrame struct {
-	mat gocv.Mat
+	isClosed bool
+	mat      gocv.Mat
 }
 
-func (frame openCVFrame) DataRef() interface{} {
+func (frame *openCVFrame) DataRef() interface{} {
 	return &frame.mat
 }
 
-func (frame openCVFrame) Close() {
-	frame.mat.Close()
+func (frame *openCVFrame) Close() {
+	if !frame.isClosed {
+		frame.mat.Close()
+		frame.isClosed = true
+	}
 }
 
 type openCVBackend struct {
@@ -33,7 +37,7 @@ func (b openCVBackend) Connect(cancel context.Context, addr string) (Connection,
 }
 
 func (b openCVBackend) NewFrame() Frame {
-	return openCVFrame{mat: gocv.NewMat()}
+	return &openCVFrame{mat: gocv.NewMat()}
 }
 
 type openCVConnection struct {
