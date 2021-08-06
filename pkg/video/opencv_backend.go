@@ -3,6 +3,7 @@ package video
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"gocv.io/x/gocv"
 )
@@ -42,6 +43,7 @@ func (b openCVBackend) NewFrame() Frame {
 
 type openCVConnection struct {
 	// will eventually hide this behind an interface
+	mu     sync.Mutex
 	isOpen bool
 	vc     *gocv.VideoCapture
 }
@@ -93,6 +95,8 @@ func (c *openCVConnection) Read(frame Frame) error {
 }
 
 func (c *openCVConnection) IsOpen() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.isOpen {
 		return c.vc.IsOpened()
 	}
@@ -100,6 +104,8 @@ func (c *openCVConnection) IsOpen() bool {
 }
 
 func (c *openCVConnection) Close() error {
+	c.mu.Lock()
 	c.isOpen = false
+	c.mu.Unlock()
 	return c.vc.Close()
 }
