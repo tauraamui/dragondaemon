@@ -6,6 +6,7 @@ import (
 
 type Connection interface {
 	Read(Frame) error
+	IsOpen() bool
 	Close() error
 }
 

@@ -91,6 +91,10 @@ func (c *openCVConnection) Read(frame Frame) error {
 	return nil
 }
 
+func (c *openCVConnection) IsOpen() bool {
+	return c.vc.IsOpened()
+}
+
 func (c *openCVConnection) Close() error {
 	return c.vc.Close()
 }

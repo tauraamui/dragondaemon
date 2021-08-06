@@ -10,6 +10,7 @@ import (
 type Connection interface {
 	Read() video.Frame
 	Title() string
+	IsOpen() bool
 	Close() error
 }
 
@@ -28,6 +29,10 @@ func (c *connection) Read() video.Frame {
 
 func (c *connection) Title() string {
 	return c.title
+}
+
+func (c *connection) IsOpen() bool {
+	return c.vc.IsOpen()
 }
 
 func (c *connection) Close() error {
