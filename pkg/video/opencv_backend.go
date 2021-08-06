@@ -42,7 +42,8 @@ func (b openCVBackend) NewFrame() Frame {
 
 type openCVConnection struct {
 	// will eventually hide this behind an interface
-	vc *gocv.VideoCapture
+	isOpen bool
+	vc     *gocv.VideoCapture
 }
 
 func (c *openCVConnection) connect(cancel context.Context, addr string) error {
@@ -92,9 +93,13 @@ func (c *openCVConnection) Read(frame Frame) error {
 }
 
 func (c *openCVConnection) IsOpen() bool {
-	return c.vc.IsOpened()
+	if c.isOpen {
+		return c.vc.IsOpened()
+	}
+	return false
 }
 
 func (c *openCVConnection) Close() error {
+	c.isOpen = false
 	return c.vc.Close()
 }
