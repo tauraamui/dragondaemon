@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tauraamui/dragondaemon/internal/videotest"
 	"gocv.io/x/gocv"
 )
 
@@ -24,18 +24,8 @@ func overloadReadFromVidCap(overload func(vc *gocv.VideoCapture, mat *gocv.Mat) 
 	return func() { readFromVideoConnection = readFromVidCapRef }
 }
 
-func restoreMp4File() (string, error) {
-	mp4Dir := os.TempDir()
-	err := RestoreAsset(mp4Dir, "small.mp4")
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(mp4Dir, "small.mp4"), nil
-}
-
 func TestBackendConnect(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -48,7 +38,7 @@ func TestBackendConnect(t *testing.T) {
 }
 
 func TestBackendConnectWithImmediateCancelInvoke(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -67,7 +57,7 @@ func TestBackendConnectWithImmediateCancelInvoke(t *testing.T) {
 }
 
 func TestConnectWithImmediateCancelInvoke(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -98,7 +88,7 @@ func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 }
 
 func TestOpenAndCloseVideoStream(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -111,7 +101,7 @@ func TestOpenAndCloseVideoStream(t *testing.T) {
 }
 
 func TestOpenAndReadFromVideoStream(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -125,7 +115,7 @@ func TestOpenAndReadFromVideoStream(t *testing.T) {
 }
 
 func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -158,7 +148,7 @@ func (frame invalidFrame) DataRef() interface{} {
 func (frame invalidFrame) Close() {}
 
 func TestOpenAndReadWithIncorrectFrameDataReturnsError(t *testing.T) {
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
@@ -179,7 +169,7 @@ func TestOpenAndReadFailToReadFromConnectionReturnsError(t *testing.T) {
 	)
 	defer resetReadFromVidCap()
 
-	mp4FilePath, err := restoreMp4File()
+	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 

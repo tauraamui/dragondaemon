@@ -1,7 +1,7 @@
 // Code generated for package main by go-bindata DO NOT EDIT. (@generated)
 // sources:
 // small.mp4
-package video
+package videotest
 
 import (
 	"bytes"
