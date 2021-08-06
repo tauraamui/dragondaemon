@@ -7,7 +7,7 @@ import (
 )
 
 type Processable interface {
-	DefineProcess(func(context.Context) chan interface{})
+	DefineProcess(func(context.Context) []chan interface{})
 	Start()
 	Stop()
 	Wait()
@@ -15,7 +15,7 @@ type Processable interface {
 
 type Settings struct {
 	WaitForShutdownMsg string
-	Process            func(context.Context) chan interface{}
+	Process            func(context.Context) []chan interface{}
 }
 
 func New(settings Settings) Processable {
@@ -26,7 +26,7 @@ func New(settings Settings) Processable {
 }
 
 type process struct {
-	process            func(context.Context) chan interface{}
+	process            func(context.Context) []chan interface{}
 	waitForShutdownMsg string
 	canceller          context.CancelFunc
 	signals            []chan interface{}
@@ -36,14 +36,14 @@ func (p *process) logShutdown() {
 	log.Info(p.waitForShutdownMsg)
 }
 
-func (p *process) DefineProcess(process func(context.Context) chan interface{}) {
+func (p *process) DefineProcess(process func(context.Context) []chan interface{}) {
 	p.process = process
 }
 
 func (p *process) Start() {
 	ctx, canceller := context.WithCancel(context.Background())
 	p.canceller = canceller
-	p.signals = append(p.signals, p.process(ctx))
+	p.signals = append(p.signals, p.process(ctx)...)
 }
 
 func (p *process) Stop() {

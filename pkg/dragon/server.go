@@ -130,27 +130,60 @@ func (s *server) LoadConfiguration() error {
 	return nil
 }
 
-func (s *server) RunProcesses() {
-	streamProcessSettings := process.Settings{
-		WaitForShutdownMsg: "Stopping stream process",
-		Process: func(cancel context.Context) chan interface{} {
+func streamProcess(s *server, frames chan video.Frame) func(cancel context.Context) []chan interface{} {
+	return func(cancel context.Context) []chan interface{} {
+		var stopSignals []chan interface{}
+		for _, cam := range s.cameras {
 			stopping := make(chan interface{})
-			go func(cancel context.Context, stopping chan interface{}) {
+			go func(cancel context.Context, cam camera.Connection, stopping chan interface{}) {
+				reachedShutdownCase := false
 				for {
-					time.Sleep(1 * time.Second)
+					time.Sleep(1 * time.Microsecond)
 					select {
 					case <-cancel.Done():
-						close(stopping)
+						if !reachedShutdownCase {
+							reachedShutdownCase = true
+							close(stopping)
+						}
 					default:
-						log.Info("Still streaming")
+						log.Info("Reading frame from vid stream for camera [%s]", cam.Title())
+						frames <- cam.Read()
 					}
 				}
-			}(cancel, stopping)
-			return stopping
-		},
+			}(cancel, cam, stopping)
+			stopSignals = append(stopSignals, stopping)
+		}
+		return stopSignals
+	}
+}
+
+func generateClipsProcess(frames chan video.Frame) func(cancel context.Context) []chan interface{} {
+	return func(cancel context.Context) []chan interface{} {
+		var stopSignals []chan interface{}
+		stopping := make(chan interface{})
+		go func(frames chan video.Frame, stopping chan interface{}) {
+
+		}(frames, stopping)
+		stopSignals = append(stopSignals, stopping)
+		return stopSignals
+	}
+}
+
+func (s *server) RunProcesses() {
+	frames := make(chan video.Frame)
+
+	streamProcessSettings := process.Settings{
+		WaitForShutdownMsg: "Stopping stream process",
+		Process:            streamProcess(s, frames),
+	}
+
+	generateClipsFromFramesProcessSettings := process.Settings{
+		WaitForShutdownMsg: "Stopping building clips from vid stream",
+		Process:            generateClipsProcess(frames),
 	}
 
 	s.processes = append(s.processes, process.New(streamProcessSettings))
+	s.processes = append(s.processes, process.New(generateClipsFromFramesProcessSettings))
 
 	for _, proc := range s.processes {
 		proc.Start()
