@@ -58,9 +58,12 @@ func generateClipsProcess(frames chan video.Frame) func(cancel context.Context) 
 					close(stopping)
 					break procLoop
 				default:
-					log.Debug("Reading frame from channel")
-					f := <-frames
-					f.Close()
+					select {
+					case f := <-frames:
+						log.Debug("Reading frame from channel")
+						f.Close()
+					default:
+					}
 				}
 			}
 		}(frames, stopping)
