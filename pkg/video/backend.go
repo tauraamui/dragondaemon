@@ -10,5 +10,5 @@ type Backend interface {
 }
 
 func DefaultBackend() Backend {
-	return openCVBackend{}
+	return &openCVBackend{}
 }
