@@ -3,6 +3,7 @@ package dragon
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/camera"
@@ -99,13 +100,23 @@ func (s *server) RunProcesses() {
 }
 
 func (s *server) shutdownProcesses() {
+	wg := sync.WaitGroup{}
+	wg.Add(len(s.generateClipProcesses))
+	wg.Add(len(s.streamProcesses))
+
 	for _, proc := range s.generateClipProcesses {
 		proc.Stop()
-		proc.Wait()
+		go func(wg *sync.WaitGroup, proc process.Processable) {
+			defer wg.Done()
+			proc.Wait()
+		}(&wg, proc)
 	}
 
 	for _, proc := range s.streamProcesses {
 		proc.Stop()
-		proc.Wait()
+		go func(wg *sync.WaitGroup, proc process.Processable) {
+			defer wg.Done()
+			proc.Wait()
+		}(&wg, proc)
 	}
 }
