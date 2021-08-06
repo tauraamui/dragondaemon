@@ -66,6 +66,10 @@ func (tvc testVideoConnection) Read(frame video.Frame) error {
 	return nil
 }
 
+func (tvc testVideoConnection) IsOpen() bool {
+	return true
+}
+
 func (tvc testVideoConnection) Close() error {
 	return nil
 }
