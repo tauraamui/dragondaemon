@@ -2,6 +2,7 @@ package dragon
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/camera"
@@ -10,37 +11,35 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
-func streamProcess(s *server, frames chan video.Frame) func(cancel context.Context) []chan interface{} {
+func streamProcess(cam camera.Connection, frames chan video.Frame) func(cancel context.Context) []chan interface{} {
 	return func(cancel context.Context) []chan interface{} {
 		var stopSignals []chan interface{}
-		for _, cam := range s.cameras {
-			log.Info("Streaming video from camera [%s]", cam.Title())
-			stopping := make(chan interface{})
-			go func(cancel context.Context, cam camera.Connection, stopping chan interface{}) {
-			procLoop:
-				for {
-					time.Sleep(1 * time.Microsecond)
-					select {
-					case <-cancel.Done():
-						close(stopping)
-						break procLoop
-					default:
-						if cam.IsOpen() {
-							log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
-							frame := cam.Read()
-							select {
-							case frames <- frame:
-								log.Debug("Sending frame from cam to buffer...")
-							default:
-								frame.Close()
-								log.Debug("Buffer full...")
-							}
+		log.Info("Streaming video from camera [%s]", cam.Title())
+		stopping := make(chan interface{})
+		go func(cancel context.Context, cam camera.Connection, stopping chan interface{}) {
+		procLoop:
+			for {
+				time.Sleep(1 * time.Microsecond)
+				select {
+				case <-cancel.Done():
+					close(stopping)
+					break procLoop
+				default:
+					if cam.IsOpen() {
+						log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
+						frame := cam.Read()
+						select {
+						case frames <- frame:
+							log.Debug("Sending frame from cam to buffer...")
+						default:
+							frame.Close()
+							log.Debug("Buffer full...")
 						}
 					}
 				}
-			}(cancel, cam, stopping)
-			stopSignals = append(stopSignals, stopping)
-		}
+			}
+		}(cancel, cam, stopping)
+		stopSignals = append(stopSignals, stopping)
 		return stopSignals
 	}
 }
@@ -73,28 +72,39 @@ func generateClipsProcess(frames chan video.Frame) func(cancel context.Context) 
 }
 
 func (s *server) RunProcesses() {
-	frames := make(chan video.Frame)
+	s.generateClipProcesses = map[string]process.Processable{}
+	s.streamProcesses = map[string]process.Processable{}
+	for _, cam := range s.cameras {
+		frames := make(chan video.Frame)
+		streamProcess := process.Settings{
+			WaitForShutdownMsg: fmt.Sprintf("Closing camera [%s] video stream...", cam.Title()),
+			Process:            streamProcess(cam, frames),
+		}
+		s.streamProcesses[cam.Title()] = process.New(streamProcess)
 
-	streamProcess := process.Settings{
-		WaitForShutdownMsg: "Closing camera video streams...",
-		Process:            streamProcess(s, frames),
+		generateClipsFromFramesProcess := process.Settings{
+			WaitForShutdownMsg: fmt.Sprintf("Stopping generating clips from [%s] video stream...", cam.Title()),
+			Process:            generateClipsProcess(frames),
+		}
+		s.generateClipProcesses[cam.Title()] = process.New(generateClipsFromFramesProcess)
 	}
 
-	generateClipsFromFramesProcess := process.Settings{
-		WaitForShutdownMsg: "",
-		Process:            generateClipsProcess(frames),
+	for _, proc := range s.generateClipProcesses {
+		proc.Start()
 	}
 
-	s.processes = append(s.processes, process.New(generateClipsFromFramesProcess))
-	s.processes = append(s.processes, process.New(streamProcess))
-
-	for _, proc := range s.processes {
+	for _, proc := range s.streamProcesses {
 		proc.Start()
 	}
 }
 
 func (s *server) shutdownProcesses() {
-	for _, proc := range s.processes {
+	for _, proc := range s.generateClipProcesses {
+		proc.Stop()
+		proc.Wait()
+	}
+
+	for _, proc := range s.streamProcesses {
 		proc.Stop()
 		proc.Wait()
 	}

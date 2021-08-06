@@ -25,13 +25,14 @@ func NewServer(cr config.Resolver, vb video.Backend) Server {
 }
 
 type server struct {
-	configResolver config.Resolver
-	videoBackend   video.Backend
-	shutdownDone   chan interface{}
-	config         configdef.Values
-	mu             sync.Mutex
-	processes      []process.Processable
-	cameras        []camera.Connection
+	configResolver        config.Resolver
+	videoBackend          video.Backend
+	shutdownDone          chan interface{}
+	config                configdef.Values
+	mu                    sync.Mutex
+	streamProcesses       map[string]process.Processable
+	generateClipProcesses map[string]process.Processable
+	cameras               []camera.Connection
 }
 
 func (s *server) Connect() []error {

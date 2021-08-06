@@ -50,7 +50,9 @@ func (p *process) Start() {
 
 func (p *process) Stop() {
 	p.logShutdown()
-	p.canceller()
+	if p.canceller != nil {
+		p.canceller()
+	}
 }
 
 func (p *process) Wait() {
