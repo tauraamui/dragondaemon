@@ -8,7 +8,7 @@ import (
 )
 
 type Connection interface {
-	Read()
+	Read() video.Frame
 	Title() string
 	Close()
 }
@@ -21,12 +21,13 @@ type connection struct {
 	f       video.Frame
 }
 
-func (c *connection) Read() {
+func (c *connection) Read() video.Frame {
 	if c.f != nil {
 		c.f.Close()
 	}
 	c.f = c.backend.NewFrame()
 	c.vc.Read(c.f)
+	return c.f
 }
 
 func (c *connection) Title() string {
