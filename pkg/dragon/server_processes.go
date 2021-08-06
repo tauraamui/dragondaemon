@@ -14,6 +14,7 @@ func streamProcess(s *server, frames chan video.Frame) func(cancel context.Conte
 	return func(cancel context.Context) []chan interface{} {
 		var stopSignals []chan interface{}
 		for _, cam := range s.cameras {
+			log.Info("Streaming video from camera [%s]", cam.Title())
 			stopping := make(chan interface{})
 			go func(cancel context.Context, cam camera.Connection, stopping chan interface{}) {
 			procLoop:
@@ -24,7 +25,7 @@ func streamProcess(s *server, frames chan video.Frame) func(cancel context.Conte
 						close(stopping)
 						break procLoop
 					default:
-						log.Info("Reading frame from vid stream for camera [%s]", cam.Title())
+						log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
 						frame := cam.Read()
 						select {
 						case frames <- frame:
@@ -55,7 +56,7 @@ func generateClipsProcess(frames chan video.Frame) func(cancel context.Context) 
 					close(stopping)
 					break procLoop
 				default:
-					log.Info("Reading frame from channel")
+					log.Debug("Reading frame from channel")
 					f := <-frames
 					f.Close()
 				}
