@@ -167,17 +167,13 @@ func generateClipsProcess(frames chan video.Frame) func(cancel context.Context) 
 		var stopSignals []chan interface{}
 		stopping := make(chan interface{})
 		go func(frames chan video.Frame, stopping chan interface{}) {
-			reachedShutdownCase := false
 		procLoop:
 			for {
 				time.Sleep(1 * time.Microsecond)
 				select {
 				case <-cancel.Done():
-					if !reachedShutdownCase {
-						reachedShutdownCase = true
-						close(stopping)
-						break procLoop
-					}
+					close(stopping)
+					break procLoop
 				default:
 					log.Info("Reading frame from channel")
 					f := <-frames
@@ -198,13 +194,13 @@ func (s *server) RunProcesses() {
 		Process:            streamProcess(s, frames),
 	}
 
-	// generateClipsFromFramesProcessSettings := process.Settings{
-	// 	WaitForShutdownMsg: "Stopping building clips from vid stream",
-	// 	Process:            generateClipsProcess(frames),
-	// }
+	generateClipsFromFramesProcessSettings := process.Settings{
+		WaitForShutdownMsg: "Stopping building clips from vid stream",
+		Process:            generateClipsProcess(frames),
+	}
 
+	s.processes = append(s.processes, process.New(generateClipsFromFramesProcessSettings))
 	s.processes = append(s.processes, process.New(streamProcessSettings))
-	// s.processes = append(s.processes, process.New(generateClipsFromFramesProcessSettings))
 
 	for _, proc := range s.processes {
 		proc.Start()
