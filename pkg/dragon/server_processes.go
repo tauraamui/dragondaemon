@@ -69,18 +69,18 @@ func generateClipsProcess(frames chan video.Frame) func(cancel context.Context) 
 func (s *server) RunProcesses() {
 	frames := make(chan video.Frame)
 
-	streamProcessSettings := process.Settings{
+	streamProcess := process.Settings{
 		WaitForShutdownMsg: "Stopping stream process",
 		Process:            streamProcess(s, frames),
 	}
 
-	generateClipsFromFramesProcessSettings := process.Settings{
+	generateClipsFromFramesProcess := process.Settings{
 		WaitForShutdownMsg: "Stopping building clips from vid stream",
 		Process:            generateClipsProcess(frames),
 	}
 
-	s.processes = append(s.processes, process.New(generateClipsFromFramesProcessSettings))
-	s.processes = append(s.processes, process.New(streamProcessSettings))
+	s.processes = append(s.processes, process.New(generateClipsFromFramesProcess))
+	s.processes = append(s.processes, process.New(streamProcess))
 
 	for _, proc := range s.processes {
 		proc.Start()
