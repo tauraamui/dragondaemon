@@ -8,6 +8,7 @@ import (
 	"github.com/tauraamui/dragondaemon/internal/videotest"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
+	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
 func TestServerRunProcesses(t *testing.T) {
@@ -18,10 +19,14 @@ func TestServerRunProcesses(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{
 		resolveConfigs: func() configdef.Values {
 			return configdef.Values{
-				Cameras: []configdef.Camera{},
+				Cameras: []configdef.Camera{
+					{Title: "TestConn", Address: mp4FilePath},
+				},
 			}
 		},
-	}, testVideoBackend{})
+	}, video.DefaultBackend())
+	require.NoError(t, s.LoadConfiguration())
+	require.Len(t, s.Connect(), 0)
 	s.RunProcesses()
 	<-s.Shutdown()
 }
