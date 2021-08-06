@@ -7,7 +7,6 @@ import (
 )
 
 type Processable interface {
-	DefineProcess(func(context.Context) []chan interface{})
 	Start()
 	Stop()
 	Wait()
@@ -36,10 +35,6 @@ func (p *process) logShutdown() {
 	if len(p.waitForShutdownMsg) > 0 {
 		log.Info(p.waitForShutdownMsg)
 	}
-}
-
-func (p *process) DefineProcess(process func(context.Context) []chan interface{}) {
-	p.process = process
 }
 
 func (p *process) Start() {
