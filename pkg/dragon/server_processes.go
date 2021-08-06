@@ -71,12 +71,12 @@ func (s *server) RunProcesses() {
 	frames := make(chan video.Frame)
 
 	streamProcess := process.Settings{
-		WaitForShutdownMsg: "Stopping stream process",
+		WaitForShutdownMsg: "Closing camera video streams...",
 		Process:            streamProcess(s, frames),
 	}
 
 	generateClipsFromFramesProcess := process.Settings{
-		WaitForShutdownMsg: "Stopping building clips from vid stream",
+		WaitForShutdownMsg: "",
 		Process:            generateClipsProcess(frames),
 	}
 

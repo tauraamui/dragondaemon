@@ -33,7 +33,9 @@ type process struct {
 }
 
 func (p *process) logShutdown() {
-	log.Info(p.waitForShutdownMsg)
+	if len(p.waitForShutdownMsg) > 0 {
+		log.Info(p.waitForShutdownMsg)
+	}
 }
 
 func (p *process) DefineProcess(process func(context.Context) []chan interface{}) {
