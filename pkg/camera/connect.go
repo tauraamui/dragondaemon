@@ -10,7 +10,7 @@ import (
 type Connection interface {
 	Read() video.Frame
 	Title() string
-	Close()
+	Close() error
 }
 
 type connection struct {
@@ -18,26 +18,20 @@ type connection struct {
 	title   string
 	sett    Settings
 	vc      video.Connection
-	f       video.Frame
 }
 
 func (c *connection) Read() video.Frame {
-	if c.f != nil {
-		c.f.Close()
-	}
-	c.f = c.backend.NewFrame()
-	c.vc.Read(c.f)
-	return c.f
+	frame := c.backend.NewFrame()
+	c.vc.Read(frame)
+	return frame
 }
 
 func (c *connection) Title() string {
 	return c.title
 }
 
-func (c *connection) Close() {
-	if c.f != nil {
-		c.f.Close()
-	}
+func (c *connection) Close() error {
+	return c.vc.Close()
 }
 
 func connect(ctx context.Context, title, addr string, settings Settings, backend video.Backend) (Connection, error) {
@@ -47,7 +41,6 @@ func connect(ctx context.Context, title, addr string, settings Settings, backend
 	}
 	return &connection{
 		backend: backend,
-		f:       backend.NewFrame(),
 		title:   title,
 		vc:      vc,
 		sett:    settings,
