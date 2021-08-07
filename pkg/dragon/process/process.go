@@ -7,6 +7,7 @@ import (
 )
 
 type Process interface {
+	Setup()
 	Start()
 	Stop()
 	Wait()
@@ -36,6 +37,8 @@ func (p *process) logShutdown() {
 		log.Info(p.waitForShutdownMsg)
 	}
 }
+
+func (p *process) Setup() {}
 
 func (p *process) Start() {
 	ctx, canceller := context.WithCancel(context.Background())

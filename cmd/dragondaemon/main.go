@@ -209,6 +209,7 @@ func (service *Service) Manage() (string, error) {
 
 func startupServer(ctx context.Context, server dragon.Server) {
 	connectToCameras(ctx, server)
+	server.SetupProcesses()
 	server.RunProcesses()
 }
 
