@@ -6,7 +6,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
-type Processable interface {
+type Process interface {
 	Start()
 	Stop()
 	Wait()
@@ -17,7 +17,7 @@ type Settings struct {
 	Process            func(context.Context) []chan interface{}
 }
 
-func New(settings Settings) Processable {
+func New(settings Settings) Process {
 	return &process{
 		waitForShutdownMsg: settings.WaitForShutdownMsg,
 		process:            settings.Process,

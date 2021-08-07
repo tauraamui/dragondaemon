@@ -34,8 +34,8 @@ type server struct {
 	shutdownDone          chan interface{}
 	config                configdef.Values
 	mu                    sync.Mutex
-	streamProcesses       map[string]process.Processable
-	generateClipProcesses map[string]process.Processable
+	streamProcesses       map[string]process.Process
+	generateClipProcesses map[string]process.Process
 	cameras               []camera.Connection
 }
 

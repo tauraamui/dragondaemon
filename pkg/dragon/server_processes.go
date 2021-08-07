@@ -9,8 +9,8 @@ import (
 )
 
 func (s *server) RunProcesses() {
-	s.generateClipProcesses = map[string]process.Processable{}
-	s.streamProcesses = map[string]process.Processable{}
+	s.generateClipProcesses = map[string]process.Process{}
+	s.streamProcesses = map[string]process.Process{}
 	for _, cam := range s.cameras {
 		frames := make(chan video.Frame)
 		streamProcess := process.Settings{
@@ -42,7 +42,7 @@ func (s *server) shutdownProcesses() {
 
 	for _, proc := range s.generateClipProcesses {
 		proc.Stop()
-		go func(wg *sync.WaitGroup, proc process.Processable) {
+		go func(wg *sync.WaitGroup, proc process.Process) {
 			defer wg.Done()
 			proc.Wait()
 		}(&wg, proc)
@@ -50,7 +50,7 @@ func (s *server) shutdownProcesses() {
 
 	for _, proc := range s.streamProcesses {
 		proc.Stop()
-		go func(wg *sync.WaitGroup, proc process.Processable) {
+		go func(wg *sync.WaitGroup, proc process.Process) {
 			defer wg.Done()
 			proc.Wait()
 		}(&wg, proc)
