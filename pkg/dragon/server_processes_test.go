@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,9 @@ func (suite *ServerProcessTestSuite) SetupSuite() {
 }
 
 func (suite *ServerProcessTestSuite) TearDownSuite() {
-	require.NoError(suite.T(), os.Remove(suite.mp4FilePath))
+	if assert.FileExists(suite.T(), suite.mp4FilePath) {
+		require.NoError(suite.T(), os.Remove(suite.mp4FilePath))
+	}
 }
 
 func (suite *ServerProcessTestSuite) SetupTest() {
@@ -60,6 +63,7 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	require.NoError(suite.T(), suite.server.LoadConfiguration())
 	require.Len(suite.T(), suite.server.Connect(), 0)
 	suite.server.RunProcesses()
+	time.Sleep(1 * time.Second)
 	<-suite.server.Shutdown()
 	assert.Equal(suite.T(), []string{
 		"Connecting to camera: [TestConn]...",
