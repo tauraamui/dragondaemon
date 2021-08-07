@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
-	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -72,12 +71,6 @@ func (tvc testVideoConnection) IsOpen() bool {
 
 func (tvc testVideoConnection) Close() error {
 	return nil
-}
-
-func overloadWarnLog(overload func(string, ...interface{})) func() {
-	logWarnRef := log.Warn
-	log.Warn = overload
-	return func() { log.Warn = logWarnRef }
 }
 
 func TestNewServer(t *testing.T) {

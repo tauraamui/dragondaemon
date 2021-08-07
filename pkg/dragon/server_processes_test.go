@@ -1,9 +1,11 @@
 package dragon_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tauraamui/dragondaemon/internal/videotest"
@@ -14,8 +16,10 @@ import (
 
 type ServerProcessTestSuite struct {
 	suite.Suite
-	mp4FilePath string
-	server      dragon.Server
+	mp4FilePath           string
+	server                dragon.Server
+	infoLogs              []string
+	resetInfoLogsOverload func()
 }
 
 func (suite *ServerProcessTestSuite) SetupSuite() {
@@ -24,7 +28,7 @@ func (suite *ServerProcessTestSuite) SetupSuite() {
 	suite.mp4FilePath = mp4FilePath
 }
 
-func (suite *ServerProcessTestSuite) TeardownSuite() {
+func (suite *ServerProcessTestSuite) TearDownSuite() {
 	require.NoError(suite.T(), os.Remove(suite.mp4FilePath))
 }
 
@@ -38,6 +42,18 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 			}
 		},
 	}, video.DefaultBackend())
+
+	suite.infoLogs = []string{}
+	resetLogInfo := overloadInfoLog(
+		func(format string, a ...interface{}) {
+			suite.infoLogs = append(suite.infoLogs, fmt.Sprintf(format, a...))
+		},
+	)
+	suite.resetInfoLogsOverload = resetLogInfo
+}
+
+func (suite *ServerProcessTestSuite) TearDownTest() {
+	suite.resetInfoLogsOverload()
 }
 
 func (suite *ServerProcessTestSuite) TestRunProcesses() {
@@ -45,6 +61,7 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	require.Len(suite.T(), suite.server.Connect(), 0)
 	suite.server.RunProcesses()
 	<-suite.server.Shutdown()
+	assert.Equal(suite.T(), []string{}, suite.infoLogs)
 }
 
 func TestServerProcessTestSuite(t *testing.T) {
