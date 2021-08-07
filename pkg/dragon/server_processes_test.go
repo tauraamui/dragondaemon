@@ -62,6 +62,7 @@ func (suite *ServerProcessTestSuite) TearDownTest() {
 func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	require.NoError(suite.T(), suite.server.LoadConfiguration())
 	require.Len(suite.T(), suite.server.Connect(), 0)
+	suite.server.SetupProcesses()
 	suite.server.RunProcesses()
 	time.Sleep(1 * time.Second)
 	<-suite.server.Shutdown()
