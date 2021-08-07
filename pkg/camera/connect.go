@@ -3,6 +3,7 @@ package camera
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -13,15 +14,18 @@ type Connection interface {
 	Read() video.Frame
 	Title() string
 	IsOpen() bool
+	IsClosing() bool
 	Close() error
 }
 
 type connection struct {
-	uuid    string
-	backend video.Backend
-	title   string
-	sett    Settings
-	vc      video.Connection
+	uuid      string
+	backend   video.Backend
+	title     string
+	sett      Settings
+	mu        sync.Mutex
+	isClosing bool
+	vc        video.Connection
 }
 
 func (c *connection) UUID() string {
@@ -29,6 +33,8 @@ func (c *connection) UUID() string {
 }
 
 func (c *connection) Read() video.Frame {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	frame := c.backend.NewFrame()
 	c.vc.Read(frame)
 	return frame
@@ -39,10 +45,21 @@ func (c *connection) Title() string {
 }
 
 func (c *connection) IsOpen() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.vc.IsOpen()
 }
 
+func (c *connection) IsClosing() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.isClosing
+}
+
 func (c *connection) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.isClosing = true
 	return c.vc.Close()
 }
 
