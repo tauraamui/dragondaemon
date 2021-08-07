@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
 type Connection interface {
+	UUID() string
 	Read() video.Frame
 	Title() string
 	IsOpen() bool
@@ -15,10 +17,15 @@ type Connection interface {
 }
 
 type connection struct {
+	uuid    string
 	backend video.Backend
 	title   string
 	sett    Settings
 	vc      video.Connection
+}
+
+func (c *connection) UUID() string {
+	return c.uuid
 }
 
 func (c *connection) Read() video.Frame {
@@ -45,6 +52,7 @@ func connect(ctx context.Context, title, addr string, settings Settings, backend
 		return nil, fmt.Errorf("Unable to connect to camera [%s]: %w", title, err)
 	}
 	return &connection{
+		uuid:    uuid.NewString(),
 		backend: backend,
 		title:   title,
 		vc:      vc,
