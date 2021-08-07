@@ -79,7 +79,10 @@ var openVideoCapture = func(addr string) (*gocv.VideoCapture, error) {
 }
 
 var readFromVideoConnection = func(vc *gocv.VideoCapture, mat *gocv.Mat) bool {
-	return vc.Read(mat)
+	if vc.IsOpened() {
+		return vc.Read(mat)
+	}
+	return false
 }
 
 func (c *openCVConnection) Read(frame Frame) error {
