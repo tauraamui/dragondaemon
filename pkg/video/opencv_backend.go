@@ -42,7 +42,6 @@ func (b *openCVBackend) NewFrame() Frame {
 }
 
 type openCVConnection struct {
-	// will eventually hide this behind an interface
 	mu     sync.Mutex
 	isOpen bool
 	vc     *gocv.VideoCapture
@@ -57,6 +56,7 @@ func (c *openCVConnection) connect(cancel context.Context, addr string) error {
 			return r.err
 		}
 		c.vc = r.vc
+		c.isOpen = true
 		return nil
 	case <-cancel.Done():
 		return errors.New("connection cancelled")
@@ -87,6 +87,8 @@ func (c *openCVConnection) Read(frame Frame) error {
 	if !ok {
 		return errors.New("must pass OpenCV frame to OpenCV connection read")
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	ok = readFromVideoConnection(c.vc, mat)
 	if !ok {
 		return errors.New("unable to read from video connection")
