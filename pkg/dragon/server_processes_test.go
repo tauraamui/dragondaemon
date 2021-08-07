@@ -61,7 +61,13 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	require.Len(suite.T(), suite.server.Connect(), 0)
 	suite.server.RunProcesses()
 	<-suite.server.Shutdown()
-	assert.Equal(suite.T(), []string{}, suite.infoLogs)
+	assert.Equal(suite.T(), []string{
+		"Connecting to camera: [TestConn]...",
+		"Connected successfully to camera: [TestConn]",
+		"Streaming video from camera [TestConn]",
+		"Stopping generating clips from [TestConn] video stream...",
+		"Closing camera [TestConn] video stream...",
+	}, suite.infoLogs)
 }
 
 func TestServerProcessTestSuite(t *testing.T) {
