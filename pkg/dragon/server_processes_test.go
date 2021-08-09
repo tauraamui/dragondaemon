@@ -30,9 +30,11 @@ func (suite *ServerProcessTestSuite) SetupSuite() {
 }
 
 func (suite *ServerProcessTestSuite) TearDownSuite() {
-	if assert.FileExists(suite.T(), suite.mp4FilePath) {
-		require.NoError(suite.T(), os.Remove(suite.mp4FilePath))
+	file, err := os.Open(suite.mp4FilePath)
+	if err == nil {
+		os.Remove(file.Name())
 	}
+	file.Close()
 }
 
 func (suite *ServerProcessTestSuite) SetupTest() {
@@ -78,23 +80,3 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 func TestServerProcessTestSuite(t *testing.T) {
 	suite.Run(t, &ServerProcessTestSuite{})
 }
-
-// func TestServerRunProcesses(t *testing.T) {
-// 	mp4FilePath, err := videotest.RestoreMp4File()
-// 	require.NoError(t, err)
-// 	defer func() { os.Remove(mp4FilePath) }()
-
-// 	s := dragon.NewServer(testConfigResolver{
-// 		resolveConfigs: func() configdef.Values {
-// 			return configdef.Values{
-// 				Cameras: []configdef.Camera{
-// 					{Title: "TestConn", Address: mp4FilePath},
-// 				},
-// 			}
-// 		},
-// 	}, video.DefaultBackend())
-// 	require.NoError(t, s.LoadConfiguration())
-// 	require.Len(t, s.Connect(), 0)
-// 	s.RunProcesses()
-// 	<-s.Shutdown()
-// }

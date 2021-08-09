@@ -23,22 +23,26 @@ func StreamProcess(cam camera.Connection, frames chan video.Frame) func(cancel c
 					close(stopping)
 					break procLoop
 				default:
-					if cam.IsOpen() {
-						log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
-						frame := cam.Read()
-						select {
-						case frames <- frame:
-							log.Debug("Sending frame from cam to buffer...")
-						default:
-							frame.Close()
-							log.Debug("Buffer full...")
-						}
-					}
+					stream(cam, frames)
 				}
 			}
 		}(cancel, cam, stopping)
 		stopSignals = append(stopSignals, stopping)
 		return stopSignals
+	}
+}
+
+func stream(cam camera.Connection, frames chan video.Frame) {
+	if cam.IsOpen() {
+		log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
+		frame := cam.Read()
+		select {
+		case frames <- frame:
+			log.Debug("Sending frame from cam to buffer...")
+		default:
+			frame.Close()
+			log.Debug("Buffer full...")
+		}
 	}
 }
 
