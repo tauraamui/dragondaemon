@@ -18,6 +18,12 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
+func overloadInfoLog(overload func(string, ...interface{})) func() {
+	logInfoRef := log.Debug
+	log.Info = overload
+	return func() { log.Info = logInfoRef }
+}
+
 func overloadDebugLog(overload func(string, ...interface{})) func() {
 	logDebugRef := log.Debug
 	log.Debug = overload
@@ -29,6 +35,8 @@ type StreamAndPersistProcessesTestSuite struct {
 	mp4FilePath            string
 	backend                video.Backend
 	conn                   camera.Connection
+	infoLogs               []string
+	resetInfoLogsOverload  func()
 	debugLogs              []string
 	resetDebugLogsOverload func()
 }
@@ -56,6 +64,14 @@ func (suite *StreamAndPersistProcessesTestSuite) TearDownSuite() {
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) SetupTest() {
+	suite.infoLogs = []string{}
+	resetLogInfo := overloadInfoLog(
+		func(format string, a ...interface{}) {
+			suite.infoLogs = append(suite.infoLogs, fmt.Sprintf(format, a...))
+		},
+	)
+	suite.resetInfoLogsOverload = resetLogInfo
+
 	suite.debugLogs = []string{}
 	resetLogDebug := overloadDebugLog(
 		func(format string, a ...interface{}) {
@@ -66,6 +82,7 @@ func (suite *StreamAndPersistProcessesTestSuite) SetupTest() {
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) TearDownTest() {
+	suite.resetInfoLogsOverload()
 	suite.resetDebugLogsOverload()
 }
 
@@ -76,10 +93,18 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	runStreamProcess(ctx)
 	time.Sleep(5 * time.Millisecond)
 	cancel()
+	assert.Contains(suite.T(), suite.infoLogs,
+		"Streaming video from camera [TestConn]",
+	)
 	assert.Contains(suite.T(), suite.debugLogs,
 		"Reading frame from vid stream for camera [TestConn]",
 		"Buffer full...",
 	)
+}
+
+func (suite *StreamAndPersistProcessesTestSuite) TestStream() {
+	frames := make(chan video.Frame)
+	process.Stream(suite.conn, frames)
 }
 
 func TestStreamAndPersistProcessTestSuite(t *testing.T) {
