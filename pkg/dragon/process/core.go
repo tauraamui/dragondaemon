@@ -22,9 +22,16 @@ type persistCameraToDisk struct {
 	clips         chan video.Clip
 	streamProcess Process
 	generateClips Process
+	writeClips    Process
 }
 
 func (proc *persistCameraToDisk) Setup() {
+	writeClipsToDiskProcess := Settings{
+		WaitForShutdownMsg: fmt.Sprintf("Stopping writing clips to disk from [%s] video stream...", proc.cam.Title()),
+		Process:            WriteClipsToDiskProcess(proc.clips),
+	}
+	proc.writeClips = New(writeClipsToDiskProcess)
+
 	generateClipsFromFramesProcess := Settings{
 		WaitForShutdownMsg: fmt.Sprintf("Stopping generating clips from [%s] video stream...", proc.cam.Title()),
 		Process:            GenerateClipsProcess(proc.frames, proc.clips, proc.cam.FPS(), proc.cam.SPC()),
@@ -39,18 +46,24 @@ func (proc *persistCameraToDisk) Setup() {
 }
 
 func (proc *persistCameraToDisk) Start() {
+	proc.writeClips.Start()
 	proc.generateClips.Start()
 	proc.streamProcess.Start()
 }
 
 func (proc *persistCameraToDisk) Stop() {
+	proc.writeClips.Stop()
 	proc.generateClips.Stop()
 	proc.streamProcess.Stop()
 }
 
 func (proc *persistCameraToDisk) Wait() {
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
+	go func(wg *sync.WaitGroup) {
+		proc.writeClips.Wait()
+		wg.Done()
+	}(&wg)
 	go func(wg *sync.WaitGroup) {
 		proc.generateClips.Wait()
 		wg.Done()
