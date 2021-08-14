@@ -90,7 +90,8 @@ func TestStreamAndPersistProcessTestSuite(t *testing.T) {
 	suite.Run(t, &StreamAndPersistProcessesTestSuite{})
 }
 
-func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
+// Probably replace this test with a unit test, and then a e2e test for the whole process
+func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl() {
 	frames := make(chan video.Frame)
 	runStreamProcess := process.StreamProcess(suite.conn, frames)
 	ctx, cancel := context.WithCancel(context.TODO())
