@@ -86,6 +86,10 @@ func (suite *StreamAndPersistProcessesTestSuite) TearDownTest() {
 	suite.resetDebugLogsOverload()
 }
 
+func TestStreamAndPersistProcessTestSuite(t *testing.T) {
+	suite.Run(t, &StreamAndPersistProcessesTestSuite{})
+}
+
 func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	frames := make(chan video.Frame)
 	runStreamProcess := process.StreamProcess(suite.conn, frames)
@@ -102,11 +106,6 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	)
 }
 
-func (suite *StreamAndPersistProcessesTestSuite) TestStream() {
-	frames := make(chan video.Frame)
-	process.Stream(suite.conn, frames)
-}
+func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 
-func TestStreamAndPersistProcessTestSuite(t *testing.T) {
-	suite.Run(t, &StreamAndPersistProcessesTestSuite{})
 }

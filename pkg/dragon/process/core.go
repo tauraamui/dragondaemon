@@ -12,12 +12,14 @@ func NewCoreProcess(cam camera.Connection) Process {
 	return &persistCameraToDisk{
 		cam:    cam,
 		frames: make(chan video.Frame),
+		clips:  make(chan video.Clip),
 	}
 }
 
 type persistCameraToDisk struct {
 	cam           camera.Connection
 	frames        chan video.Frame
+	clips         chan video.Clip
 	streamProcess Process
 	generateClips Process
 }
@@ -25,7 +27,7 @@ type persistCameraToDisk struct {
 func (proc *persistCameraToDisk) Setup() {
 	generateClipsFromFramesProcess := Settings{
 		WaitForShutdownMsg: fmt.Sprintf("Stopping generating clips from [%s] video stream...", proc.cam.Title()),
-		Process:            GenerateClipsProcess(proc.frames),
+		Process:            GenerateClipsProcess(proc.frames, proc.clips, proc.cam.FPS(), proc.cam.SPC()),
 	}
 	proc.generateClips = New(generateClipsFromFramesProcess)
 

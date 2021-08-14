@@ -11,8 +11,10 @@ import (
 
 type Connection interface {
 	UUID() string
-	Read() video.Frame
 	Title() string
+	FPS() int
+	SPC() int
+	Read() video.Frame
 	IsOpen() bool
 	IsClosing() bool
 	Close() error
@@ -42,6 +44,14 @@ func (c *connection) Read() video.Frame {
 
 func (c *connection) Title() string {
 	return c.title
+}
+
+func (c *connection) FPS() int {
+	return c.sett.FPS
+}
+
+func (c *connection) SPC() int {
+	return c.sett.SecondsPerClip
 }
 
 func (c *connection) IsOpen() bool {
