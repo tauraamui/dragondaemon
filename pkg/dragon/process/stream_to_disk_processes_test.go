@@ -1,4 +1,4 @@
-package process_test
+package process
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/internal/videotest"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
-	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -93,7 +92,7 @@ func TestStreamAndPersistProcessTestSuite(t *testing.T) {
 // Probably replace this test with a unit test, and then a e2e test for the whole process
 func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl() {
 	frames := make(chan video.Frame)
-	runStreamProcess := process.StreamProcess(suite.conn, frames)
+	runStreamProcess := StreamProcess(suite.conn, frames)
 	ctx, cancel := context.WithCancel(context.TODO())
 	runStreamProcess(ctx)
 	time.Sleep(5 * time.Millisecond)
