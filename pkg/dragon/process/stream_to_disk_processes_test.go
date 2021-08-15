@@ -117,10 +117,10 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	assert.Equal(suite.T(), expectedClipCount, count)
 }
 
-func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessUnevenFrameCount() {
+func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessExtraFrames() {
 	const FPS = 30
 	const SPC = 2
-	const expectedClipCount = 7
+	const expectedClipCount = 6
 
 	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
 		for i := 0; i < ((fps*spc)*expectedCount)+12; i++ {
@@ -131,7 +131,24 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessUnevenF
 
 	count := countClipsCreatedByGenerateProc(FPS, SPC, expectedClipCount, frames)
 
-	assert.Equal(suite.T(), expectedClipCount, count)
+	assert.Equal(suite.T(), expectedClipCount+1, count)
+}
+
+func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessMissingFrames() {
+	const FPS = 30
+	const SPC = 2
+	const expectedClipCount = 6
+
+	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
+		for i := 0; i < ((fps*spc)*expectedCount)-75; i++ {
+			frames <- backend.NewFrame()
+		}
+		close(done)
+	}
+
+	count := countClipsCreatedByGenerateProc(FPS, SPC, expectedClipCount, frames)
+
+	assert.Equal(suite.T(), expectedClipCount-1, count)
 }
 
 func defaultFrames(

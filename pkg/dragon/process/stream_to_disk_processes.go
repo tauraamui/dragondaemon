@@ -71,14 +71,21 @@ func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps in
 
 func generateClipFromStream(cancel context.Context, frames chan video.Frame, fps, spc int) video.Clip {
 	clip := video.NewClip()
+
+	var capturedFrames int
 procLoop:
-	for framesRead := 0; framesRead < fps*spc; framesRead++ {
+	for capturedFrames < fps*spc {
 		select {
 		case <-cancel.Done():
 			break procLoop
 		default:
-			frame := <-frames
-			clip.AppendFrame(frame)
+			select {
+			case frame := <-frames:
+				clip.AppendFrame(frame)
+				capturedFrames++
+			default:
+				continue
+			}
 		}
 	}
 	return clip
