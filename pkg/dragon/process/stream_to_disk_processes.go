@@ -92,7 +92,6 @@ procLoop:
 				clip.AppendFrame(frame)
 				capturedFrames++
 			default:
-				time.Sleep(1 * time.Microsecond)
 				continue
 			}
 		}
