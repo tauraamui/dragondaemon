@@ -69,7 +69,7 @@ func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps in
 	}
 }
 
-var generateClipFromStream = func(frames chan video.Frame, fps, spc int) video.Clip {
+func generateClipFromStream(frames chan video.Frame, fps, spc int) video.Clip {
 	clip := video.NewClip()
 	for framesRead := 0; framesRead < fps*spc; framesRead++ {
 		frame := <-frames
