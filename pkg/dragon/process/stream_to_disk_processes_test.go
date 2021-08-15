@@ -111,13 +111,20 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	const FPS = 30
 	const SPC = 2
 	const expectedClipCount = 6
+
+	count := countClipsCreatedByGenerateProc(FPS, SPC, expectedClipCount)
+
+	assert.Equal(suite.T(), expectedClipCount, count)
+}
+
+func countClipsCreatedByGenerateProc(fps, spc, expectedCount int) int {
 	var backend = video.DefaultBackend()
 
 	frames := make(chan video.Frame)
 
 	doneCreatingFrames := make(chan interface{})
 	go func(frames chan video.Frame, done chan interface{}) {
-		for i := 0; i < (FPS*SPC)*expectedClipCount; i++ {
+		for i := 0; i < (fps*spc)*expectedCount; i++ {
 			frames <- backend.NewFrame()
 		}
 		close(done)
@@ -144,7 +151,7 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	}(&wg, &count, clips, countingCtx)
 
 	procCtx, cancelProc := context.WithCancel(context.TODO())
-	proc := GenerateClipsProcess(frames, clips, FPS, SPC)
+	proc := GenerateClipsProcess(frames, clips, fps, spc)
 	go proc(procCtx)
 
 	<-doneCreatingFrames
@@ -152,6 +159,5 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	cancelClipCount()
 
 	wg.Wait()
-
-	assert.Equal(suite.T(), expectedClipCount, count)
+	return count
 }
