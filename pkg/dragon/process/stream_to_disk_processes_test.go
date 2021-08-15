@@ -112,22 +112,50 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	const SPC = 2
 	const expectedClipCount = 6
 
-	count := countClipsCreatedByGenerateProc(FPS, SPC, expectedClipCount)
+	count := countClipsCreatedByGenerateProc(FPS, SPC, expectedClipCount, defaultFrames)
 
 	assert.Equal(suite.T(), expectedClipCount, count)
 }
 
-func countClipsCreatedByGenerateProc(fps, spc, expectedCount int) int {
+func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessUnevenFrameCount() {
+	const FPS = 30
+	const SPC = 2
+	const expectedClipCount = 6
+
+	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
+		for i := 0; i < (fps*spc)*expectedCount; i++ {
+			frames <- backend.NewFrame()
+		}
+		close(done)
+	}
+
+	count := countClipsCreatedByGenerateProc(FPS, SPC, expectedClipCount, frames)
+
+	assert.Equal(suite.T(), expectedClipCount, count)
+}
+
+func defaultFrames(
+	backend video.Backend,
+	fps, spc, expectedCount int,
+	frames chan video.Frame, done chan interface{},
+) {
+	for i := 0; i < (fps*spc)*expectedCount; i++ {
+		frames <- backend.NewFrame()
+	}
+	close(done)
+}
+
+func countClipsCreatedByGenerateProc(
+	fps, spc, expectedCount int,
+	frameMaker func(video.Backend, int, int, int, chan video.Frame, chan interface{}),
+) int {
 	var backend = video.DefaultBackend()
 
 	frames := make(chan video.Frame)
 
 	doneCreatingFrames := make(chan interface{})
+	go frameMaker(backend, fps, spc, expectedCount, frames, doneCreatingFrames)
 	go func(frames chan video.Frame, done chan interface{}) {
-		for i := 0; i < (fps*spc)*expectedCount; i++ {
-			frames <- backend.NewFrame()
-		}
-		close(done)
 	}(frames, doneCreatingFrames)
 
 	countingCtx, cancelClipCount := context.WithCancel(context.TODO())
