@@ -110,13 +110,14 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl()
 func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	const FPS = 30
 	const SPC = 2
+	const expectedClipCount = 6
 	var backend = video.DefaultBackend()
 
 	frames := make(chan video.Frame)
 
 	doneCreatingFrames := make(chan interface{})
 	go func(frames chan video.Frame, done chan interface{}) {
-		for i := 0; i < FPS*SPC; i++ {
+		for i := 0; i < (FPS*SPC)*expectedClipCount; i++ {
 			frames <- backend.NewFrame()
 		}
 		close(done)
@@ -152,5 +153,5 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 
 	wg.Wait()
 
-	assert.Equal(suite.T(), 1, count)
+	assert.Equal(suite.T(), expectedClipCount, count)
 }
