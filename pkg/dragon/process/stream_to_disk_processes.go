@@ -60,7 +60,7 @@ func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps in
 					close(stopping)
 					break procLoop
 				default:
-					clips <- generateClipFromStream(frames, fps, spc)
+					clips <- generateClipFromStream(cancel, frames, fps, spc)
 				}
 			}
 		}(frames, stopping)
@@ -69,11 +69,17 @@ func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps in
 	}
 }
 
-func generateClipFromStream(frames chan video.Frame, fps, spc int) video.Clip {
+func generateClipFromStream(cancel context.Context, frames chan video.Frame, fps, spc int) video.Clip {
 	clip := video.NewClip()
+procLoop:
 	for framesRead := 0; framesRead < fps*spc; framesRead++ {
-		frame := <-frames
-		clip.AppendFrame(frame)
+		select {
+		case <-cancel.Done():
+			break procLoop
+		default:
+			frame := <-frames
+			clip.AppendFrame(frame)
+		}
 	}
 	return clip
 }
