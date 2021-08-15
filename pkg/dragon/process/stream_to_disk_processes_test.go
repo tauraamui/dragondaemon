@@ -120,7 +120,7 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessUnevenFrameCount() {
 	const FPS = 30
 	const SPC = 2
-	const expectedClipCount = 6
+	const expectedClipCount = 7
 
 	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
 		for i := 0; i < ((fps*spc)*expectedCount)+12; i++ {
