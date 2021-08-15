@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -107,5 +108,49 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl()
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
+	const FPS = 30
+	const SPC = 2
+	var backend = video.DefaultBackend()
 
+	frames := make(chan video.Frame)
+
+	doneCreatingFrames := make(chan interface{})
+	go func(frames chan video.Frame, done chan interface{}) {
+		for i := 0; i < FPS*SPC; i++ {
+			frames <- backend.NewFrame()
+		}
+		close(done)
+	}(frames, doneCreatingFrames)
+
+	countingCtx, cancelClipCount := context.WithCancel(context.TODO())
+	clips := make(chan video.Clip)
+	count := 0
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func(wg *sync.WaitGroup, count *int, clips chan video.Clip, stop context.Context) {
+		defer wg.Done()
+	procLoop:
+		for {
+			select {
+			case <-stop.Done():
+				break procLoop
+			default:
+				clip := <-clips
+				*count++
+				clip.Close()
+			}
+		}
+	}(&wg, &count, clips, countingCtx)
+
+	procCtx, cancelProc := context.WithCancel(context.TODO())
+	proc := GenerateClipsProcess(frames, clips, FPS, SPC)
+	go proc(procCtx)
+
+	<-doneCreatingFrames
+	cancelProc()
+	cancelClipCount()
+
+	wg.Wait()
+
+	assert.Equal(suite.T(), 1, count)
 }
