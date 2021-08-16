@@ -115,6 +115,57 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	assert.Greater(suite.T(), count, 0)
 }
 
+type testVideoBackend struct {
+	onFrameCloseCallback func()
+}
+
+func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
+	return testVideoConnection{}, nil
+}
+
+func (tvb testVideoBackend) NewFrame() video.Frame {
+	return testVideoFrame{
+		onCloseCallback: tvb.onFrameCloseCallback,
+	}
+}
+
+type testVideoFrame struct {
+	onCloseCallback func()
+}
+
+func (tvf testVideoFrame) DataRef() interface{} {
+	return nil
+}
+
+func (tvf testVideoFrame) Close() {
+	if tvf.onCloseCallback != nil {
+		tvf.onCloseCallback()
+	}
+}
+
+type testVideoConnection struct {
+}
+
+func (tvc testVideoConnection) Read(frame video.Frame) error {
+	return nil
+}
+
+func (tvc testVideoConnection) IsOpen() bool {
+	return true
+}
+
+func (tvc testVideoConnection) Close() error {
+	return nil
+}
+
+func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessClosesUnsentFrames() {
+	closedFrames := 0
+	countFrameClose := func() { closedFrames++ }
+	conn, err := video.Connect("fakeaddr", testVideoBackend{onFrameCloseCallback: countFrameClose})
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), conn)
+}
+
 func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	const FPS = 30
 	const SPC = 2
