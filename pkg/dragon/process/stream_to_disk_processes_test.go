@@ -299,8 +299,6 @@ func countClipsCreatedByGenerateProc(
 
 	doneCreatingFrames := make(chan interface{})
 	go frameMaker(backend, fps, spc, expectedCount, frames, doneCreatingFrames)
-	go func(frames chan video.Frame, done chan interface{}) {
-	}(frames, doneCreatingFrames)
 
 	countingCtx, cancelClipCount := context.WithCancel(context.TODO())
 	clips := make(chan video.Clip)
