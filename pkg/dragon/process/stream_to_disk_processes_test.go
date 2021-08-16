@@ -112,7 +112,7 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 
 	count := countFramesReadFromStreamProc(suite.conn, frames, 10)
 
-	assert.GreaterOrEqual(suite.T(), 11, count)
+	assert.GreaterOrEqual(suite.T(), count, 11)
 	assert.Less(suite.T(), count, 15)
 }
 
