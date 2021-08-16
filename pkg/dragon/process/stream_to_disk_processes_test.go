@@ -110,60 +110,9 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl()
 func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	frames := make(chan video.Frame)
 
-	count := countFramesReadFromStreamProc(suite.conn, frames, 10, 10)
+	count := countFramesReadFromStreamProc(suite.conn, frames, 10)
 
 	assert.Equal(suite.T(), 11, count)
-}
-
-type testVideoBackend struct {
-	onFrameCloseCallback func()
-}
-
-func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
-	return testVideoConnection{}, nil
-}
-
-func (tvb testVideoBackend) NewFrame() video.Frame {
-	return testVideoFrame{
-		onCloseCallback: tvb.onFrameCloseCallback,
-	}
-}
-
-type testVideoFrame struct {
-	onCloseCallback func()
-}
-
-func (tvf testVideoFrame) DataRef() interface{} {
-	return nil
-}
-
-func (tvf testVideoFrame) Close() {
-	if tvf.onCloseCallback != nil {
-		tvf.onCloseCallback()
-	}
-}
-
-type testVideoConnection struct {
-}
-
-func (tvc testVideoConnection) Read(frame video.Frame) error {
-	return nil
-}
-
-func (tvc testVideoConnection) IsOpen() bool {
-	return true
-}
-
-func (tvc testVideoConnection) Close() error {
-	return nil
-}
-
-func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessClosesUnsentFrames() {
-	closedFrames := 0
-	countFrameClose := func() { closedFrames++ }
-	conn, err := video.Connect("fakeaddr", testVideoBackend{onFrameCloseCallback: countFrameClose})
-	require.NoError(suite.T(), err)
-	require.NotNil(suite.T(), conn)
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
@@ -221,7 +170,7 @@ func defaultFrames(
 	close(done)
 }
 
-func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Frame, targetToSend, sendCap int) int {
+func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Frame, targetToSend int) int {
 	runStreamProcess := StreamProcess(conn, frames)
 	ctx, cancel := context.WithCancel(context.TODO())
 	runStreamProcess(ctx)
