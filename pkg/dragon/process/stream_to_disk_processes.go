@@ -125,6 +125,6 @@ var writeClipToDisk = func(clip video.Clip) {
 	err := clip.Write()
 	if err != nil {
 		log.Error(fmt.Errorf("Unable to write clip to disk: %w", err).Error())
-		clip.Close()
 	}
+	clip.Close()
 }
