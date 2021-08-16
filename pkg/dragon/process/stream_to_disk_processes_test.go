@@ -109,27 +109,8 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl()
 
 func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	frames := make(chan video.Frame)
-	runStreamProcess := StreamProcess(suite.conn, frames)
-	ctx, cancel := context.WithCancel(context.TODO())
-	runStreamProcess(ctx)
 
-	go func(cancel context.CancelFunc) {
-		time.Sleep(5 * time.Millisecond)
-		cancel()
-	}(cancel)
-
-	count := 0
-procLoop:
-	for {
-		select {
-		case <-ctx.Done():
-			break procLoop
-		default:
-			f := <-frames
-			f.Close()
-			count++
-		}
-	}
+	count := countFramesReadFromStreamProc(suite.conn, frames)
 
 	assert.Greater(suite.T(), count, 0)
 }
@@ -187,6 +168,31 @@ func defaultFrames(
 		frames <- backend.NewFrame()
 	}
 	close(done)
+}
+
+func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Frame) int {
+	runStreamProcess := StreamProcess(conn, frames)
+	ctx, cancel := context.WithCancel(context.TODO())
+	runStreamProcess(ctx)
+
+	go func(cancel context.CancelFunc) {
+		time.Sleep(5 * time.Millisecond)
+		cancel()
+	}(cancel)
+
+	count := 0
+procLoop:
+	for {
+		select {
+		case <-ctx.Done():
+			break procLoop
+		default:
+			f := <-frames
+			f.Close()
+			count++
+		}
+	}
+	return count
 }
 
 func countClipsCreatedByGenerateProc(
