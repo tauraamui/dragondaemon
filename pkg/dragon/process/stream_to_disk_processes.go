@@ -121,7 +121,7 @@ func WriteClipsToDiskProcess(clips chan video.Clip) func(canel context.Context) 
 	}
 }
 
-var writeClipToDisk = func(clip video.Clip) {
+func writeClipToDisk(clip video.Clip) {
 	err := clip.Write()
 	if err != nil {
 		log.Error(fmt.Errorf("Unable to write clip to disk: %w", err).Error())
