@@ -33,7 +33,7 @@ func StreamProcess(cam camera.Connection, frames chan video.Frame) func(cancel c
 	}
 }
 
-var stream = func(cam camera.Connection, frames chan video.Frame) {
+func stream(cam camera.Connection, frames chan video.Frame) {
 	if cam.IsOpen() {
 		log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
 		frame := cam.Read()
