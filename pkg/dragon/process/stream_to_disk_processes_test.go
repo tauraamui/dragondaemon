@@ -166,7 +166,7 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessMissing
 	const expectedClipCount = 6
 
 	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
-		for i := 0; i < ((fps*spc)*expectedCount)-75; i++ {
+		for i := 0; i < ((fps*spc)*expectedCount)-69; i++ {
 			frames <- backend.NewFrame()
 		}
 		close(done)
