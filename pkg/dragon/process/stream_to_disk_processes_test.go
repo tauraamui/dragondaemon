@@ -2,6 +2,7 @@ package process
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -30,6 +31,12 @@ func overloadDebugLog(overload func(string, ...interface{})) func() {
 	return func() { log.Info = logDebugRef }
 }
 
+func overloadErrorLog(overload func(string, ...interface{})) func() {
+	logErrorRef := log.Error
+	log.Error = overload
+	return func() { log.Error = logErrorRef }
+}
+
 type StreamAndPersistProcessesTestSuite struct {
 	suite.Suite
 	mp4FilePath            string
@@ -39,6 +46,8 @@ type StreamAndPersistProcessesTestSuite struct {
 	resetInfoLogsOverload  func()
 	debugLogs              []string
 	resetDebugLogsOverload func()
+	errorLogs              []string
+	resetErrorLogsOverload func()
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) SetupSuite() {
@@ -79,11 +88,19 @@ func (suite *StreamAndPersistProcessesTestSuite) SetupTest() {
 		},
 	)
 	suite.resetDebugLogsOverload = resetLogDebug
+
+	resetLogError := overloadErrorLog(
+		func(format string, a ...interface{}) {
+			suite.errorLogs = append(suite.errorLogs, fmt.Sprintf(format, a...))
+		},
+	)
+	suite.resetErrorLogsOverload = resetLogError
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) TearDownTest() {
 	suite.resetInfoLogsOverload()
 	suite.resetDebugLogsOverload()
+	suite.resetErrorLogsOverload()
 }
 
 func TestStreamAndPersistProcessTestSuite(t *testing.T) {
@@ -161,6 +178,7 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessMissing
 }
 
 type testVideoClip struct {
+	writeError      error
 	onWriteCallback func()
 	onCloseCallback func()
 }
@@ -171,7 +189,8 @@ func (clip testVideoClip) Write() error {
 	if clip.onWriteCallback != nil {
 		clip.onWriteCallback()
 	}
-	return nil
+
+	return clip.writeError
 }
 
 func (clip testVideoClip) Close() {
@@ -204,6 +223,30 @@ func (suite *StreamAndPersistProcessesTestSuite) TestWriteClipsToDiskProcess() {
 
 	assert.Equal(suite.T(), writeCount, writeInvokedCount)
 	assert.Equal(suite.T(), closeCount, closeInvokedCount)
+}
+
+func (suite *StreamAndPersistProcessesTestSuite) TestWriteClipsToDiskProcessLogsWriteFailErrors() {
+	clips := make(chan video.Clip)
+	writeClipsProcess := WriteClipsToDiskProcess(clips)
+	ctx, cancel := context.WithCancel(context.TODO())
+
+	writeClipsProcess(ctx)
+
+	for i := 0; i < 3; i++ {
+		clip := testVideoClip{
+			writeError: errors.New("clip write test error"),
+		}
+		clips <- clip
+	}
+
+	cancel()
+
+	assert.Len(suite.T(), suite.errorLogs, 3)
+	assert.ElementsMatch(suite.T(), suite.errorLogs, []string{
+		"Unable to write clip to disk: clip write test error",
+		"Unable to write clip to disk: clip write test error",
+		"Unable to write clip to disk: clip write test error",
+	})
 }
 
 func defaultFrames(
