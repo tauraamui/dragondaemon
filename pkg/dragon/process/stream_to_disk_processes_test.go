@@ -160,6 +160,52 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessMissing
 	assert.Equal(suite.T(), expectedClipCount-1, count)
 }
 
+type testVideoClip struct {
+	onWriteCallback func()
+	onCloseCallback func()
+}
+
+func (clip testVideoClip) AppendFrame(video.Frame) {}
+
+func (clip testVideoClip) Write() error {
+	if clip.onWriteCallback != nil {
+		clip.onWriteCallback()
+	}
+	return nil
+}
+
+func (clip testVideoClip) Close() {
+	if clip.onCloseCallback != nil {
+		clip.onCloseCallback()
+	}
+}
+
+func (suite *StreamAndPersistProcessesTestSuite) TestWriteClipsToDiskProcess() {
+	const writeCount = 55
+	const closeCount = writeCount
+
+	clips := make(chan video.Clip)
+	writeClipsProcess := WriteClipsToDiskProcess(clips)
+	ctx, cancel := context.WithCancel(context.TODO())
+
+	writeClipsProcess(ctx)
+
+	writeInvokedCount := 0
+	closeInvokedCount := 0
+	for i := 0; i < writeCount; i++ {
+		clip := testVideoClip{
+			onWriteCallback: func() { writeInvokedCount++ },
+			onCloseCallback: func() { closeInvokedCount++ },
+		}
+		clips <- clip
+	}
+
+	cancel()
+
+	assert.Equal(suite.T(), writeCount, writeInvokedCount)
+	assert.Equal(suite.T(), closeCount, closeInvokedCount)
+}
+
 func defaultFrames(
 	backend video.Backend,
 	fps, spc, expectedCount int,
