@@ -110,9 +110,9 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcessWithRealImpl()
 func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	frames := make(chan video.Frame)
 
-	count := countFramesReadFromStreamProc(suite.conn, frames)
+	count := countFramesReadFromStreamProc(suite.conn, frames, 10, 10)
 
-	assert.Greater(suite.T(), count, 0)
+	assert.Equal(suite.T(), 11, count)
 }
 
 type testVideoBackend struct {
@@ -221,17 +221,21 @@ func defaultFrames(
 	close(done)
 }
 
-func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Frame) int {
+func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Frame, targetToSend, sendCap int) int {
 	runStreamProcess := StreamProcess(conn, frames)
 	ctx, cancel := context.WithCancel(context.TODO())
 	runStreamProcess(ctx)
 
-	go func(cancel context.CancelFunc) {
-		time.Sleep(5 * time.Millisecond)
-		cancel()
-	}(cancel)
-
 	count := 0
+	go func(cancel context.CancelFunc, count *int) {
+		for {
+			if *count >= targetToSend {
+				cancel()
+				break
+			}
+		}
+	}(cancel, &count)
+
 procLoop:
 	for {
 		select {
