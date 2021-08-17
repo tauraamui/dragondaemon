@@ -2,11 +2,11 @@ package camera
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -15,7 +15,7 @@ type Connection interface {
 	Title() string
 	FPS() int
 	SPC() int
-	Read() video.Frame
+	Read() (video.Frame, error)
 	IsOpen() bool
 	IsClosing() bool
 	Close() error
@@ -36,14 +36,14 @@ func (c *connection) UUID() string {
 }
 
 // TODO(tauraamui): make return typed error and frame
-func (c *connection) Read() video.Frame {
+func (c *connection) Read() (video.Frame, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	frame := c.backend.NewFrame()
 	if err := c.vc.Read(frame); err != nil {
-		log.Error("Unable to read frame from [%s] stream", c.Title())
+		return nil, errors.New("unable to read frame from connection")
 	}
-	return frame
+	return frame, nil
 }
 
 func (c *connection) Title() string {

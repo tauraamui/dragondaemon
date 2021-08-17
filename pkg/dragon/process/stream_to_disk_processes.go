@@ -36,7 +36,11 @@ func StreamProcess(cam camera.Connection, frames chan video.Frame) func(cancel c
 func stream(cam camera.Connection, frames chan video.Frame) {
 	if cam.IsOpen() {
 		log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
-		frame := cam.Read()
+		frame, err := cam.Read()
+		if err != nil {
+			log.Error(fmt.Errorf("Unable to retrieve frame: %w. Auto re-connecting is not yet implemented", err).Error())
+			return
+		}
 		select {
 		case frames <- frame:
 			log.Debug("Sending frame from cam to buffer...")
