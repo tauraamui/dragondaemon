@@ -30,14 +30,14 @@ type Service struct {
 
 // Setup will setup local DB and ask for root admin credentials
 func (service *Service) Setup() (string, error) {
-	logging.Info("Setting up dragondaemon service...") //nolint
+	log.Info("Setting up dragondaemon service...")
 
 	err := config.Setup()
 	if err != nil {
 		if !errors.Is(err, config.ErrConfigAlreadyExists) {
 			return "", err
 		}
-		logging.Error(err.Error()) //nolint
+		log.Error(err.Error())
 	}
 
 	err = db.Setup()
@@ -45,17 +45,17 @@ func (service *Service) Setup() (string, error) {
 		if !errors.Is(err, db.ErrDBAlreadyExists) {
 			return "", err
 		}
-		logging.Error(err.Error()) //nolint
+		log.Error(err.Error())
 	}
 
 	return "Setup successful...", nil
 }
 
 func (service *Service) RemoveSetup() (string, error) {
-	logging.Info("Removing setup for dragondaemon service...") //nolint
+	log.Info("Removing setup for dragondaemon service...")
 	err := db.Destroy()
 	if err != nil {
-		logging.Error("unable to delete database file: %s", err.Error()) //nolint
+		log.Error("unable to delete database file: %s", err.Error())
 	}
 
 	return "Removing setup successful...", nil
@@ -102,7 +102,7 @@ func (service *Service) Manage() (string, error) {
 
 	killSignal := <-interrupt
 	fmt.Print("\r")
-	log.Error("Received signal: %s", killSignal) //nolint
+	log.Error("Received signal: %s", killSignal)
 
 	cancelStartup()
 	log.Info("Shutting down server...")
@@ -237,7 +237,7 @@ func init() {
 		logging.CurrentLoggingLevel = logging.DebugLevel
 		logging.CallbackLabel = true
 	default:
-		logging.CurrentLoggingLevel = logging.InfoLevel
+		logging.CurrentLoggingLevel = logging.WarnLevel
 	}
 }
 
