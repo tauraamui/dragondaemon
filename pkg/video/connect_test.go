@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -47,16 +48,20 @@ func (tvc testVideoConnection) Close() error {
 
 func TestConnectInvokesBackendConnect(t *testing.T) {
 	invokedConnect := false
-	video.Connect("fakeaddr", testVideoBackend{
+	conn, err := video.Connect("fakeaddr", testVideoBackend{
 		connectCallback: func() { invokedConnect = true },
 	})
+	require.NoError(t, err)
+	assert.NotNil(t, conn)
 	assert.True(t, invokedConnect)
 }
 
 func TestConnectWithCancelInvokesBackendConnect(t *testing.T) {
 	invokedConnect := false
-	video.ConnectWithCancel(context.TODO(), "fakeaddr", testVideoBackend{
+	conn, err := video.ConnectWithCancel(context.TODO(), "fakeaddr", testVideoBackend{
 		connectCallback: func() { invokedConnect = true },
 	})
+	require.NoError(t, err)
+	assert.NotNil(t, conn)
 	assert.True(t, invokedConnect)
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -34,11 +35,14 @@ func (c *connection) UUID() string {
 	return c.uuid
 }
 
+// TODO(tauraamui): make return typed error and frame
 func (c *connection) Read() video.Frame {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	frame := c.backend.NewFrame()
-	c.vc.Read(frame)
+	if err := c.vc.Read(frame); err != nil {
+		log.Error("Unable to read frame from [%s] stream", c.Title())
+	}
 	return frame
 }
 

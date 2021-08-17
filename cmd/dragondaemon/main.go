@@ -220,8 +220,6 @@ func connectToCameras(ctx context.Context, server dragon.Server) {
 	}
 }
 
-var debugMode bool
-
 func init() {
 	logging.CallbackLabelLevel = 5
 	logging.ColorLogLevelLabelOnly = true
@@ -233,7 +231,6 @@ func init() {
 	case "warn":
 		logging.CurrentLoggingLevel = logging.WarnLevel
 	case "debug":
-		debugMode = true
 		logging.CurrentLoggingLevel = logging.DebugLevel
 		logging.CallbackLabel = true
 	default:

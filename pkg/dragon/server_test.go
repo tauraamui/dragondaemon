@@ -111,8 +111,8 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 		},
 		testVideoBackend{},
 	)
-	s.LoadConfiguration()
-	s.Connect()
+	require.NoError(t, s.LoadConfiguration())
+	require.Len(t, s.Connect(), 0)
 
 	assert.Len(t, warnLogs, 1)
 	assert.Contains(t, warnLogs, "Camera [Disabled camera] is disabled... skipping...")
@@ -149,7 +149,7 @@ func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
-	s.LoadConfiguration()
+	require.NoError(t, s.LoadConfiguration())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan []error)
@@ -159,13 +159,13 @@ func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 	cancel()
 
 	connErrs := <-errs
-	require.Len(t, connErrs, 0)
+	assert.Len(t, connErrs, 0)
 }
 
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
-	s.LoadConfiguration()
+	require.NoError(t, s.LoadConfiguration())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan []error)
@@ -192,8 +192,8 @@ func TestServerShutdown(t *testing.T) {
 	defer resetLogWarn()
 
 	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
-	s.LoadConfiguration()
-	s.Connect()
+	require.NoError(t, s.LoadConfiguration())
+	require.Len(t, s.Connect(), 0)
 
 	timeout := time.After(3 * time.Second)
 	done := make(chan interface{})
