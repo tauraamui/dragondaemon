@@ -72,6 +72,27 @@ func TestConnectReturnsConnectionAndNoError(t *testing.T) {
 	assert.True(t, conn.IsClosing())
 }
 
+func TestConnectWithCancelReturnsConnectionAndNoError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	conn, err := camera.ConnectWithCancel(ctx, "FakeCamera", "fakeaddr", camera.Settings{
+		FPS:            22,
+		SecondsPerClip: 3,
+	}, testVideoBackend{})
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+
+	assert.NotEmpty(t, conn.UUID())
+	assert.Equal(t, conn.Title(), "FakeCamera")
+	assert.Equal(t, conn.FPS(), 22)
+	assert.Equal(t, conn.SPC(), 3)
+	assert.True(t, conn.IsOpen())
+	assert.False(t, conn.IsClosing())
+	require.NoError(t, conn.Close())
+	assert.True(t, conn.IsClosing())
+}
+
 func TestConnectReturnsNoConnectionAndError(t *testing.T) {
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
 		onConnectError: errors.New("test error"),
