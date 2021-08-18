@@ -2,7 +2,6 @@ package camera
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -41,7 +40,7 @@ func (c *connection) Read() (video.Frame, error) {
 	defer c.mu.Unlock()
 	frame := c.backend.NewFrame()
 	if err := c.vc.Read(frame); err != nil {
-		return nil, errors.New("unable to read frame from connection")
+		return nil, fmt.Errorf("unable to read frame from connection: %w", err)
 	}
 	return frame, nil
 }

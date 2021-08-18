@@ -2,6 +2,7 @@ package camera_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,14 +12,17 @@ import (
 )
 
 type testVideoBackend struct {
-	connectCallback func()
+	connectCallback       func()
+	onConnectionReadError error
 }
 
 func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
 	if tvb.connectCallback != nil {
 		tvb.connectCallback()
 	}
-	return testVideoConnection{}, nil
+	return testVideoConnection{
+		onReadError: tvb.onConnectionReadError,
+	}, nil
 }
 
 func (tvb testVideoBackend) NewFrame() video.Frame {
@@ -35,10 +39,11 @@ func (tvf testVideoFrame) DataRef() interface{} {
 func (tvf testVideoFrame) Close() {}
 
 type testVideoConnection struct {
+	onReadError error
 }
 
 func (tvc testVideoConnection) Read(frame video.Frame) error {
-	return nil
+	return tvc.onReadError
 }
 
 func (tvc testVideoConnection) IsOpen() bool {
@@ -49,7 +54,7 @@ func (tvc testVideoConnection) Close() error {
 	return nil
 }
 
-func TestConnectInvokesVideoConnect(t *testing.T) {
+func TestConnectReturnsConnectionAndNoError(t *testing.T) {
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{
 		FPS:            22,
 		SecondsPerClip: 3,
@@ -65,4 +70,26 @@ func TestConnectInvokesVideoConnect(t *testing.T) {
 	assert.False(t, conn.IsClosing())
 	require.NoError(t, conn.Close())
 	assert.True(t, conn.IsClosing())
+}
+
+func TestConnectReadReturnsFrameAndNoError(t *testing.T) {
+	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{})
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+
+	frame, err := conn.Read()
+	assert.NoError(t, err)
+	assert.NotNil(t, frame)
+}
+
+func TestConnectReadReturnsNoFrameAndError(t *testing.T) {
+	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
+		onConnectionReadError: errors.New("test error"),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+
+	frame, err := conn.Read()
+	assert.EqualError(t, err, "unable to read frame from connection: test error")
+	assert.Nil(t, frame)
 }
