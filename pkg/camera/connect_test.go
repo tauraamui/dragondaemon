@@ -12,13 +12,13 @@ import (
 )
 
 type testVideoBackend struct {
-	connectCallback       func()
+	onConnectError        error
 	onConnectionReadError error
 }
 
 func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
-	if tvb.connectCallback != nil {
-		tvb.connectCallback()
+	if tvb.onConnectError != nil {
+		return nil, tvb.onConnectError
 	}
 	return testVideoConnection{
 		onReadError: tvb.onConnectionReadError,
@@ -70,6 +70,14 @@ func TestConnectReturnsConnectionAndNoError(t *testing.T) {
 	assert.False(t, conn.IsClosing())
 	require.NoError(t, conn.Close())
 	assert.True(t, conn.IsClosing())
+}
+
+func TestConnectReturnsNoConnectionAndError(t *testing.T) {
+	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
+		onConnectError: errors.New("test error"),
+	})
+	assert.EqualError(t, err, "Unable to connect to camera [FakeCamera]: test error")
+	assert.Nil(t, conn)
 }
 
 func TestConnectReadReturnsFrameAndNoError(t *testing.T) {
