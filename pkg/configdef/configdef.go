@@ -1,6 +1,10 @@
 package configdef
 
-import "github.com/tauraamui/dragondaemon/pkg/config/schedule"
+import (
+	"errors"
+
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+)
 
 type Camera struct {
 	Title           string            `json:"title" validate:"empty=false"`
@@ -29,4 +33,31 @@ type Values struct {
 	Secret           string   `json:"secret"`
 	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
 	Cameras          []Camera `json:"cameras"`
+}
+
+func (v Values) Validate() error {
+	if hasDupCameraTitles(v.Cameras) {
+		return errors.New("camera titles must be unique")
+	}
+	return nil
+}
+
+func hasDupCameraTitles(cameras []Camera) (hasDup bool) {
+	hasDup = false
+	if len(cameras) == 0 {
+		return
+	}
+
+	for ci, cam := range cameras {
+		for i := ci; i < len(cameras); i++ {
+			if i == ci {
+				continue
+			}
+			if cam.Title == cameras[i].Title {
+				hasDup = true
+				return
+			}
+		}
+	}
+	return
 }
