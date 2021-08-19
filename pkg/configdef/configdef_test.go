@@ -8,11 +8,14 @@ import (
 )
 
 func TestValidateEmptyConfigPasses(t *testing.T) {
-	body := `{}`
+	// TODO(tauraamui): return this to actually be empty again
+	// once this root field has been removed
+	// body := `{}`
+	body := `{"max_clip_age_in_days": 1}`
 	config := Values{}
 	json.Unmarshal([]byte(body), &config)
 
-	assert.NoError(t, config.Validate())
+	assert.NoError(t, config.RunValidate())
 }
 
 func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {

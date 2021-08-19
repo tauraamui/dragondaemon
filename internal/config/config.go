@@ -38,7 +38,7 @@ func Load() (configdef.Values, error) {
 		return configdef.Values{}, err
 	}
 
-	if err = values.Validate(); err != nil {
+	if err = values.RunValidate(); err != nil {
 		return configdef.Values{}, err
 	}
 

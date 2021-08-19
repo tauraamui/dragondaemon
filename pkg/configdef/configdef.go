@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
+	"gopkg.in/dealancer/validate.v2"
 )
 
 type Camera struct {
@@ -38,12 +39,12 @@ type Values struct {
 	Cameras          []Camera `json:"cameras"`
 }
 
-func (v Values) Validate() error {
+func (v Values) RunValidate() error {
 	const validationErrorHeader = "validation failed: %w"
 	if hasDupCameraTitles(v.Cameras) {
 		return fmt.Errorf(validationErrorHeader, errors.New("camera titles must be unique"))
 	}
-	return nil
+	return validate.Validate(&v)
 }
 
 func hasDupCameraTitles(cameras []Camera) (hasDup bool) {
