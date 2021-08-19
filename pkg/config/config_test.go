@@ -36,6 +36,7 @@ var _ = Describe("Config", func() {
 					{
 						"title": "Test Cam 1",
 						"address": "camera-network-addr",
+						"max_clip_age_days": 1,
 						"fps": 1,
 						"persist_location": "/testroot/clips/Test Cam 1",
 						"mock_writer": true,
@@ -60,7 +61,8 @@ var _ = Describe("Config", func() {
 				"max_clip_age_in_days": 1,
 				"cameras": [
 					{
-						"title": "Test Cam 2"
+						"title": "Test Cam 2",
+						"max_clip_age_days": 1
 					}
 				]
 			}`)
@@ -107,6 +109,7 @@ var _ = Describe("Config", func() {
 							DateTimeLabel:  false,
 							DateTimeFormat: "2006/01/02 15:04:05.999999999",
 							PersistLoc:     "/testroot/clips/Test Cam 1",
+							MaxClipAgeDays: 1,
 							MockWriter:     true,
 							MockCapturer:   true,
 							SecondsPerClip: 2,
