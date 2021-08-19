@@ -15,7 +15,28 @@ func TestValidateEmptyConfigPasses(t *testing.T) {
 	config := Values{}
 	json.Unmarshal([]byte(body), &config)
 
-	assert.NoError(t, config.RunValidate())
+	assert.NoError(t, config.runValidate())
+}
+
+func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
+	// TODO(tauraamui): return this to actually be empty again
+	// once this root field has been removed
+	// body := `{}`
+	body := `{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "NotBlank",
+					"max_clip_age_days": 15,
+					"fps": 11,
+					"seconds_per_clip": 1
+				}
+			]
+		}`
+	config := Values{}
+	json.Unmarshal([]byte(body), &config)
+
+	assert.NoError(t, config.runValidate())
 }
 
 func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {

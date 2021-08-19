@@ -40,6 +40,10 @@ type Values struct {
 }
 
 func (v Values) RunValidate() error {
+	return v.runValidate()
+}
+
+func (v Values) runValidate() error {
 	const validationErrorHeader = "validation failed: %w"
 	if hasDupCameraTitles(v.Cameras) {
 		return fmt.Errorf(validationErrorHeader, errors.New("camera titles must be unique"))
