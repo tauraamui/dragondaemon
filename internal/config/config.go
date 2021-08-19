@@ -25,18 +25,21 @@ func Load() (configdef.Values, error) {
 
 	configPath, err := resolveConfigPath()
 	if err != nil {
-		return values, err
+		return configdef.Values{}, err
 	}
 
 	log.Info("Resolved config file location: %s", configPath)
 	file, err := readConfigFile(configPath)
 	if err != nil {
-		return values, err
+		return configdef.Values{}, err
 	}
 
-	err = unmarshal(file, &values)
-	if err != nil {
-		return values, err
+	if err := unmarshal(file, &values); err != nil {
+		return configdef.Values{}, err
+	}
+
+	if err = values.Validate(); err != nil {
+		return configdef.Values{}, err
 	}
 
 	return values, nil

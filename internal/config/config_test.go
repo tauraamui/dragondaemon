@@ -78,14 +78,22 @@ func (suite *ConfigTestSuite) TestLoadConfig() {
 	assert.ElementsMatch(suite.T(), config.Cameras, []configdef.Camera{})
 }
 
-func (suite *ConfigTestSuite) TestLoadConfigWithCameras() {
+func (suite *ConfigTestSuite) TestConfigLoadFailsValidationOnDupCameraTitles() {
 	suite.overwriteTestConfig(
-		`{}`,
+		`{"cameras": [
+			{"title": "FakeCam1"},
+			{"title": "FakeCam2"},
+			{"title": "FakeCam3"},
+			{"title": "FakeCam4"},
+			{"title": "FakeCam3"}
+		]}`,
 	)
 
 	config, err := Load()
-	require.NoError(suite.T(), err)
-	require.NotNil(suite.T(), config)
+	require.Error(suite.T(), err)
+	require.Empty(suite.T(), config)
+
+	assert.EqualError(suite.T(), err, "validation failed: camera titles must be unique")
 }
 
 func TestConfigTestSuite(t *testing.T) {

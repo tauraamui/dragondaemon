@@ -2,6 +2,7 @@ package configdef
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 )
@@ -36,8 +37,9 @@ type Values struct {
 }
 
 func (v Values) Validate() error {
+	const validationErrorHeader = "validation failed: %w"
 	if hasDupCameraTitles(v.Cameras) {
-		return errors.New("camera titles must be unique")
+		return fmt.Errorf(validationErrorHeader, errors.New("camera titles must be unique"))
 	}
 	return nil
 }
