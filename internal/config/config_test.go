@@ -13,6 +13,8 @@ import (
 type ConfigTestSuite struct {
 	suite.Suite
 	fs          afero.Fs
+	path        string
+	configFile  afero.File
 	fileContent string
 }
 
@@ -27,20 +29,32 @@ func (suite *ConfigTestSuite) SetupSuite() {
 }
 
 func (suite *ConfigTestSuite) TearDownSuite() {
-	suite.fs = afero.NewMemMapFs()
+	suite.fs = afero.NewOsFs()
 }
 
-func (suite *ConfigTestSuite) TestLoadConfig() {
+func (suite *ConfigTestSuite) SetupTest() {
 	path, err := resolveConfigPath()
 	require.NoError(suite.T(), err)
 	require.NoError(suite.T(), suite.fs.MkdirAll(path, os.ModeDir|os.ModePerm))
+	suite.path = path
 
 	configFile, err := suite.fs.Create(path)
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), configFile)
 
+	suite.configFile = configFile
+
 	_, err = configFile.WriteString(suite.fileContent)
 	assert.NoError(suite.T(), err)
+}
+
+func (suite *ConfigTestSuite) TearDownTest() {
+	require.NoError(suite.T(), suite.configFile.Close())
+	suite.fs.Remove(suite.path)
+}
+
+func (suite *ConfigTestSuite) TestLoadConfig() {
+
 }
 
 func TestConfigTestSuite(t *testing.T) {
