@@ -11,6 +11,7 @@ type Camera struct {
 	Title           string            `json:"title" validate:"empty=false"`
 	Address         string            `json:"address"`
 	PersistLoc      string            `json:"persist_location"`
+	MaxClipAgeDays  int               `json:"max_clip_age_days" validate:"gte=1 & lte=30"`
 	MockWriter      bool              `json:"mock_writer"`
 	MockCapturer    bool              `json:"mock_capturer"`
 	FPS             int               `json:"fps" validate:"gte=1 & lte=30"`
@@ -30,8 +31,9 @@ type ReolinkAdvanced struct {
 }
 
 type Values struct {
-	Debug            bool     `json:"debug"`
-	Secret           string   `json:"secret"`
+	Debug  bool   `json:"debug"`
+	Secret string `json:"secret"`
+	// TODO(tauraamui): remove from here to use the one per camera
 	MaxClipAgeInDays int      `json:"max_clip_age_in_days" validate:"gte=1 & lte=30"`
 	Cameras          []Camera `json:"cameras"`
 }
