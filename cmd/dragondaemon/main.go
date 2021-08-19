@@ -94,7 +94,7 @@ func (service *Service) Manage() (string, error) {
 	server := dragon.NewServer(config.DefaultResolver(), video.DefaultBackend())
 	err := server.LoadConfiguration()
 	if err != nil {
-		log.Fatal("unable to load config: %v", err)
+		log.Fatal(fmt.Errorf("failed to load config: %w", err).Error())
 	}
 
 	ctx, cancelStartup := context.WithCancel(context.Background())
