@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidatePasses(t *testing.T) {
+func TestValidateEmptyConfigPasses(t *testing.T) {
 	body := `{}`
 	config := Values{}
 	json.Unmarshal([]byte(body), &config)
