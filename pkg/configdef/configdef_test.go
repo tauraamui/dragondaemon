@@ -39,6 +39,24 @@ func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
 	assert.NoError(t, config.runValidate())
 }
 
+func TestValidatePopulatedConfigFailsValiationForMaxClipAgeDays(t *testing.T) {
+	body := `{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "NotBlank",
+					"max_clip_age_days": 85,
+					"fps": 11,
+					"seconds_per_clip": 1
+				}
+			]
+		}`
+	config := Values{}
+	json.Unmarshal([]byte(body), &config)
+
+	assert.EqualError(t, config.runValidate(), `Validation error in field "MaxClipAgeDays" of type "int" using validator "lte=30"`)
+}
+
 func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {
 	cameras := []Camera{}
 	assert.False(t, hasDupCameraTitles(cameras))
