@@ -75,7 +75,7 @@ func TestValidatePopulatedConfigFailsValiationForFPSLessThan1(t *testing.T) {
 	assert.EqualError(t, config.runValidate(), `Validation error in field "FPS" of type "int" using validator "gte=1"`)
 }
 
-func TestValidatePopulatedConfigFailsValiationForFPSMoreThan3(t *testing.T) {
+func TestValidatePopulatedConfigFailsValiationForFPSMoreThan30(t *testing.T) {
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -91,6 +91,42 @@ func TestValidatePopulatedConfigFailsValiationForFPSMoreThan3(t *testing.T) {
 	json.Unmarshal([]byte(body), &config)
 
 	assert.EqualError(t, config.runValidate(), `Validation error in field "FPS" of type "int" using validator "lte=30"`)
+}
+
+func TestValidatePopulatedConfigFailsValiationForSPCLessThan1(t *testing.T) {
+	body := `{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "NotBlank",
+					"max_clip_age_days": 30,
+					"fps": 30,
+					"seconds_per_clip":-5
+				}
+			]
+		}`
+	config := Values{}
+	json.Unmarshal([]byte(body), &config)
+
+	assert.EqualError(t, config.runValidate(), `Validation error in field "SecondsPerClip" of type "int" using validator "gte=1"`)
+}
+
+func TestValidatePopulatedConfigFailsValiationForSPCMoreThan3(t *testing.T) {
+	body := `{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "NotBlank",
+					"max_clip_age_days": 30,
+					"fps": 30,
+					"seconds_per_clip":12
+				}
+			]
+		}`
+	config := Values{}
+	json.Unmarshal([]byte(body), &config)
+
+	assert.EqualError(t, config.runValidate(), `Validation error in field "SecondsPerClip" of type "int" using validator "lte=3"`)
 }
 
 func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {
