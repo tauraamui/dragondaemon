@@ -3,9 +3,10 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 	"strings"
+
+	"github.com/tauraamui/dragondaemon/pkg/log"
 
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 )
