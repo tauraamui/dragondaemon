@@ -34,9 +34,9 @@ func (service *Service) Setup() (string, error) {
 
 	err := config.DefaultResolver().Create()
 	if err != nil {
-		// if !errors.Is(err, config.ErrConfigAlreadyExists) {
-		// 	return "", err
-		// }
+		if !errors.Is(err, config.ErrConfigAlreadyExists) {
+			return "", err
+		}
 		log.Error(err.Error())
 	}
 
