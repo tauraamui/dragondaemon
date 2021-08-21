@@ -25,7 +25,7 @@ func create() error {
 
 func writeConfigToDisk(data []byte, path string, overwrite bool) error {
 	flags := os.O_RDWR | os.O_CREATE
-	if overwrite {
+	if !overwrite {
 		flags |= os.O_EXCL
 	}
 
