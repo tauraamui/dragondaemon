@@ -20,7 +20,15 @@ func create() error {
 
 	path := mustResolveConfigPath()
 
-	return writeConfigToDisk(data, path, false)
+	err = writeConfigToDisk(data, path, false)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return configdef.ErrConfigAlreadyExists(err)
+		}
+		return err
+	}
+
+	return nil
 }
 
 func writeConfigToDisk(data []byte, path string, overwrite bool) error {
