@@ -10,6 +10,14 @@ func DefaultResolver() configdef.Resolver {
 
 type defaultResolver struct{}
 
+func (d defaultResolver) Create() error {
+	return create()
+}
+
 func (d defaultResolver) Resolve() (configdef.Values, error) {
 	return load()
+}
+
+func (d defaultResolver) Destroy() error {
+	return destroy()
 }

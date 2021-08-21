@@ -32,6 +32,7 @@ type Service struct {
 func (service *Service) Setup() (string, error) {
 	log.Info("Setting up dragondaemon service...")
 
+	// err := config.DefaultResolver().Create()
 	err := config.Setup()
 	if err != nil {
 		// if !errors.Is(err, config.ErrConfigAlreadyExists) {
