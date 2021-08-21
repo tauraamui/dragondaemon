@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -19,11 +20,31 @@ func create() error {
 
 	path := mustResolveConfigPath()
 
-	return writeConfigData(data, path, false)
+	return writeConfigToDisk(data, path, false)
 }
 
-func writeConfigData(data []byte, path string, overwrite bool) error {
-	return errors.New("writing to file not implemented yet")
+func writeConfigToDisk(data []byte, path string, overwrite bool) error {
+	flags := os.O_RDWR | os.O_CREATE
+	if overwrite {
+		flags |= os.O_EXCL
+	}
+
+	file, err := fs.OpenFile(path, flags, 0666)
+	if err != nil {
+		return fmt.Errorf("unable to create/open file: %w", err)
+	}
+	defer file.Close()
+
+	bc, err := file.Write(data)
+	if err != nil {
+		return fmt.Errorf("unable to write config to file: %s: %w", path, err)
+	}
+
+	if bc != len(data) {
+		return fmt.Errorf("unable to write full config data to file: %s: %w", path, err)
+	}
+
+	return nil
 }
 
 func loadRawDefaultConfig() ([]byte, error) {
