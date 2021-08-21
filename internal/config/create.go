@@ -58,8 +58,7 @@ func writeConfigToDisk(data []byte, path string, overwrite bool) error {
 func loadRawDefaultConfig() ([]byte, error) {
 	return json.MarshalIndent(
 		configdef.Values{
-			MaxClipAgeInDays: defaultSettings[MAXCLIPAGEINDAYS].(int),
-			Cameras:          defaultSettings[CAMERAS].([]configdef.Camera),
+			Cameras: defaultSettings[CAMERAS].([]configdef.Camera),
 		}, "", " ")
 }
 

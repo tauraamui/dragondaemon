@@ -38,8 +38,7 @@ func (suite *CreateConfigTestSuite) TestConfigCreate() {
 
 	assert.NoError(suite.T(), err)
 	assert.EqualValues(suite.T(), configdef.Values{
-		MaxClipAgeInDays: 30,
-		Cameras:          []configdef.Camera{},
+		Cameras: []configdef.Camera{},
 	}, loadedConfig)
 }
 

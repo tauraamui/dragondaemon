@@ -50,7 +50,6 @@ func (suite *LoadConfigTestSuite) SetupTest() {
 		`{
 			"debug": true,
 			"secret": "DJIF3fje943fi4jefgo0",
-			"max_clip_age_in_days": 19,
 			"cameras": []
 		}`,
 	)
@@ -76,7 +75,6 @@ func (suite *LoadConfigTestSuite) TestLoadConfig() {
 
 	assert.Equal(suite.T(), true, config.Debug)
 	assert.Equal(suite.T(), "DJIF3fje943fi4jefgo0", config.Secret)
-	assert.Equal(suite.T(), 19, config.MaxClipAgeInDays)
 	assert.ElementsMatch(suite.T(), config.Cameras, []configdef.Camera{})
 }
 
