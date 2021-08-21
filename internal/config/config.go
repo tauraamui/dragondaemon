@@ -8,7 +8,8 @@ import (
 var fs afero.Fs = afero.NewOsFs()
 
 func Setup() error {
-	return setup()
+	// return setup()
+	return nil
 }
 
 func Load() (configdef.Values, error) {
