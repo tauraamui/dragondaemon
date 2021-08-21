@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
@@ -29,6 +30,14 @@ func (suite *CreateConfigTestSuite) TearDownSuite() {
 
 func (suite *CreateConfigTestSuite) TestConfigCreate() {
 	require.NoError(suite.T(), suite.configResolver.Create())
+	loadedConfig, err := suite.configResolver.Resolve()
+
+	assert.NoError(suite.T(), err)
+	assert.EqualValues(suite.T(), configdef.Values{
+		MaxClipAgeInDays: 30,
+		Cameras:          []configdef.Camera{},
+	}, loadedConfig)
+
 }
 
 func TestCreateConfigTestSuite(t *testing.T) {
