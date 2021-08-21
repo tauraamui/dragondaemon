@@ -39,6 +39,30 @@ func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
 	assert.NoError(t, config.runValidate())
 }
 
+func TestValidatePopulatedConfigFailsValiationForNonUniqueCameraTitles(t *testing.T) {
+	body := `{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "TheSameNotUnique",
+					"max_clip_age_days": 15,
+					"fps": 11,
+					"seconds_per_clip": 1
+				},
+				{
+					"title": "TheSameNotUnique",
+					"max_clip_age_days": 15,
+					"fps": 11,
+					"seconds_per_clip": 1
+				}
+			]
+		}`
+	config := Values{}
+	json.Unmarshal([]byte(body), &config)
+
+	assert.EqualError(t, config.runValidate(), "validation failed: camera titles must be unique")
+}
+
 func TestValidatePopulatedConfigFailsValiationForMaxClipAgeDays(t *testing.T) {
 	body := `{
 			"max_clip_age_in_days": 1,
