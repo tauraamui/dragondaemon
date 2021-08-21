@@ -12,7 +12,7 @@ import (
 
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
-	"github.com/tauraamui/dragondaemon/internal/config"
+	"github.com/tauraamui/dragondaemon/pkg/config"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/log"
