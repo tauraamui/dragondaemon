@@ -13,13 +13,15 @@ import (
 
 type ConfigTestSuite struct {
 	suite.Suite
-	fs         afero.Fs
-	path       string
-	configFile afero.File
+	configResolver configdef.Resolver
+	fs             afero.Fs
+	path           string
+	configFile     afero.File
 }
 
 func (suite *ConfigTestSuite) SetupSuite() {
 	suite.fs = afero.NewMemMapFs()
+	suite.configResolver = DefaultResolver()
 
 	// use in memory FS in implementation for tests
 	fs = suite.fs
@@ -68,7 +70,7 @@ func (suite *ConfigTestSuite) TearDownTest() {
 }
 
 func (suite *ConfigTestSuite) TestLoadConfig() {
-	config, err := Load()
+	config, err := suite.configResolver.Resolve()
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), config)
 
@@ -89,7 +91,7 @@ func (suite *ConfigTestSuite) TestConfigLoadFailsValidationOnDupCameraTitles() {
 		]}`,
 	)
 
-	config, err := Load()
+	config, err := suite.configResolver.Resolve()
 	require.Error(suite.T(), err)
 	require.Empty(suite.T(), config)
 
