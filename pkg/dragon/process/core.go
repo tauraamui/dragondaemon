@@ -23,6 +23,7 @@ type persistCameraToDisk struct {
 	streamProcess Process
 	generateClips Process
 	writeClips    Process
+	deleteClips   Process
 }
 
 func (proc *persistCameraToDisk) Setup() {
@@ -43,15 +44,23 @@ func (proc *persistCameraToDisk) Setup() {
 		Process:            StreamProcess(proc.cam, proc.frames),
 	}
 	proc.streamProcess = New(streamProcess)
+
+	deleteProcess := Settings{
+		WaitForShutdownMsg: fmt.Sprintf("Stopping deleting old saved clips for [%s]", proc.cam.Title()),
+		Process:            DeleteOldClips(proc.cam),
+	}
+	proc.deleteClips = New(deleteProcess)
 }
 
 func (proc *persistCameraToDisk) Start() {
+	proc.deleteClips.Start()
 	proc.writeClips.Start()
 	proc.generateClips.Start()
 	proc.streamProcess.Start()
 }
 
 func (proc *persistCameraToDisk) Stop() {
+	proc.deleteClips.Stop()
 	proc.writeClips.Stop()
 	proc.generateClips.Stop()
 	proc.streamProcess.Stop()
@@ -59,7 +68,11 @@ func (proc *persistCameraToDisk) Stop() {
 
 func (proc *persistCameraToDisk) Wait() {
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
+	go func(wg *sync.WaitGroup) {
+		proc.deleteClips.Wait()
+		wg.Done()
+	}(&wg)
 	go func(wg *sync.WaitGroup) {
 		proc.writeClips.Wait()
 		wg.Done()
