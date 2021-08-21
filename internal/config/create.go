@@ -23,7 +23,7 @@ func create() error {
 	err = writeConfigToDisk(data, path, false)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return configdef.ErrConfigAlreadyExists(err)
+			return configdef.ErrConfigAlreadyExists
 		}
 		return err
 	}

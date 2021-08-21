@@ -48,11 +48,10 @@ func (suite *CreateConfigTestSuite) TestConfigCreateFailsDueToAlreadyExisting() 
 	err := suite.configResolver.Create()
 	assert.EqualError(
 		suite.T(), err,
-		"unable to create/open file: open /home/tauraamui/.config/tacusci/dragondaemon/config.json: file already exists",
+		"config file already exists",
 	)
 
-	_, ok := err.(configdef.ErrConfigAlreadyExists)
-	assert.True(suite.T(), ok, "Error returned should be of type ErrConfigAlreadyExists")
+	assert.ErrorIs(suite.T(), err, configdef.ErrConfigAlreadyExists)
 }
 
 func TestCreateConfigTestSuite(t *testing.T) {
