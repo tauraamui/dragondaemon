@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -40,7 +41,23 @@ func load() (configdef.Values, error) {
 		return configdef.Values{}, err
 	}
 
+	loadDefaultCameraDataLabelFormats(values.Cameras)
+
 	return values, nil
+}
+
+func loadDefaultCameraDataLabelFormats(cameras []configdef.Camera) {
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(cameras); i++ {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, camera *configdef.Camera) {
+			defer wg.Done()
+			if len(camera.DateTimeFormat) == 0 {
+				camera.DateTimeFormat = defaultSettings[DATETIMEFORMAT].(string)
+			}
+		}(&wg, &cameras[i])
+	}
+	wg.Wait()
 }
 
 var readConfigFile = func(path string) ([]byte, error) {
