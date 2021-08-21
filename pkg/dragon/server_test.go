@@ -20,6 +20,10 @@ type testConfigResolver struct {
 	resolveError    error
 }
 
+func (tcc testConfigResolver) Create() error {
+	return errors.New("create not implemented")
+}
+
 func (tcc testConfigResolver) Resolve() (configdef.Values, error) {
 	if tcc.resolveCallback != nil {
 		tcc.resolveCallback()
@@ -36,6 +40,10 @@ func (tcc testConfigResolver) Resolve() (configdef.Values, error) {
 	return configdef.Values{
 		Cameras: []configdef.Camera{{Title: "Test camera"}},
 	}, nil
+}
+
+func (tcc testConfigResolver) Destroy() error {
+	return errors.New("destroy not implemented")
 }
 
 type testVideoBackend struct {
