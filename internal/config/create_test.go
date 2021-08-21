@@ -28,6 +28,10 @@ func (suite *CreateConfigTestSuite) TearDownSuite() {
 	suite.fs = afero.NewOsFs()
 }
 
+func (suite *CreateConfigTestSuite) TearDownTest() {
+	suite.fs.RemoveAll("/")
+}
+
 func (suite *CreateConfigTestSuite) TestConfigCreate() {
 	require.NoError(suite.T(), suite.configResolver.Create())
 	loadedConfig, err := suite.configResolver.Resolve()
@@ -37,7 +41,14 @@ func (suite *CreateConfigTestSuite) TestConfigCreate() {
 		MaxClipAgeInDays: 30,
 		Cameras:          []configdef.Camera{},
 	}, loadedConfig)
+}
 
+func (suite *CreateConfigTestSuite) TestConfigCreateFailsDueToAlreadyExisting() {
+	require.NoError(suite.T(), suite.configResolver.Create())
+	require.EqualError(
+		suite.T(), suite.configResolver.Create(),
+		"unable to create/open file: open /home/tauraamui/.config/tacusci/dragondaemon/config.json: file already exists",
+	)
 }
 
 func TestCreateConfigTestSuite(t *testing.T) {
