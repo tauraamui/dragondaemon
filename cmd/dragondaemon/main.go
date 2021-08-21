@@ -12,7 +12,7 @@ import (
 
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
-	"github.com/tauraamui/dragondaemon/pkg/config"
+	"github.com/tauraamui/dragondaemon/internal/config"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -34,9 +34,9 @@ func (service *Service) Setup() (string, error) {
 
 	err := config.Setup()
 	if err != nil {
-		if !errors.Is(err, config.ErrConfigAlreadyExists) {
-			return "", err
-		}
+		// if !errors.Is(err, config.ErrConfigAlreadyExists) {
+		// 	return "", err
+		// }
 		log.Error(err.Error())
 	}
 
