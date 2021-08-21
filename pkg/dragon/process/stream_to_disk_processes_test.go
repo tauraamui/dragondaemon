@@ -321,7 +321,7 @@ func countClipsCreatedByGenerateProc(
 	}(&wg, &count, clips, countingCtx)
 
 	procCtx, cancelProc := context.WithCancel(context.TODO())
-	proc := GenerateClipsProcess(frames, clips, fps, spc)
+	proc := GenerateClipsProcess(frames, clips, "", fps, spc)
 	go proc(procCtx)
 
 	<-doneCreatingFrames

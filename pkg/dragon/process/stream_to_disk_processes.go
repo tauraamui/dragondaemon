@@ -51,7 +51,12 @@ func stream(cam camera.Connection, frames chan video.Frame) {
 	}
 }
 
-func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps int, spc int) func(cancel context.Context) []chan interface{} {
+func GenerateClipsProcess(
+	frames chan video.Frame,
+	clips chan video.Clip,
+	fullCamPersistLocation string,
+	fps, spc int,
+) func(cancel context.Context) []chan interface{} {
 	return func(cancel context.Context) []chan interface{} {
 		var stopSignals []chan interface{}
 		stopping := make(chan interface{})
@@ -64,7 +69,7 @@ func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps in
 					close(stopping)
 					break procLoop
 				default:
-					clips <- generateClipFromStream(cancel, frames, fps, spc)
+					clips <- generateClipFromStream(cancel, frames, fullCamPersistLocation, fps, spc)
 				}
 			}
 		}(frames, stopping)
@@ -73,8 +78,8 @@ func GenerateClipsProcess(frames chan video.Frame, clips chan video.Clip, fps in
 	}
 }
 
-func generateClipFromStream(cancel context.Context, frames chan video.Frame, fps, spc int) video.Clip {
-	clip := video.NewClip()
+func generateClipFromStream(cancel context.Context, frames chan video.Frame, persistLocation string, fps, spc int) video.Clip {
+	clip := video.NewClip(persistLocation)
 
 	var capturedFrames int
 procLoop:

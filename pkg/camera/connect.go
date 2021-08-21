@@ -3,6 +3,7 @@ package camera
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync"
 
 	"github.com/google/uuid"
@@ -12,6 +13,8 @@ import (
 type Connection interface {
 	UUID() string
 	Title() string
+	PersistLocation() string
+	FullPersistLocation() string
 	FPS() int
 	SPC() int
 	Read() (video.Frame, error)
@@ -22,9 +25,9 @@ type Connection interface {
 
 type connection struct {
 	uuid      string
-	backend   video.Backend
 	title     string
 	sett      Settings
+	backend   video.Backend
 	mu        sync.Mutex
 	isClosing bool
 	vc        video.Connection
@@ -47,6 +50,14 @@ func (c *connection) Read() (video.Frame, error) {
 
 func (c *connection) Title() string {
 	return c.title
+}
+
+func (c *connection) PersistLocation() string {
+	return c.sett.PersistLocation
+}
+
+func (c *connection) FullPersistLocation() string {
+	return filepath.FromSlash(fmt.Sprintf("%s/%s", c.PersistLocation(), c.Title()))
 }
 
 func (c *connection) FPS() int {

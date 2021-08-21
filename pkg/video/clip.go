@@ -18,18 +18,20 @@ var Timestamp = func() time.Time {
 	return time.Now()
 }
 
-func NewClip() *clip {
+func NewClip(ploc string) *clip {
 	return &clip{
-		timestamp: Timestamp(),
-		isClosed:  false,
+		timestamp:       Timestamp(),
+		persistLocation: ploc,
+		isClosed:        false,
 	}
 }
 
 type clip struct {
-	timestamp time.Time
-	mu        sync.Mutex
-	isClosed  bool
-	frames    []Frame
+	timestamp       time.Time
+	persistLocation string
+	mu              sync.Mutex
+	isClosed        bool
+	frames          []Frame
 }
 
 func (c *clip) AppendFrame(f Frame) {
