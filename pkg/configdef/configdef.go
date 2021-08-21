@@ -11,7 +11,7 @@ import (
 type Camera struct {
 	Title           string            `json:"title" validate:"empty=false"`
 	Address         string            `json:"address"`
-	PersistLoc      string            `json:"persist_location"`
+	PersistLoc      string            `json:"persist_location" validate:"empty=false"`
 	MaxClipAgeDays  int               `json:"max_clip_age_days" validate:"gte=1 & lte=30"`
 	MockWriter      bool              `json:"mock_writer"`
 	MockCapturer    bool              `json:"mock_capturer"`
