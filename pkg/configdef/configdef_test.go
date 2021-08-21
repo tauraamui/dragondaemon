@@ -11,8 +11,7 @@ import (
 func TestValidateEmptyConfigPasses(t *testing.T) {
 	// TODO(tauraamui): return this to actually be empty again
 	// once this root field has been removed
-	// body := `{}`
-	body := `{"max_clip_age_in_days": 1}`
+	body := `{}`
 	config := configdef.Values{}
 	json.Unmarshal([]byte(body), &config)
 
@@ -20,9 +19,25 @@ func TestValidateEmptyConfigPasses(t *testing.T) {
 }
 
 func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
-	// TODO(tauraamui): return this to actually be empty again
-	// once this root field has been removed
-	// body := `{}`
+	body := `{
+			"max_clip_age_in_days": 1,
+			"cameras": [
+				{
+					"title": "NotBlank",
+					"persist_location": "Nowhere",
+					"max_clip_age_days": 15,
+					"fps": 11,
+					"seconds_per_clip": 1
+				}
+			]
+		}`
+	config := configdef.Values{}
+	json.Unmarshal([]byte(body), &config)
+
+	assert.NoError(t, config.RunValidate())
+}
+
+func TestValidatePopulatedConfigFailsValidationForMissingPersistLocation(t *testing.T) {
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -37,7 +52,7 @@ func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
 	config := configdef.Values{}
 	json.Unmarshal([]byte(body), &config)
 
-	assert.NoError(t, config.RunValidate())
+	assert.EqualError(t, config.RunValidate(), `Validation error in field "PersistLoc" of type "string" using validator "empty=false"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForNonUniqueCameraTitles(t *testing.T) {
@@ -46,12 +61,14 @@ func TestValidatePopulatedConfigFailsValiationForNonUniqueCameraTitles(t *testin
 			"cameras": [
 				{
 					"title": "TheSameNotUnique",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 15,
 					"fps": 11,
 					"seconds_per_clip": 1
 				},
 				{
 					"title": "TheSameNotUnique",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 15,
 					"fps": 11,
 					"seconds_per_clip": 1
@@ -70,6 +87,7 @@ func TestValidatePopulatedConfigFailsValiationForMaxClipAgeDays(t *testing.T) {
 			"cameras": [
 				{
 					"title": "NotBlank",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 85,
 					"fps": 11,
 					"seconds_per_clip": 1
@@ -88,6 +106,7 @@ func TestValidatePopulatedConfigFailsValiationForFPSLessThan1(t *testing.T) {
 			"cameras": [
 				{
 					"title": "NotBlank",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 30,
 					"fps": -4,
 					"seconds_per_clip": 1
@@ -106,6 +125,7 @@ func TestValidatePopulatedConfigFailsValiationForFPSMoreThan30(t *testing.T) {
 			"cameras": [
 				{
 					"title": "NotBlank",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 30,
 					"fps": 39,
 					"seconds_per_clip": 1
@@ -124,6 +144,7 @@ func TestValidatePopulatedConfigFailsValiationForSPCLessThan1(t *testing.T) {
 			"cameras": [
 				{
 					"title": "NotBlank",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 30,
 					"fps": 30,
 					"seconds_per_clip":-5
@@ -142,6 +163,7 @@ func TestValidatePopulatedConfigFailsValiationForSPCMoreThan3(t *testing.T) {
 			"cameras": [
 				{
 					"title": "NotBlank",
+					"persist_location": "Nowhere",
 					"max_clip_age_days": 30,
 					"fps": 30,
 					"seconds_per_clip":12
