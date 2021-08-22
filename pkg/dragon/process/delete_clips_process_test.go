@@ -64,7 +64,7 @@ func (suite *DeleteOldClipsTestSuite) TestDeleteOldClips() {
 
 	deleteClips := New(deleteProcess)
 	deleteClips.Start()
-	time.Sleep(time.Millisecond * 1)
+	time.Sleep(time.Millisecond * 3)
 
 	deleteClips.Stop()
 	deleteClips.Wait()
