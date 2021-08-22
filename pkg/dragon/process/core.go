@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
+
+var fs afero.Fs = afero.NewOsFs()
 
 func NewCoreProcess(cam camera.Connection) Process {
 	return &persistCameraToDisk{

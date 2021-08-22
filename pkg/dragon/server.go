@@ -107,6 +107,7 @@ func connect(cancel context.Context, cam configdef.Camera, backend video.Backend
 		DateTimeLabel:   cam.DateTimeLabel,
 		FPS:             cam.FPS,
 		PersistLocation: cam.PersistLoc,
+		MaxClipAgeDays:  cam.MaxClipAgeDays,
 		Reolink:         cam.ReolinkAdvanced,
 	}
 

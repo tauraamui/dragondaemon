@@ -15,6 +15,7 @@ type Connection interface {
 	Title() string
 	PersistLocation() string
 	FullPersistLocation() string
+	MaxClipAgeDays() int
 	FPS() int
 	SPC() int
 	Read() (video.Frame, error)
@@ -58,6 +59,10 @@ func (c *connection) PersistLocation() string {
 
 func (c *connection) FullPersistLocation() string {
 	return filepath.FromSlash(fmt.Sprintf("%s/%s", c.PersistLocation(), c.Title()))
+}
+
+func (c *connection) MaxClipAgeDays() int {
+	return c.sett.MaxClipAgeDays
 }
 
 func (c *connection) FPS() int {
