@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/afero"
@@ -11,7 +12,7 @@ import (
 )
 
 func DeleteOldClips(cam camera.Connection) func(cancel context.Context) []chan interface{} {
-	var lastDeleteInvokedAt time.Time
+	lastDeleteInvokedAt := TimeNow()
 	return func(cancel context.Context) []chan interface{} {
 		var stopSignals []chan interface{}
 		log.Info("Deleting old saved clips for camera [%s]", cam.Title())
@@ -34,14 +35,17 @@ func DeleteOldClips(cam camera.Connection) func(cancel context.Context) []chan i
 	}
 }
 
+var TimeNow = func() time.Time {
+	return time.Now()
+}
+
 func delete(cam camera.Connection, lastRun time.Time) time.Time {
-	if time.Now().After(lastRun.Add(5 * time.Minute)) {
-		println("running delete")
+	if TimeNow().After(lastRun.Add(5 * time.Minute)) {
 		err := removeOldClipDirsByDate(cam.FullPersistLocation(), cam.MaxClipAgeDays())
 		if err != nil {
 			log.Error("error occurred whilst removing old clip dirs: %w", err)
 		}
-		return time.Now()
+		return TimeNow()
 	}
 	return lastRun
 }
@@ -69,10 +73,15 @@ func removeOldClipDirsByDate(path string, maxClipAgeDays int) error {
 
 	for _, name := range names {
 		date, err := strToDate(name)
-		log.Error("unable to resolve date from dir name %s: %w", name, err)
+		if err != nil {
+			log.Error(fmt.Errorf("unable to resolve date from dir name %s: %w", name, err).Error())
+			continue
+		}
 		if date.Before(time.Now().AddDate(0, 0, -1*maxClipAgeDays)) {
-			if err := deleteDirAndContent(name); err != nil {
-				log.Error("unable to remove dir %s: %w", name, err)
+			if err := deleteDirAndContent(filepath.FromSlash(
+				fmt.Sprintf("%s/%s", path, name),
+			)); err != nil {
+				log.Error(fmt.Errorf("unable to remove dir %s: %w", name, err).Error())
 			}
 		}
 	}
