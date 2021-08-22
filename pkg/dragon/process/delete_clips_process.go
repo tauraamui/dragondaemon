@@ -92,6 +92,10 @@ func deleteDirAndContent(path string) error {
 	if err := verifyDirPath(path); err != nil {
 		return err
 	}
+	return removeAll(path)
+}
+
+var removeAll = func(path string) error {
 	return fs.RemoveAll(path)
 }
 
