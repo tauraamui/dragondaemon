@@ -31,7 +31,7 @@ type openCVBackend struct {
 func (b *openCVBackend) Connect(cancel context.Context, addr string) (Connection, error) {
 	err := b.conn.connect(cancel, addr)
 	if err != nil {
-		return &openCVConnection{}, err
+		return nil, err
 	}
 
 	return &b.conn, nil

@@ -12,3 +12,7 @@ type Backend interface {
 func DefaultBackend() Backend {
 	return &openCVBackend{}
 }
+
+func MockBackend() Backend {
+	return &mockVideoBackend{}
+}
