@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -22,11 +23,13 @@ type DeleteOldClipsTestSuite struct {
 }
 
 func (suite *DeleteOldClipsTestSuite) SetupSuite() {
+	logging.CurrentLoggingLevel = logging.SilentLevel
 	suite.fs = afero.NewMemMapFs()
 	fs = suite.fs
 }
 
 func (suite *DeleteOldClipsTestSuite) TearDownSuite() {
+	logging.CurrentLoggingLevel = logging.WarnLevel
 	suite.fs = afero.NewOsFs()
 }
 
