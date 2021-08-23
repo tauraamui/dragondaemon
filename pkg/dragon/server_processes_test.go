@@ -46,20 +46,19 @@ func (suite *ServerProcessTestSuite) TearDownTest() {
 }
 
 func (suite *ServerProcessTestSuite) TestRunProcesses() {
-	suite.T().Skip("In the middle of implementing new process which breaks this...")
 	require.NoError(suite.T(), suite.server.LoadConfiguration())
 	require.Len(suite.T(), suite.server.Connect(), 0)
 	suite.server.SetupProcesses()
 	suite.server.RunProcesses()
-	time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Millisecond)
 	<-suite.server.Shutdown()
-	assert.Equal(suite.T(), []string{
+	assert.Subset(suite.T(), suite.infoLogs, []string{
 		"Connecting to camera: [TestConn]...",
 		"Connected successfully to camera: [TestConn]",
 		"Streaming video from camera [TestConn]",
 		"Stopping generating clips from [TestConn] video stream...",
 		"Closing camera [TestConn] video stream...",
-	}, suite.infoLogs)
+	})
 }
 
 func TestServerProcessTestSuite(t *testing.T) {
