@@ -43,7 +43,7 @@ func delete(cam camera.Connection, lastRun time.Time) time.Time {
 	if TimeNow().After(lastRun.Add(5 * time.Minute)) {
 		err := removeOldClipDirsByDate(cam.FullPersistLocation(), cam.MaxClipAgeDays())
 		if err != nil {
-			log.Error("error occurred whilst removing old clip dirs: %w", err)
+			log.Error(fmt.Errorf("error occurred whilst removing old clip dirs: %w", err).Error())
 		}
 		return TimeNow()
 	}

@@ -73,9 +73,11 @@ fileExistanceProcLoop:
 		select {
 		case <-timeout:
 			suite.T().Fatal("Timeout exceeded. Delete clip process took too long...")
+			break fileExistanceProcLoop
 		default:
 			if err != nil {
 				suite.T().Fatal("Unable to query existance of clip: %w", err)
+				break fileExistanceProcLoop
 			}
 			if exists {
 				continue
