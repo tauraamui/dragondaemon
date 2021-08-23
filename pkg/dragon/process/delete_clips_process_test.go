@@ -64,7 +64,27 @@ func (suite *DeleteOldClipsTestSuite) TestDeleteOldClips() {
 
 	deleteClips := New(deleteProcess)
 	deleteClips.Start()
-	time.Sleep(time.Millisecond * 3)
+
+	timeout := time.After(3 * time.Second)
+fileExistanceProcLoop:
+	for {
+		time.Sleep(1 * time.Microsecond)
+		exists, err := afero.Exists(suite.fs, "/testroot/clips/FakeCamera/2010-03-11")
+		select {
+		case <-timeout:
+			suite.T().Fatal("Timeout exceeded. Delete clip process took too long...")
+		default:
+			if err != nil {
+				suite.T().Fatal("Unable to query existance of clip: %w", err)
+			}
+			if exists {
+				continue
+			}
+			if !exists {
+				break fileExistanceProcLoop
+			}
+		}
+	}
 
 	deleteClips.Stop()
 	deleteClips.Wait()
