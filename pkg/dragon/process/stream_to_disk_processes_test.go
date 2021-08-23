@@ -123,9 +123,7 @@ func (suite *StreamAndPersistProcessesTestSuite) TestStreamProcess() {
 	frames := make(chan video.Frame)
 
 	count := countFramesReadFromStreamProc(suite.conn, frames, 10)
-
-	assert.GreaterOrEqual(suite.T(), count, 11)
-	assert.LessOrEqual(suite.T(), count, 15)
+	assert.Equal(suite.T(), 11, count)
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
