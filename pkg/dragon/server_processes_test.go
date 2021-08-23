@@ -2,14 +2,12 @@ package dragon_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/tauraamui/dragondaemon/internal/videotest"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -23,20 +21,6 @@ type ServerProcessTestSuite struct {
 	resetInfoLogsOverload func()
 }
 
-func (suite *ServerProcessTestSuite) SetupSuite() {
-	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(suite.T(), err)
-	suite.mp4FilePath = mp4FilePath
-}
-
-func (suite *ServerProcessTestSuite) TearDownSuite() {
-	file, err := os.Open(suite.mp4FilePath)
-	if err == nil {
-		os.Remove(file.Name())
-	}
-	file.Close()
-}
-
 func (suite *ServerProcessTestSuite) SetupTest() {
 	suite.server = dragon.NewServer(testConfigResolver{
 		resolveConfigs: func() configdef.Values {
@@ -46,7 +30,7 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 				},
 			}
 		},
-	}, video.DefaultBackend())
+	}, video.MockBackend())
 
 	suite.infoLogs = []string{}
 	resetLogInfo := overloadInfoLog(
