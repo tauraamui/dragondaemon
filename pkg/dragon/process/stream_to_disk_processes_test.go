@@ -264,7 +264,11 @@ func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Fra
 	count := 0
 	go func(cancel context.CancelFunc, count *int) {
 		for {
-			if *count >= targetToSend {
+			if *count == targetToSend {
+				cancel()
+				break
+			}
+			if *count > targetToSend {
 				cancel()
 				break
 			}
