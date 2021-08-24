@@ -93,6 +93,9 @@ func (suite *StreamAndPersistProcessesTestSuite) SetupTest() {
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) TearDownTest() {
+	suite.errorLogs = nil
+	suite.debugLogs = nil
+	suite.infoLogs = nil
 	suite.resetInfoLogsOverload()
 	suite.resetDebugLogsOverload()
 	suite.resetErrorLogsOverload()
@@ -193,21 +196,37 @@ func (clip testVideoClip) Close() {
 	}
 }
 
+type testClipWriter struct {
+	onWrite    func()
+	writeError error
+}
+
+func (w testClipWriter) Write(video.Clip) error {
+	if w.onWrite != nil {
+		w.onWrite()
+	}
+	if w.writeError != nil {
+		return w.writeError
+	}
+	return nil
+}
+
 func (suite *StreamAndPersistProcessesTestSuite) TestWriteClipsToDiskProcess() {
 	const writeCount = 55
 	const closeCount = writeCount
 
 	clips := make(chan video.Clip)
-	writeClipsProcess := WriteClipsToDiskProcess(clips)
+	writeInvokedCount := 0
+	writeClipsProcess := WriteClipsToDiskProcess(clips, testClipWriter{
+		onWrite: func() { writeInvokedCount++ },
+	})
 	ctx, cancel := context.WithCancel(context.TODO())
 
 	writeClipsProcess(ctx)
 
-	writeInvokedCount := 0
 	closeInvokedCount := 0
 	for i := 0; i < writeCount; i++ {
 		clip := testVideoClip{
-			onWriteCallback: func() { writeInvokedCount++ },
 			onCloseCallback: func() { closeInvokedCount++ },
 		}
 		clips <- clip
@@ -221,16 +240,15 @@ func (suite *StreamAndPersistProcessesTestSuite) TestWriteClipsToDiskProcess() {
 
 func (suite *StreamAndPersistProcessesTestSuite) TestWriteClipsToDiskProcessLogsWriteFailErrors() {
 	clips := make(chan video.Clip)
-	writeClipsProcess := WriteClipsToDiskProcess(clips)
+	writeClipsProcess := WriteClipsToDiskProcess(clips, testClipWriter{
+		writeError: errors.New("clip write test error"),
+	})
 	ctx, cancel := context.WithCancel(context.TODO())
 
 	writeClipsProcess(ctx)
 
 	for i := 0; i < 3; i++ {
-		clip := testVideoClip{
-			writeError: errors.New("clip write test error"),
-		}
-		clips <- clip
+		clips <- testVideoClip{}
 	}
 
 	cancel()

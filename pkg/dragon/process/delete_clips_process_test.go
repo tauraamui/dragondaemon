@@ -122,6 +122,10 @@ func (tvb testVideoBackend) NewFrame() video.Frame {
 	return testVideoFrame{}
 }
 
+func (tvb testVideoBackend) NewWriter() video.ClipWriter {
+	return nil
+}
+
 type testVideoFrame struct {
 }
 

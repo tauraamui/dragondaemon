@@ -58,6 +58,10 @@ func (tvb testVideoBackend) NewFrame() video.Frame {
 	return testVideoFrame{}
 }
 
+func (tvb testVideoBackend) NewWriter() video.ClipWriter {
+	return nil
+}
+
 type testVideoFrame struct {
 }
 
@@ -159,6 +163,10 @@ func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string)
 
 func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 	return testVideoFrame{}
+}
+
+func (b testWaitsOnCancelVideoBackend) NewWriter() video.ClipWriter {
+	return nil
 }
 
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
