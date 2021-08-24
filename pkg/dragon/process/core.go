@@ -11,9 +11,10 @@ import (
 
 var fs afero.Fs = afero.NewOsFs()
 
-func NewCoreProcess(cam camera.Connection) Process {
+func NewCoreProcess(cam camera.Connection, writer video.ClipWriter) Process {
 	return &persistCameraToDisk{
 		cam:    cam,
+		writer: writer,
 		frames: make(chan video.Frame),
 		clips:  make(chan video.Clip),
 	}
@@ -21,6 +22,7 @@ func NewCoreProcess(cam camera.Connection) Process {
 
 type persistCameraToDisk struct {
 	cam           camera.Connection
+	writer        video.ClipWriter
 	frames        chan video.Frame
 	clips         chan video.Clip
 	streamProcess Process
@@ -32,7 +34,7 @@ type persistCameraToDisk struct {
 func (proc *persistCameraToDisk) Setup() {
 	writeClipsToDiskProcess := Settings{
 		WaitForShutdownMsg: fmt.Sprintf("Stopping writing clips to disk from [%s] video stream...", proc.cam.Title()),
-		Process:            WriteClipsToDiskProcess(proc.clips),
+		Process:            WriteClipsToDiskProcess(proc.clips, proc.writer),
 	}
 	proc.writeClips = New(writeClipsToDiskProcess)
 

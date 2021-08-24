@@ -1,7 +1,6 @@
 package video
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 
 type Clip interface {
 	AppendFrame(Frame)
-	Write() error
 	Close()
 }
 
@@ -42,10 +40,6 @@ func (c *clip) AppendFrame(f Frame) {
 		log.Fatal("cannot append frame to closed clip")
 	}
 	c.frames = append(c.frames, f)
-}
-
-func (c *clip) Write() error {
-	return errors.New("not implemented yet")
 }
 
 func (c *clip) Close() {

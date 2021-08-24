@@ -108,10 +108,11 @@ procLoop:
 	return clip
 }
 
-func WriteClipsToDiskProcess(clips chan video.Clip) func(canel context.Context) []chan interface{} {
+func WriteClipsToDiskProcess(clips chan video.Clip, writer video.ClipWriter) func(canel context.Context) []chan interface{} {
 	return func(cancel context.Context) []chan interface{} {
 		var stopSignals []chan interface{}
 		stopping := make(chan interface{})
+
 		go func(clips chan video.Clip, stopping chan interface{}) {
 		procLoop:
 			for {
@@ -121,7 +122,7 @@ func WriteClipsToDiskProcess(clips chan video.Clip) func(canel context.Context) 
 					close(stopping)
 					break procLoop
 				default:
-					writeClipToDisk(<-clips)
+					writeClipToDisk(<-clips, writer)
 				}
 			}
 		}(clips, stopping)
@@ -130,8 +131,8 @@ func WriteClipsToDiskProcess(clips chan video.Clip) func(canel context.Context) 
 	}
 }
 
-func writeClipToDisk(clip video.Clip) {
-	err := clip.Write()
+func writeClipToDisk(clip video.Clip, writer video.ClipWriter) {
+	err := writer.Write(clip)
 	if err != nil {
 		log.Error(fmt.Errorf("Unable to write clip to disk: %w", err).Error())
 	}

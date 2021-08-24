@@ -41,6 +41,16 @@ func (b *openCVBackend) NewFrame() Frame {
 	return &openCVFrame{mat: gocv.NewMat()}
 }
 
+func (b *openCVBackend) NewWriter() ClipWriter {
+	return &openCVClipWriter{}
+}
+
+type openCVClipWriter struct{}
+
+func (w *openCVClipWriter) Write(clip Clip) error {
+	return errors.New("OpenCV backend clip writer write not implemented...")
+}
+
 type openCVConnection struct {
 	mu     sync.Mutex
 	isOpen bool

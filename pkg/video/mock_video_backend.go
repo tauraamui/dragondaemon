@@ -31,6 +31,10 @@ func (b *mockVideoBackend) NewFrame() Frame {
 	return &openCVFrame{mat: gocv.NewMat()}
 }
 
+func (b *mockVideoBackend) NewWriter() ClipWriter {
+	return &openCVClipWriter{}
+}
+
 type mockVideoConnection struct {
 	cameraTitle             string
 	renderedBaseFrameCanvas bool

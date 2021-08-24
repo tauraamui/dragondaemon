@@ -7,6 +7,7 @@ import (
 type Backend interface {
 	Connect(context.Context, string) (Connection, error)
 	NewFrame() Frame
+	NewWriter() ClipWriter
 }
 
 func DefaultBackend() Backend {
