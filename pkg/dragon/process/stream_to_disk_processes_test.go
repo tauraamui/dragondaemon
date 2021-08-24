@@ -254,24 +254,37 @@ func defaultFrames(
 	close(done)
 }
 
+type counter struct {
+	sync.Mutex
+	count int
+}
+
+func (c *counter) value() int {
+	c.Lock()
+	defer c.Unlock()
+	return c.count
+}
+
+func (c *counter) incr() {
+	c.Lock()
+	defer c.Unlock()
+	c.count++
+}
+
 func countFramesReadFromStreamProc(conn camera.Connection, frames chan video.Frame, targetToSend int) int {
 	runStreamProcess := StreamProcess(conn, frames)
 	ctx, cancel := context.WithCancel(context.TODO())
 	runStreamProcess(ctx)
 
-	count := 0
-	go func(cancel context.CancelFunc, count *int) {
+	c := counter{}
+	go func(cancel context.CancelFunc, count *counter) {
 		for {
-			if *count == targetToSend {
-				cancel()
-				break
-			}
-			if *count > targetToSend {
+			if count.value() >= targetToSend {
 				cancel()
 				break
 			}
 		}
-	}(cancel, &count)
+	}(cancel, &c)
 
 procLoop:
 	for {
@@ -281,10 +294,10 @@ procLoop:
 		default:
 			f := <-frames
 			f.Close()
-			count++
+			c.incr()
 		}
 	}
-	return count
+	return c.value()
 }
 
 func countClipsCreatedByGenerateProc(
@@ -299,10 +312,10 @@ func countClipsCreatedByGenerateProc(
 
 	countingCtx, cancelClipCount := context.WithCancel(context.TODO())
 	clips := make(chan video.Clip)
-	count := 0
+	c := counter{}
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	go func(wg *sync.WaitGroup, count *int, clips chan video.Clip, stop context.Context) {
+	go func(wg *sync.WaitGroup, count *counter, clips chan video.Clip, stop context.Context) {
 		defer wg.Done()
 	procLoop:
 		for {
@@ -311,11 +324,11 @@ func countClipsCreatedByGenerateProc(
 				break procLoop
 			default:
 				clip := <-clips
-				*count++
+				c.incr()
 				clip.Close()
 			}
 		}
-	}(&wg, &count, clips, countingCtx)
+	}(&wg, &c, clips, countingCtx)
 
 	procCtx, cancelProc := context.WithCancel(context.TODO())
 	proc := GenerateClipsProcess(frames, clips, "", fps, spc)
@@ -326,5 +339,5 @@ func countClipsCreatedByGenerateProc(
 	cancelClipCount()
 
 	wg.Wait()
-	return count
+	return c.value()
 }
