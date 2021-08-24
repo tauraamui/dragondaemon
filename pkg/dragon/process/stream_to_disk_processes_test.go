@@ -50,7 +50,7 @@ type StreamAndPersistProcessesTestSuite struct {
 }
 
 func (suite *StreamAndPersistProcessesTestSuite) SetupSuite() {
-	logging.CurrentLoggingLevel = logging.DebugLevel
+	logging.CurrentLoggingLevel = logging.SilentLevel
 	suite.backend = video.MockBackend()
 	conn, err := camera.Connect("TestConn", "fake-addr", camera.Settings{}, suite.backend)
 	require.NoError(suite.T(), err)

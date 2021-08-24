@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -99,6 +100,8 @@ func TestServerLoadConfig(t *testing.T) {
 }
 
 func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
+	logging.CurrentLoggingLevel = logging.SilentLevel
+	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	var warnLogs []string
 	resetLogWarn := overloadWarnLog(
 		func(format string, a ...interface{}) {
@@ -127,6 +130,8 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 }
 
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
+	logging.CurrentLoggingLevel = logging.SilentLevel
+	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s := dragon.NewServer(testConfigResolver{
 		resolveError: errors.New("test unable to resolve config"),
 	}, testVideoBackend{})
@@ -135,6 +140,8 @@ func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 }
 
 func TestServerConnect(t *testing.T) {
+	logging.CurrentLoggingLevel = logging.SilentLevel
+	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
 	err := s.LoadConfiguration()
 	require.NoError(t, err)
@@ -156,6 +163,8 @@ func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
 
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
+	logging.CurrentLoggingLevel = logging.SilentLevel
+	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	require.NoError(t, s.LoadConfiguration())
 
@@ -172,6 +181,8 @@ func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
+	logging.CurrentLoggingLevel = logging.SilentLevel
+	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
 	require.NoError(t, s.LoadConfiguration())
 
@@ -191,6 +202,8 @@ func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 }
 
 func TestServerShutdown(t *testing.T) {
+	logging.CurrentLoggingLevel = logging.SilentLevel
+	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	var warnLogs []string
 	resetLogWarn := overloadWarnLog(
 		func(format string, a ...interface{}) {

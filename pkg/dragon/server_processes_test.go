@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -22,6 +23,7 @@ type ServerProcessTestSuite struct {
 }
 
 func (suite *ServerProcessTestSuite) SetupTest() {
+	logging.CurrentLoggingLevel = logging.SilentLevel
 	suite.server = dragon.NewServer(testConfigResolver{
 		resolveConfigs: func() configdef.Values {
 			return configdef.Values{
@@ -42,6 +44,7 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 }
 
 func (suite *ServerProcessTestSuite) TearDownTest() {
+	logging.CurrentLoggingLevel = logging.WarnLevel
 	suite.resetInfoLogsOverload()
 }
 
