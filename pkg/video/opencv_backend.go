@@ -46,15 +46,40 @@ func (b *openCVBackend) NewFrame() Frame {
 }
 
 func (b *openCVBackend) NewWriter() ClipWriter {
-	return &openCVClipWriter{}
+	return &openCVClipWriter{
+		onWriteInitDone: false,
+	}
 }
 
+const codec = "avc1.4d001e"
+
 type openCVClipWriter struct {
-	w *gocv.VideoWriter
+	onWriteInitDone bool
+	vw              *gocv.VideoWriter
+	clip            Clip
+}
+
+func (w *openCVClipWriter) init(clip Clip) error {
+	if w.onWriteInitDone {
+		return nil
+	}
+	defer func() { w.onWriteInitDone = true }()
+
+	w.clip = clip
+	width, height := clip.FrameDimensions()
+	vw, err := gocv.VideoWriterFile(
+		clip.PersistLocation(), codec, float64(clip.FPS()), width, height, true,
+	)
+	if err != nil {
+		return err
+	}
+	w.vw = vw
+	return nil
 }
 
 func (w *openCVClipWriter) Write(clip Clip) error {
-	return errors.New("OpenCV backend clip writer write not implemented...")
+	w.init(clip)
+	return nil
 }
 
 type openCVConnection struct {
