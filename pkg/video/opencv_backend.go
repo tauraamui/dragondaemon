@@ -17,6 +17,10 @@ func (frame *openCVFrame) DataRef() interface{} {
 	return &frame.mat
 }
 
+func (frame *openCVFrame) Dimensions() (int, int) {
+	return frame.mat.Cols(), frame.mat.Rows()
+}
+
 func (frame *openCVFrame) Close() {
 	if !frame.isClosed {
 		frame.mat.Close()
@@ -45,7 +49,9 @@ func (b *openCVBackend) NewWriter() ClipWriter {
 	return &openCVClipWriter{}
 }
 
-type openCVClipWriter struct{}
+type openCVClipWriter struct {
+	w *gocv.VideoWriter
+}
 
 func (w *openCVClipWriter) Write(clip Clip) error {
 	return errors.New("OpenCV backend clip writer write not implemented...")

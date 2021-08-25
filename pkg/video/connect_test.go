@@ -33,6 +33,10 @@ func (tvf testVideoFrame) DataRef() interface{} {
 	return nil
 }
 
+func (tvf testVideoFrame) Dimensions() (int, int) {
+	return 100, 50
+}
+
 func (tvf testVideoFrame) Close() {}
 
 type testVideoConnection struct {

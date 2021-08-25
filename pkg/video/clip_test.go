@@ -31,6 +31,10 @@ func (frame *testFrame) DataRef() interface{} {
 	return nil
 }
 
+func (frame *testFrame) Dimensions() (int, int) {
+	return 100, 50
+}
+
 func (frame *testFrame) Close() {
 	if frame.onClose != nil {
 		frame.onClose()

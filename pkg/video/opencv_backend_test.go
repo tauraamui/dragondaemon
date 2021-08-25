@@ -145,6 +145,10 @@ func (frame invalidFrame) DataRef() interface{} {
 	return nil
 }
 
+func (frame invalidFrame) Dimensions() (int, int) {
+	return 100, 50
+}
+
 func (frame invalidFrame) Close() {}
 
 func TestOpenAndReadWithIncorrectFrameDataReturnsError(t *testing.T) {
