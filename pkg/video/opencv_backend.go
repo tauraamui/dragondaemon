@@ -79,7 +79,20 @@ func (w *openCVClipWriter) init(clip Clip) error {
 
 func (w *openCVClipWriter) Write(clip Clip) error {
 	w.init(clip)
+	for _, frame := range clip.GetFrames() {
+		if err := w.writeFrame(frame); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (w *openCVClipWriter) writeFrame(frame Frame) error {
+	mat, ok := frame.DataRef().(*gocv.Mat)
+	if !ok {
+		return errors.New("must pass OpenCV frame to OpenCV writer")
+	}
+	return w.vw.Write(*mat)
 }
 
 type openCVConnection struct {

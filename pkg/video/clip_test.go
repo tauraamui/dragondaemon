@@ -49,7 +49,7 @@ func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 	frame := &testFrame{onClose: func() { frameCloseInvoked = true }}
 	clip.AppendFrame(frame)
 
-	assert.Contains(t, clip.frames, frame)
+	assert.Contains(t, clip.GetFrames(), frame)
 	assert.False(t, frameCloseInvoked)
 }
 
@@ -61,7 +61,7 @@ func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
 	frame := &testFrame{onClose: func() { frameCloseInvoked = true }}
 	clip.AppendFrame(frame)
 
-	assert.Contains(t, clip.frames, frame)
+	assert.Contains(t, clip.GetFrames(), frame)
 	clip.Close()
 
 	assert.True(t, frameCloseInvoked)

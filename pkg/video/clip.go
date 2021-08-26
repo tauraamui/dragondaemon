@@ -9,6 +9,7 @@ import (
 
 type Clip interface {
 	AppendFrame(Frame)
+	GetFrames() []Frame
 	FrameDimensions() (int, int)
 	FPS() int
 	PersistLocation() string
@@ -19,7 +20,7 @@ var Timestamp = func() time.Time {
 	return time.Now()
 }
 
-func NewClip(ploc string) *clip {
+func NewClip(ploc string) Clip {
 	return &clip{
 		timestamp:       Timestamp(),
 		persistLocation: ploc,
@@ -46,7 +47,7 @@ func (c *clip) AppendFrame(f Frame) {
 	c.frames = append(c.frames, f)
 }
 
-func (c *clip) FrameDimension() (int, int) {
+func (c *clip) FrameDimensions() (int, int) {
 	if len(c.frames) == 0 {
 		return 0, 0
 	}
@@ -70,4 +71,8 @@ func (c *clip) Close() {
 	}
 
 	c.isClosed = true
+}
+
+func (c *clip) GetFrames() []Frame {
+	return c.frames
 }

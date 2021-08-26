@@ -182,18 +182,26 @@ type testVideoClip struct {
 
 func (clip testVideoClip) AppendFrame(video.Frame) {}
 
-func (clip testVideoClip) Write() error {
-	if clip.onWriteCallback != nil {
-		clip.onWriteCallback()
-	}
+func (clip testVideoClip) FrameDimensions() (int, int) {
+	return 100, 50
+}
 
-	return clip.writeError
+func (clip testVideoClip) FPS() int {
+	return 30
+}
+
+func (clip testVideoClip) PersistLocation() string {
+	return "fake-video-clip.mp4"
 }
 
 func (clip testVideoClip) Close() {
 	if clip.onCloseCallback != nil {
 		clip.onCloseCallback()
 	}
+}
+
+func (clip testVideoClip) GetFrames() []video.Frame {
+	return nil
 }
 
 type testClipWriter struct {
