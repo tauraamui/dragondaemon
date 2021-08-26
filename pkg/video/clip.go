@@ -74,5 +74,7 @@ func (c *clip) Close() {
 }
 
 func (c *clip) GetFrames() []Frame {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.frames
 }
