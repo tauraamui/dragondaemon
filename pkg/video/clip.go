@@ -18,6 +18,8 @@ type Clip interface {
 	Close()
 }
 
+const DATE_AND_TIME_FORMAT = "2006-01-02 15.04.05"
+
 var Timestamp = func() time.Time {
 	return time.Now()
 }
@@ -62,7 +64,7 @@ func (c *clip) FPS() int {
 
 func (c *clip) FileName() string {
 	return filepath.FromSlash(
-		fmt.Sprintf("%s/%s", c.persistLocation, c.timestamp.String()),
+		fmt.Sprintf("%s/%s", c.persistLocation, c.timestamp.Format(DATE_AND_TIME_FORMAT)),
 	)
 }
 
