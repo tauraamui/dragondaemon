@@ -1,6 +1,8 @@
 package video
 
 import (
+	"fmt"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -12,7 +14,7 @@ type Clip interface {
 	GetFrames() []Frame
 	FrameDimensions() (int, int)
 	FPS() int
-	PersistLocation() string
+	FileName() string
 	Close()
 }
 
@@ -58,8 +60,10 @@ func (c *clip) FPS() int {
 	return c.fps
 }
 
-func (c *clip) PersistLocation() string {
-	return c.persistLocation
+func (c *clip) FileName() string {
+	return filepath.FromSlash(
+		fmt.Sprintf("%s/%s", c.persistLocation, c.timestamp.String()),
+	)
 }
 
 func (c *clip) Close() {

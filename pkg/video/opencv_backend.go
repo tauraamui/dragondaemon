@@ -60,15 +60,10 @@ type openCVClipWriter struct {
 }
 
 func (w *openCVClipWriter) init(clip Clip) error {
-	if w.onWriteInitDone {
-		return nil
-	}
-	defer func() { w.onWriteInitDone = true }()
-
 	w.clip = clip
 	width, height := clip.FrameDimensions()
 	vw, err := gocv.VideoWriterFile(
-		clip.PersistLocation(), codec, float64(clip.FPS()), width, height, true,
+		clip.FileName(), codec, float64(clip.FPS()), width, height, true,
 	)
 	if err != nil {
 		return err
@@ -77,8 +72,14 @@ func (w *openCVClipWriter) init(clip Clip) error {
 	return nil
 }
 
+func (w *openCVClipWriter) reset() {
+	w.vw.Close()
+	w.vw = nil
+}
+
 func (w *openCVClipWriter) Write(clip Clip) error {
 	w.init(clip)
+	defer w.reset()
 	for _, frame := range clip.GetFrames() {
 		if err := w.writeFrame(frame); err != nil {
 			return err
