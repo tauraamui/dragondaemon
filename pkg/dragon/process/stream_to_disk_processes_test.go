@@ -175,8 +175,6 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessMissing
 }
 
 type testVideoClip struct {
-	writeError      error
-	onWriteCallback func()
 	onCloseCallback func()
 }
 
@@ -190,7 +188,7 @@ func (clip testVideoClip) FPS() int {
 	return 30
 }
 
-func (clip testVideoClip) PersistLocation() string {
+func (clip testVideoClip) FileName() string {
 	return "fake-video-clip.mp4"
 }
 
