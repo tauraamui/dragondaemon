@@ -43,10 +43,19 @@ func (v Values) RunValidate() error {
 
 func (v Values) runValidate() error {
 	const validationErrorHeader = "validation failed: %w"
+	defaultPersistLocToDot(v.Cameras)
 	if hasDupCameraTitles(v.Cameras) {
 		return fmt.Errorf(validationErrorHeader, errors.New("camera titles must be unique"))
 	}
 	return validate.Validate(&v)
+}
+
+func defaultPersistLocToDot(cameras []Camera) {
+	for _, cam := range cameras {
+		if len(cam.PersistLoc) == 0 {
+			cam.PersistLoc = "."
+		}
+	}
 }
 
 func hasDupCameraTitles(cameras []Camera) (hasDup bool) {
