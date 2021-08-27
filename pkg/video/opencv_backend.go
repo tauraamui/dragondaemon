@@ -78,7 +78,9 @@ func (w *openCVClipWriter) reset() {
 }
 
 func (w *openCVClipWriter) Write(clip Clip) error {
-	w.init(clip)
+	if err := w.init(clip); err != nil {
+		return err
+	}
 	defer w.reset()
 	for _, frame := range clip.GetFrames() {
 		if err := w.writeFrame(frame); err != nil {
