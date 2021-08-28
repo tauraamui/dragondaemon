@@ -24,9 +24,10 @@ var Timestamp = func() time.Time {
 	return time.Now()
 }
 
-func NewClip(ploc string) Clip {
+func NewClip(ploc string, fps int) Clip {
 	return &clip{
 		timestamp:       Timestamp(),
+		fps:             fps,
 		persistLocation: ploc,
 		isClosed:        false,
 	}

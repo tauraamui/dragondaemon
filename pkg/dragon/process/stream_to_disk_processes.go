@@ -79,7 +79,7 @@ func GenerateClipsProcess(
 }
 
 func generateClipFromStream(cancel context.Context, frames chan video.Frame, persistLocation string, fps, spc int) video.Clip {
-	clip := video.NewClip(persistLocation)
+	clip := video.NewClip(persistLocation, fps)
 
 	var capturedFrames int
 procLoop:

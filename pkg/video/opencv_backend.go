@@ -3,6 +3,7 @@ package video
 import (
 	"context"
 	"errors"
+	"os"
 	"sync"
 
 	"gocv.io/x/gocv"
@@ -60,6 +61,9 @@ type openCVClipWriter struct {
 }
 
 func (w *openCVClipWriter) init(clip Clip) error {
+	if err := ensureDirectoryPathExists(clip.FileName()); err != nil {
+		return err
+	}
 	w.clip = clip
 	width, height := clip.FrameDimensions()
 	vw, err := gocv.VideoWriterFile(
@@ -70,6 +74,14 @@ func (w *openCVClipWriter) init(clip Clip) error {
 	}
 	w.vw = vw
 	return nil
+}
+
+func ensureDirectoryPathExists(path string) error {
+	err := fs.MkdirAll(path, os.ModePerm|os.ModeDir)
+	if err == nil || os.IsExist(err) {
+		return nil
+	}
+	return err
 }
 
 func (w *openCVClipWriter) reset() {
