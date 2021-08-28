@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/internal/videotest"
@@ -22,6 +23,11 @@ func overloadReadFromVidCap(overload func(vc *gocv.VideoCapture, mat *gocv.Mat) 
 	readFromVidCapRef := readFromVideoConnection
 	readFromVideoConnection = overload
 	return func() { readFromVideoConnection = readFromVidCapRef }
+}
+
+func overloadFSIntoInMem() func() {
+	fs = afero.NewMemMapFs()
+	return func() { fs = afero.NewOsFs() }
 }
 
 func TestBackendConnect(t *testing.T) {
@@ -142,6 +148,39 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	})
 }
 
+func makeClip(seconds, fps int) (Clip, error) {
+	mp4FilePath, err := videotest.RestoreMp4File()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { os.Remove(mp4FilePath) }()
+
+	conn := openCVConnection{}
+	err = conn.connect(context.TODO(), mp4FilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	clip := NewClip("/testroot/clips/TestCam", fps)
+	for i := 0; i < fps*seconds; i++ {
+		f := &openCVFrame{
+			mat: gocv.NewMat(),
+		}
+		err = conn.Read(f)
+		if err != nil {
+			f.Close()
+			break
+		}
+		clip.AppendFrame(f)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return clip, err
+}
+
 type invalidFrame struct{}
 
 func (frame invalidFrame) DataRef() interface{} {
@@ -191,4 +230,22 @@ func TestOpenAndReadFailToReadFromConnectionReturnsError(t *testing.T) {
 
 	err = conn.Read(frame)
 	assert.EqualError(t, err, "unable to read from video connection")
+}
+
+func TestNewWriterReturnsNonNilInstance(t *testing.T) {
+	backend := openCVBackend{}
+	writer := backend.NewWriter()
+	assert.NotNil(t, writer)
+}
+
+func TestClipWriterInit(t *testing.T) {
+	overloadFSIntoInMem()
+	defer func() { fs.RemoveAll("/") }()
+
+	clip, err := makeClip(3, 10)
+	require.NoError(t, err)
+
+	writer := openCVClipWriter{}
+	err = writer.init(clip)
+	assert.NoError(t, err)
 }
