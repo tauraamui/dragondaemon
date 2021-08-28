@@ -19,7 +19,7 @@ func overloadFatalLog(overload func(string, ...interface{})) func() {
 }
 
 func TestNewClip(t *testing.T) {
-	clip := NewClip(testClipPath)
+	clip := NewClip(testClipPath, 22)
 	assert.NotNil(t, clip)
 }
 
@@ -42,7 +42,7 @@ func (frame *testFrame) Close() {
 }
 
 func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
-	clip := NewClip(testClipPath)
+	clip := NewClip(testClipPath, 22)
 	require.NotNil(t, clip)
 
 	frameCloseInvoked := false
@@ -54,7 +54,7 @@ func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 }
 
 func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
-	clip := NewClip(testClipPath)
+	clip := NewClip(testClipPath, 22)
 	require.NotNil(t, clip)
 
 	frameCloseInvoked := false
@@ -79,7 +79,7 @@ func TestClipAppendFailsIfClipAlreadyClosed(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 
-	clip := NewClip(testClipPath)
+	clip := NewClip(testClipPath, 22)
 	require.NotNil(t, clip)
 
 	clip.Close()
