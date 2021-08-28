@@ -132,6 +132,9 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	err = conn.Read(frame)
 	require.NoError(t, err)
 	assert.Greater(t, frame.mat.Total(), 0)
+	frameWidth, frameHeight := frame.Dimensions()
+	assert.Equal(t, frameWidth, 560)
+	assert.Equal(t, frameHeight, 320)
 	// make sure as much as possible that the impl
 	// isn't just writing random junk to the frame
 	assert.Equal(t, frame.mat.ToBytes()[:10], []byte{
