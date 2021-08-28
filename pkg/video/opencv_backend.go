@@ -66,7 +66,7 @@ func (w *openCVClipWriter) init(clip Clip) error {
 	}
 	w.clip = clip
 	width, height := clip.FrameDimensions()
-	vw, err := gocv.VideoWriterFile(
+	vw, err := openVideoWriter(
 		clip.FileName(), codec, float64(clip.FPS()), width, height, true,
 	)
 	if err != nil {
@@ -74,6 +74,10 @@ func (w *openCVClipWriter) init(clip Clip) error {
 	}
 	w.vw = vw
 	return nil
+}
+
+var openVideoWriter = func(filename, codec string, fps float64, width, height int, isColor bool) (*gocv.VideoWriter, error) {
+	return gocv.VideoWriterFile(filename, codec, fps, width, height, isColor)
 }
 
 func ensureDirectoryPathExists(path string) error {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -25,9 +26,21 @@ func overloadReadFromVidCap(overload func(vc *gocv.VideoCapture, mat *gocv.Mat) 
 	return func() { readFromVideoConnection = readFromVidCapRef }
 }
 
+func overloadOpenVideoWriter(overload func(filename, codec string, fps float64, width, height int, isColor bool) (*gocv.VideoWriter, error)) func() {
+	openVidWriterRef := openVideoWriter
+	openVideoWriter = overload
+	return func() { openVideoWriter = openVidWriterRef }
+}
+
 func overloadFSIntoInMem() func() {
 	fs = afero.NewMemMapFs()
 	return func() { fs = afero.NewOsFs() }
+}
+
+func overloadTimestamp(fixed time.Time) func() {
+	TimestampRef := Timestamp
+	Timestamp = func() time.Time { return fixed }
+	return func() { Timestamp = TimestampRef }
 }
 
 func TestBackendConnect(t *testing.T) {
@@ -239,13 +252,41 @@ func TestNewWriterReturnsNonNilInstance(t *testing.T) {
 }
 
 func TestClipWriterInit(t *testing.T) {
+	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0))
+	defer resetTimestamp()
+
 	overloadFSIntoInMem()
 	defer func() { fs.RemoveAll("/") }()
 
 	clip, err := makeClip(3, 10)
 	require.NoError(t, err)
 
+	var passedFilename string
+	var passedCodec string
+	var passedFPS float64
+	var passedWidth, passedHeight int
+	var passedIsColor bool
+	resetOpenVidWriter := overloadOpenVideoWriter(func(
+		filename, codec string, fps float64, width, height int, isColor bool,
+	) (*gocv.VideoWriter, error) {
+		passedFilename = filename
+		passedCodec = codec
+		passedFPS = fps
+		passedWidth = width
+		passedHeight = height
+		passedIsColor = isColor
+		return &gocv.VideoWriter{}, nil
+	})
+	defer resetOpenVidWriter()
+
 	writer := openCVClipWriter{}
 	err = writer.init(clip)
 	assert.NoError(t, err)
+
+	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28 21.57.30", passedFilename)
+	assert.Equal(t, codec, passedCodec)
+	assert.EqualValues(t, 10, passedFPS)
+	assert.Equal(t, 560, passedWidth)
+	assert.Equal(t, 320, passedHeight)
+	assert.True(t, passedIsColor)
 }
