@@ -31,8 +31,8 @@ func (frame *testFrame) DataRef() interface{} {
 	return nil
 }
 
-func (frame *testFrame) Dimensions() (int, int) {
-	return 100, 50
+func (frame *testFrame) Dimensions() FrameDimension {
+	return FrameDimension{W: 100, H: 50}
 }
 
 func (frame *testFrame) Close() {

@@ -180,8 +180,8 @@ type testVideoClip struct {
 
 func (clip testVideoClip) AppendFrame(video.Frame) {}
 
-func (clip testVideoClip) FrameDimensions() (int, int) {
-	return 100, 50
+func (clip testVideoClip) FrameDimensions() (video.FrameDimension, error) {
+	return video.FrameDimension{W: 100, H: 50}, nil
 }
 
 func (clip testVideoClip) FPS() int {
