@@ -287,10 +287,28 @@ func TestClipWriterInit(t *testing.T) {
 	err = writer.init(clip)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30", passedFilename)
+	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4", passedFilename)
 	assert.Equal(t, codec, passedCodec)
 	assert.EqualValues(t, 10, passedFPS)
 	assert.Equal(t, 560, passedWidth)
 	assert.Equal(t, 320, passedHeight)
 	assert.True(t, passedIsColor)
+}
+
+func TestClipWriterWrite(t *testing.T) {
+	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
+	defer resetTimestamp()
+
+	defer func() { fs.RemoveAll("/") }()
+	clip, err := makeClip(3, 10)
+	require.NoError(t, err)
+	require.NotNil(t, clip)
+
+	backend := openCVBackend{}
+	writer := backend.NewWriter()
+	err = writer.Write(clip)
+	assert.NoError(t, err)
+
+	_, err = fs.Stat("/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4")
+	assert.NoError(t, err)
 }
