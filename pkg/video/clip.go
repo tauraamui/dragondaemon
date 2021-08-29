@@ -67,7 +67,7 @@ func (c *clip) FPS() int {
 func (c *clip) FileName() string {
 	return filepath.FromSlash(
 		fmt.Sprintf(
-			"%s/%s/%s",
+			"%s/%s/%s.mp4",
 			c.rootPersistLocation,
 			c.timestamp.Format(DATE_FORMAT),
 			c.timestamp.Format(DATE_AND_TIME_FORMAT)),
