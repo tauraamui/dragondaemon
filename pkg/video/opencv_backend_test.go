@@ -165,6 +165,19 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	})
 }
 
+func makeClips(seconds, fps, count int) ([]Clip, error) {
+	clips := []Clip{}
+	for i := 0; i < count; i++ {
+		clip, err := makeClip(3, 10)
+		if err != nil {
+
+			return nil, err
+		}
+		clips = append(clips, clip)
+	}
+	return clips, nil
+}
+
 func makeClip(seconds, fps int) (Clip, error) {
 	mp4FilePath, err := videotest.RestoreMp4File()
 	if err != nil {
@@ -300,15 +313,69 @@ func TestClipWriterWrite(t *testing.T) {
 	defer resetTimestamp()
 
 	defer func() { fs.RemoveAll("/") }()
+
 	clip, err := makeClip(3, 10)
 	require.NoError(t, err)
 	require.NotNil(t, clip)
 
 	backend := openCVBackend{}
 	writer := backend.NewWriter()
+	require.NotNil(t, writer)
 	err = writer.Write(clip)
 	assert.NoError(t, err)
 
 	_, err = fs.Stat("/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4")
 	assert.NoError(t, err)
+}
+
+func TestClipWriterWriteMultipleClips(t *testing.T) {
+	const seconds = 2
+	const fps = 10
+	const clipCount = 8
+
+	var accessCount int64 = 0
+	resetTimestampFunc := overloadTimestampFunc(func() time.Time {
+		accessCount += seconds
+		return time.Unix(1630184250+accessCount, 0).UTC()
+	})
+	defer resetTimestampFunc()
+
+	defer func() { fs.RemoveAll("/") }()
+
+	backend := openCVBackend{}
+	writer := backend.NewWriter()
+	require.NotNil(t, writer)
+
+	clips, err := makeClips(seconds, fps, clipCount)
+	require.NoError(t, err)
+
+	for _, clip := range clips {
+		err = writer.Write(clip)
+		require.NoError(t, err)
+		clip.Close()
+	}
+
+	expectedClipFiles := []string{
+		// first clip in list should not exist
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.32.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.34.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.36.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.38.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.40.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.42.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.44.mp4",
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.46.mp4",
+		// last clip in list should not exist
+		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.48.mp4",
+	}
+
+	for i, path := range expectedClipFiles {
+		_, err = fs.Stat(path)
+		if i > 0 && i < clipCount+1 {
+			assert.NoError(t, err)
+			continue
+		}
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	}
 }
