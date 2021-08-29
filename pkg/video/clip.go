@@ -18,6 +18,7 @@ type Clip interface {
 	Close()
 }
 
+const DATE_FORMAT = "2006-01-02"
 const DATE_AND_TIME_FORMAT = "2006-01-02 15.04.05"
 
 var Timestamp = func() time.Time {
@@ -26,20 +27,20 @@ var Timestamp = func() time.Time {
 
 func NewClip(ploc string, fps int) Clip {
 	return &clip{
-		timestamp:       Timestamp(),
-		fps:             fps,
-		persistLocation: ploc,
-		isClosed:        false,
+		timestamp:           Timestamp(),
+		fps:                 fps,
+		rootPersistLocation: ploc,
+		isClosed:            false,
 	}
 }
 
 type clip struct {
-	timestamp       time.Time
-	persistLocation string
-	fps             int
-	mu              sync.Mutex
-	isClosed        bool
-	frames          []Frame
+	timestamp           time.Time
+	rootPersistLocation string
+	fps                 int
+	mu                  sync.Mutex
+	isClosed            bool
+	frames              []Frame
 }
 
 func (c *clip) AppendFrame(f Frame) {
@@ -65,7 +66,11 @@ func (c *clip) FPS() int {
 
 func (c *clip) FileName() string {
 	return filepath.FromSlash(
-		fmt.Sprintf("%s/%s", c.persistLocation, c.timestamp.Format(DATE_AND_TIME_FORMAT)),
+		fmt.Sprintf(
+			"%s/%s/%s",
+			c.rootPersistLocation,
+			c.timestamp.Format(DATE_FORMAT),
+			c.timestamp.Format(DATE_AND_TIME_FORMAT)),
 	)
 }
 

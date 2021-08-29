@@ -287,7 +287,7 @@ func TestClipWriterInit(t *testing.T) {
 	err = writer.init(clip)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28 20.57.30", passedFilename)
+	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30", passedFilename)
 	assert.Equal(t, codec, passedCodec)
 	assert.EqualValues(t, 10, passedFPS)
 	assert.Equal(t, 560, passedWidth)
