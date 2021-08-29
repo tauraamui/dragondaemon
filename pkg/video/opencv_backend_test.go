@@ -38,8 +38,12 @@ func overloadFSIntoInMem() func() {
 }
 
 func overloadTimestamp(fixed time.Time) func() {
+	return overloadTimestampFunc(func() time.Time { return fixed })
+}
+
+func overloadTimestampFunc(overload func() time.Time) func() {
 	TimestampRef := Timestamp
-	Timestamp = func() time.Time { return fixed }
+	Timestamp = overload
 	return func() { Timestamp = TimestampRef }
 }
 
