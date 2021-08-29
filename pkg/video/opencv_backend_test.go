@@ -256,7 +256,7 @@ func TestNewWriterReturnsNonNilInstance(t *testing.T) {
 }
 
 func TestClipWriterInit(t *testing.T) {
-	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0))
+	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
 	defer resetTimestamp()
 
 	overloadFSIntoInMem()
@@ -287,7 +287,7 @@ func TestClipWriterInit(t *testing.T) {
 	err = writer.init(clip)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28 21.57.30", passedFilename)
+	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28 20.57.30", passedFilename)
 	assert.Equal(t, codec, passedCodec)
 	assert.EqualValues(t, 10, passedFPS)
 	assert.Equal(t, 560, passedWidth)
