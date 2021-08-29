@@ -18,8 +18,8 @@ func (frame *openCVFrame) DataRef() interface{} {
 	return &frame.mat
 }
 
-func (frame *openCVFrame) Dimensions() (int, int) {
-	return frame.mat.Cols(), frame.mat.Rows()
+func (frame *openCVFrame) Dimensions() FrameDimension {
+	return FrameDimension{frame.mat.Cols(), frame.mat.Rows()}
 }
 
 func (frame *openCVFrame) Close() {
@@ -65,9 +65,14 @@ func (w *openCVClipWriter) init(clip Clip) error {
 		return err
 	}
 	w.clip = clip
-	width, height := clip.FrameDimensions()
+
+	dimensions, err := clip.FrameDimensions()
+	if err != nil {
+		return err
+	}
+
 	vw, err := openVideoWriter(
-		clip.FileName(), codec, float64(clip.FPS()), width, height, true,
+		clip.FileName(), codec, float64(clip.FPS()), dimensions.W, dimensions.H, true,
 	)
 	if err != nil {
 		return err

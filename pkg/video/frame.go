@@ -1,7 +1,11 @@
 package video
 
+type FrameDimension struct {
+	W, H int
+}
+
 type Frame interface {
 	DataRef() interface{}
-	Dimensions() (int, int)
+	Dimensions() FrameDimension
 	Close()
 }

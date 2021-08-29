@@ -1,6 +1,7 @@
 package video
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -12,7 +13,7 @@ import (
 type Clip interface {
 	AppendFrame(Frame)
 	GetFrames() []Frame
-	FrameDimensions() (int, int)
+	FrameDimensions() (FrameDimension, error)
 	FPS() int
 	FileName() string
 	Close()
@@ -53,11 +54,11 @@ func (c *clip) AppendFrame(f Frame) {
 	c.frames = append(c.frames, f)
 }
 
-func (c *clip) FrameDimensions() (int, int) {
+func (c *clip) FrameDimensions() (FrameDimension, error) {
 	if len(c.frames) == 0 {
-		return 0, 0
+		return FrameDimension{}, errors.New("unable to resolve clip's footage dimensions")
 	}
-	return c.frames[0].Dimensions()
+	return c.frames[0].Dimensions(), nil
 }
 
 func (c *clip) FPS() int {
