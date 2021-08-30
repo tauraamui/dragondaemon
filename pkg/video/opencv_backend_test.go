@@ -3,6 +3,7 @@ package video
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -32,9 +33,13 @@ func overloadOpenVideoWriter(overload func(filename, codec string, fps float64, 
 	return func() { openVideoWriter = openVidWriterRef }
 }
 
-func overloadFSIntoInMem() func() {
-	fs = afero.NewMemMapFs()
-	return func() { fs = afero.NewOsFs() }
+func setupOSFSForTesting() (string, error) {
+	fs = afero.NewOsFs()
+	rootDir, err := videotest.MakeRootPath(fs)
+	if err != nil {
+		return "", err
+	}
+	return rootDir, nil
 }
 
 func overloadTimestamp(fixed time.Time) func() {
@@ -178,7 +183,7 @@ func makeClips(seconds, fps, count int) ([]Clip, error) {
 	return clips, nil
 }
 
-func makeClip(seconds, fps int) (Clip, error) {
+func makeClip(rootPath string, seconds, fps int) (Clip, error) {
 	mp4FilePath, err := videotest.RestoreMp4File()
 	if err != nil {
 		return nil, err
@@ -191,7 +196,7 @@ func makeClip(seconds, fps int) (Clip, error) {
 		return nil, err
 	}
 
-	clip := NewClip("/testroot/clips/TestCam", fps)
+	clip := NewClip(fmt.Sprintf("/%s/clips/TestCam", rootPath), fps)
 	for i := 0; i < fps*seconds; i++ {
 		f := &openCVFrame{
 			mat: gocv.NewMat(),
@@ -272,9 +277,6 @@ func TestClipWriterInit(t *testing.T) {
 	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
 	defer resetTimestamp()
 
-	overloadFSIntoInMem()
-	defer func() { fs.RemoveAll("/") }()
-
 	clip, err := makeClip(3, 10)
 	require.NoError(t, err)
 
@@ -312,9 +314,11 @@ func TestClipWriterWrite(t *testing.T) {
 	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
 	defer resetTimestamp()
 
-	defer func() { fs.RemoveAll("/") }()
+	pathRoot, err := setupOSFSForTesting()
+	require.NoError(t, err)
+	defer func() { fs.RemoveAll(pathRoot) }()
 
-	clip, err := makeClip(3, 10)
+	clip, err := makeClip(pathRoot, 3, 10)
 	require.NoError(t, err)
 	require.NotNil(t, clip)
 
@@ -324,7 +328,7 @@ func TestClipWriterWrite(t *testing.T) {
 	err = writer.Write(clip)
 	assert.NoError(t, err)
 
-	_, err = fs.Stat("/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4")
+	_, err = fs.Stat(fmt.Sprintf("/%s/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4", pathRoot))
 	assert.NoError(t, err)
 }
 
@@ -339,8 +343,6 @@ func TestClipWriterWriteMultipleClips(t *testing.T) {
 		return time.Unix(1630184250+accessCount, 0).UTC()
 	})
 	defer resetTimestampFunc()
-
-	defer func() { fs.RemoveAll("/") }()
 
 	backend := openCVBackend{}
 	writer := backend.NewWriter()
