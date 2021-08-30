@@ -311,14 +311,13 @@ func TestClipWriterInit(t *testing.T) {
 }
 
 func TestClipWriterWrite(t *testing.T) {
-	t.Skip()
 	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
 	defer resetTimestamp()
 
 	pathRoot, err := setupOSFSForTesting()
 	require.NoError(t, err)
 	defer func() {
-		println("Removing all under [%s]", pathRoot)
+		os.RemoveAll(pathRoot)
 	}()
 
 	clip, err := makeClip(pathRoot, 3, 10)
@@ -336,7 +335,6 @@ func TestClipWriterWrite(t *testing.T) {
 }
 
 func TestClipWriterWriteMultipleClips(t *testing.T) {
-	t.Skip()
 	const seconds = 2
 	const fps = 10
 	const clipCount = 8
@@ -369,17 +367,17 @@ func TestClipWriterWriteMultipleClips(t *testing.T) {
 
 	expectedClipFiles := []string{
 		// first clip in list should not exist
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.32.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.34.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.36.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.38.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.40.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.42.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.44.mp4",
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.46.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.32.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.34.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.36.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.38.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.40.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.42.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.44.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.46.mp4",
 		// last clip in list should not exist
-		"/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.48.mp4",
+		pathRoot + "/clips/TestCam/2021-08-28/2021-08-28 20.57.48.mp4",
 	}
 
 	for i, path := range expectedClipFiles {
