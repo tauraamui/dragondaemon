@@ -61,7 +61,7 @@ type openCVClipWriter struct {
 }
 
 func (w *openCVClipWriter) init(clip Clip) error {
-	if err := ensureDirectoryPathExists(clip.FileName()); err != nil {
+	if err := ensureDirectoryPathExists(clip.RootPath()); err != nil {
 		return err
 	}
 	w.clip = clip

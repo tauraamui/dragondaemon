@@ -15,6 +15,7 @@ type Clip interface {
 	GetFrames() []Frame
 	FrameDimensions() (FrameDimension, error)
 	FPS() int
+	RootPath() string
 	FileName() string
 	Close()
 }
@@ -63,6 +64,10 @@ func (c *clip) FrameDimensions() (FrameDimension, error) {
 
 func (c *clip) FPS() int {
 	return c.fps
+}
+
+func (c *clip) RootPath() string {
+	return filepath.Join(c.rootPersistLocation, c.timestamp.Format(DATE_FORMAT))
 }
 
 func (c *clip) FileName() string {
