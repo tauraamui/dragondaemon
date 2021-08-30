@@ -88,21 +88,8 @@ procLoop:
 		case <-cancel.Done():
 			break procLoop
 		default:
-			/* The idea behind this nested select is if there is
-			any delay in providing frames from the video stream,
-			for example if in the middle of trying to re-connect,
-			and the server is still running, then we shall wait
-			until adding more frames to make up the total of each
-			clip. This will have the side affect of a clip potentially
-			containing frames before and after a large delay.
-			*/
-			select {
-			case frame := <-frames:
-				clip.AppendFrame(frame)
-				capturedFrames++
-			default:
-				continue
-			}
+			clip.AppendFrame(<-frames)
+			capturedFrames++
 		}
 	}
 	return clip
