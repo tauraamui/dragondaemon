@@ -381,8 +381,9 @@ func TestClipWriterWriteMultipleClips(t *testing.T) {
 	}
 
 	for i, path := range expectedClipFiles {
-		_, err = fs.Stat(path)
+		clip, err := fs.Stat(path)
 		if i > 0 && i < clipCount+1 {
+			assert.False(t, clip.IsDir())
 			assert.NoError(t, err)
 			continue
 		}

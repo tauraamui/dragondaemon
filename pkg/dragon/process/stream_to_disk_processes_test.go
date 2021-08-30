@@ -188,6 +188,10 @@ func (clip testVideoClip) FPS() int {
 	return 30
 }
 
+func (clip testVideoClip) RootPath() string {
+	return "testroot/clips/today"
+}
+
 func (clip testVideoClip) FileName() string {
 	return "fake-video-clip.mp4"
 }
