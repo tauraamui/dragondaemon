@@ -120,7 +120,7 @@ func connect(cancel context.Context, cam configdef.Camera, backend video.Backend
 }
 
 func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings, backend video.Backend) (camera.Connection, error) {
-	log.Info("Connecting to camera: [%s]...", title)
+	log.Info("Connecting to camera: [%s@%s]...", title, addr)
 	return camera.ConnectWithCancel(ctx, title, addr, sett, backend)
 }
 
