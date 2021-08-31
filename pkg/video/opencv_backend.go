@@ -30,17 +30,15 @@ func (frame *openCVFrame) Close() {
 	}
 }
 
-type openCVBackend struct {
-	conn openCVConnection
-}
+type openCVBackend struct{}
 
 func (b *openCVBackend) Connect(cancel context.Context, addr string) (Connection, error) {
-	err := b.conn.connect(cancel, addr)
+	conn := openCVConnection{}
+	err := conn.connect(cancel, addr)
 	if err != nil {
 		return nil, err
 	}
-
-	return &b.conn, nil
+	return &conn, nil
 }
 
 func (b *openCVBackend) NewFrame() Frame {
@@ -121,8 +119,8 @@ func (w *openCVClipWriter) writeFrame(frame Frame) error {
 }
 
 type openCVConnection struct {
-	mu     sync.Mutex
 	uuid   string
+	mu     sync.Mutex
 	isOpen bool
 	vc     *gocv.VideoCapture
 }
