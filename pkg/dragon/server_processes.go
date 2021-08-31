@@ -26,6 +26,7 @@ func (s *server) shutdownProcesses() {
 	for _, proc := range s.coreProcesses {
 		go func(wg *sync.WaitGroup, proc process.Process) {
 			proc.Stop()
+			proc.Wait()
 			wg.Done()
 		}(&wg, proc)
 	}
