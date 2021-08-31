@@ -140,40 +140,6 @@ func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcess() {
 	assert.LessOrEqual(suite.T(), expectedClipCount, count+2)
 }
 
-func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessExtraFrames() {
-	const FPS = 30
-	const SPC = 2
-	const expectedClipCount = 6
-
-	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
-		for i := 0; i < ((fps*spc)*expectedCount)+12; i++ {
-			frames <- backend.NewFrame()
-		}
-		close(done)
-	}
-
-	count := countClipsCreatedByGenerateProc(suite.backend, FPS, SPC, expectedClipCount, frames)
-
-	assert.Equal(suite.T(), expectedClipCount+1, count)
-}
-
-func (suite *StreamAndPersistProcessesTestSuite) TestGenerateClipsProcessMissingFrames() {
-	const FPS = 30
-	const SPC = 2
-	const expectedClipCount = 6
-
-	frames := func(backend video.Backend, fps, spc, expectedCount int, frames chan video.Frame, done chan interface{}) {
-		for i := 0; i < ((fps*spc)*expectedCount)-69; i++ {
-			frames <- backend.NewFrame()
-		}
-		close(done)
-	}
-
-	count := countClipsCreatedByGenerateProc(suite.backend, FPS, SPC, expectedClipCount, frames)
-
-	assert.Equal(suite.T(), expectedClipCount-1, count)
-}
-
 type testVideoClip struct {
 	onCloseCallback func()
 }
