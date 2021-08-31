@@ -28,7 +28,7 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 		resolveConfigs: func() configdef.Values {
 			return configdef.Values{
 				Cameras: []configdef.Camera{
-					{Title: "TestConn", Address: suite.mp4FilePath},
+					{Title: "TestConn", Address: "fake-conn-addr"},
 				},
 			}
 		},
@@ -56,7 +56,7 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	time.Sleep(1 * time.Millisecond)
 	<-suite.server.Shutdown()
 	assert.Subset(suite.T(), suite.infoLogs, []string{
-		"Connecting to camera: [TestConn]...",
+		"Connecting to camera: [TestConn@fake-conn-addr]...",
 		"Connected successfully to camera: [TestConn]",
 		"Streaming video from camera [TestConn]",
 		"Stopping generating clips from [TestConn] video stream...",
