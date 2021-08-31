@@ -5,6 +5,7 @@ import (
 )
 
 type Connection interface {
+	UUID() string
 	Read(Frame) error
 	IsOpen() bool
 	Close() error

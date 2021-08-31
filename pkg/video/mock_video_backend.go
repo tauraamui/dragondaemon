@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
+	"github.com/google/uuid"
 	"gocv.io/x/gocv"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
@@ -36,9 +37,17 @@ func (b *mockVideoBackend) NewWriter() ClipWriter {
 }
 
 type mockVideoConnection struct {
+	uuid                    string
 	cameraTitle             string
 	renderedBaseFrameCanvas bool
 	baseFrameCanvas         image.Image
+}
+
+func (mvc *mockVideoConnection) UUID() string {
+	if len(mvc.uuid) == 0 {
+		mvc.uuid = uuid.NewString()
+	}
+	return mvc.uuid
 }
 
 func (mvc *mockVideoConnection) Read(frame Frame) error {

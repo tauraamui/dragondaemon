@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -98,7 +97,7 @@ func connect(ctx context.Context, title, addr string, settings Settings, backend
 		return nil, fmt.Errorf("Unable to connect to camera [%s]: %w", title, err)
 	}
 	return &connection{
-		uuid:    uuid.NewString(),
+		uuid:    vc.UUID(),
 		backend: backend,
 		title:   title,
 		vc:      vc,

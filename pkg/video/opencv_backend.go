@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/google/uuid"
 	"gocv.io/x/gocv"
 )
 
@@ -121,6 +122,7 @@ func (w *openCVClipWriter) writeFrame(frame Frame) error {
 
 type openCVConnection struct {
 	mu     sync.Mutex
+	uuid   string
 	isOpen bool
 	vc     *gocv.VideoCapture
 }
@@ -161,6 +163,13 @@ var readFromVideoConnection = func(vc *gocv.VideoCapture, mat *gocv.Mat) bool {
 		return vc.Read(mat)
 	}
 	return false
+}
+
+func (c *openCVConnection) UUID() string {
+	if len(c.uuid) == 0 {
+		c.uuid = uuid.NewString()
+	}
+	return c.uuid
 }
 
 func (c *openCVConnection) Read(frame Frame) error {
