@@ -78,6 +78,10 @@ func (tvf testVideoFrame) Close() {}
 type testVideoConnection struct {
 }
 
+func (tvc testVideoConnection) UUID() string {
+	return "test-conn-uuid"
+}
+
 func (tvc testVideoConnection) Read(frame video.Frame) error {
 	return nil
 }

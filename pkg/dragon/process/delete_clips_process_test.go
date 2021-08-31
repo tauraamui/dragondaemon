@@ -143,6 +143,10 @@ type testVideoConnection struct {
 	onReadError error
 }
 
+func (tvc testVideoConnection) UUID() string {
+	return "test-conn-uuid"
+}
+
 func (tvc testVideoConnection) Read(frame video.Frame) error {
 	return tvc.onReadError
 }
