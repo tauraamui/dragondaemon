@@ -19,13 +19,10 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-type mockVideoBackend struct {
-	conn mockVideoConnection
-}
+type mockVideoBackend struct{}
 
 func (b *mockVideoBackend) Connect(cancel context.Context, addr string) (Connection, error) {
-	b.conn = mockVideoConnection{}
-	return &b.conn, nil
+	return &mockVideoConnection{}, nil
 }
 
 func (b *mockVideoBackend) NewFrame() Frame {
