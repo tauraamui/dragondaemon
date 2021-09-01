@@ -25,13 +25,13 @@ type persistCameraToDisk struct {
 	clips         chan video.Clip
 	streamProcess Process
 	generateClips Process
-	writeClips    Process
-	deleteClips   Process
+	persistClips  Process
 }
 
 func (proc *persistCameraToDisk) Setup() {
 	proc.streamProcess = NewStreamConnProcess(proc.cam, proc.frames)
-	proc.generateClips = NewGenerateClipProcess(proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC())
+	proc.generateClips = NewGenerateClipProcess(proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation())
+	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
 	// writeClipsToDiskProcess := Settings{
 	// 	WaitForShutdownMsg: fmt.Sprintf("Stopping writing clips to disk from [%s] video stream...", proc.cam.Title()),
 	// 	Process:            WriteClipsToDiskProcess(proc.clips, proc.writer),
@@ -61,23 +61,27 @@ func (proc *persistCameraToDisk) Setup() {
 
 func (proc *persistCameraToDisk) Start() {
 	log.Info("Streaming video from camera [%s]", proc.cam.Title())
-	proc.generateClips.Start()
-	log.Info("Generating clips from camera [%s] video stream...", proc.cam.Title())
 	proc.streamProcess.Start()
+	log.Info("Generating clips from camera [%s] video stream...", proc.cam.Title())
+	proc.generateClips.Start()
+	log.Info("Writing clips to disk from camera [%s] video stream...", proc.cam.Title())
+	proc.persistClips.Start()
 	// proc.deleteClips.Start()
 	// proc.writeClips.Start()
 	// proc.streamProcess.Start()
-	go func(clips chan video.Clip) {
-		for clip := range clips {
-			log.Info("Closing clip from camera [%s]", proc.cam.Title())
-			clip.Close()
-		}
-	}(proc.clips)
+	// go func(clips chan video.Clip) {
+	// 	for clip := range clips {
+	// 		log.Info("Closing clip from camera [%s]", proc.cam.Title())
+	// 		clip.Close()
+	// 	}
+	// }(proc.clips)
 }
 
 func (proc *persistCameraToDisk) Stop() {
 	// proc.deleteClips.Stop()
 	// proc.writeClips.Stop()
+	log.Info("Stopping writing clips to disk from camera [%s] video stream...", proc.cam.Title())
+	proc.persistClips.Stop()
 	log.Info("Stopping generating clips from camera [%s] video stream...", proc.cam.Title())
 	proc.generateClips.Stop()
 	log.Info("Closing camera [%s] video stream...", proc.cam.Title())
@@ -85,20 +89,7 @@ func (proc *persistCameraToDisk) Stop() {
 }
 
 func (proc *persistCameraToDisk) Wait() {
-	// wg := sync.WaitGroup{}
-	// wg.Add(4)
-	// go func(wg *sync.WaitGroup) {
-	// 	proc.deleteClips.Wait()
-	// 	wg.Done()
-	// }(&wg)
-	// go func(wg *sync.WaitGroup) {
-	// 	proc.writeClips.Wait()
-	// 	wg.Done()
-	// }(&wg)
-	// go func(wg *sync.WaitGroup) {
-	// 	proc.generateClips.Wait()
-	// 	wg.Done()
-	// }(&wg)
+	proc.persistClips.Wait()
 	proc.generateClips.Wait()
 	proc.streamProcess.Wait()
 }
