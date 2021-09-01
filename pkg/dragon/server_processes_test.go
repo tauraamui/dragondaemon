@@ -59,7 +59,6 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 		"Connecting to camera: [TestConn@fake-conn-addr]...",
 		"Connected successfully to camera: [TestConn]",
 		"Streaming video from camera [TestConn]",
-		"Stopping generating clips from [TestConn] video stream...",
 		"Closing camera [TestConn] video stream...",
 	})
 }

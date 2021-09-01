@@ -27,6 +27,7 @@ func NewStreamConnProcess(cam camera.Connection, dest chan video.Frame) Process 
 
 func (proc *streamConnProccess) Setup() {}
 func (proc *streamConnProccess) Start() {
+	log.Info("Streaming video from camera [%s]", proc.cam.Title())
 	go proc.run()
 }
 
@@ -62,7 +63,7 @@ func stream(cam camera.Connection, frames chan video.Frame) {
 }
 
 func (proc *streamConnProccess) Stop() {
-	log.Info("Shutting down stream of camera connection: [%s]", proc.cam.Title())
+	log.Info("Closing camera [%s] video stream...", proc.cam.Title())
 	proc.cancel()
 }
 func (proc *streamConnProccess) Wait() {
