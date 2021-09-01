@@ -3,6 +3,7 @@ package process
 import (
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -12,8 +13,8 @@ func NewCoreProcess(cam camera.Connection, writer video.ClipWriter) Process {
 	return &persistCameraToDisk{
 		cam:    cam,
 		writer: writer,
-		frames: make(chan video.Frame),
-		clips:  make(chan video.Clip),
+		frames: make(chan video.Frame, 3),
+		clips:  make(chan video.Clip, 3),
 	}
 }
 
@@ -30,6 +31,7 @@ type persistCameraToDisk struct {
 
 func (proc *persistCameraToDisk) Setup() {
 	proc.streamProcess = NewStreamConnProcess(proc.cam, proc.frames)
+	proc.generateClips = NewGenerateClipProcess(proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC())
 	// writeClipsToDiskProcess := Settings{
 	// 	WaitForShutdownMsg: fmt.Sprintf("Stopping writing clips to disk from [%s] video stream...", proc.cam.Title()),
 	// 	Process:            WriteClipsToDiskProcess(proc.clips, proc.writer),
@@ -58,17 +60,27 @@ func (proc *persistCameraToDisk) Setup() {
 }
 
 func (proc *persistCameraToDisk) Start() {
+	log.Info("Streaming video from camera [%s]", proc.cam.Title())
+	proc.generateClips.Start()
+	log.Info("Generating clips from camera [%s] video stream...", proc.cam.Title())
 	proc.streamProcess.Start()
 	// proc.deleteClips.Start()
 	// proc.writeClips.Start()
-	// proc.generateClips.Start()
 	// proc.streamProcess.Start()
+	go func(clips chan video.Clip) {
+		for clip := range clips {
+			log.Info("Closing clip from camera [%s]", proc.cam.Title())
+			clip.Close()
+		}
+	}(proc.clips)
 }
 
 func (proc *persistCameraToDisk) Stop() {
 	// proc.deleteClips.Stop()
 	// proc.writeClips.Stop()
-	// proc.generateClips.Stop()
+	log.Info("Stopping generating clips from camera [%s] video stream...", proc.cam.Title())
+	proc.generateClips.Stop()
+	log.Info("Closing camera [%s] video stream...", proc.cam.Title())
 	proc.streamProcess.Stop()
 }
 
@@ -87,5 +99,6 @@ func (proc *persistCameraToDisk) Wait() {
 	// 	proc.generateClips.Wait()
 	// 	wg.Done()
 	// }(&wg)
+	proc.generateClips.Wait()
 	proc.streamProcess.Wait()
 }

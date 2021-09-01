@@ -9,17 +9,18 @@ import (
 )
 
 type generateClipProcess struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	stopping chan interface{}
-	frames   chan video.Frame
-	dest     chan video.Clip
+	ctx           context.Context
+	cancel        context.CancelFunc
+	stopping      chan interface{}
+	framesPerClip int
+	frames        chan video.Frame
+	dest          chan video.Clip
 }
 
-func NewGenerateClipProcess(frames chan video.Frame, dest chan video.Clip, count int) Process {
+func NewGenerateClipProcess(frames chan video.Frame, dest chan video.Clip, framesPerClip int) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &generateClipProcess{
-		ctx: ctx, cancel: cancel, frames: frames, dest: dest, stopping: make(chan interface{}),
+		ctx: ctx, cancel: cancel, frames: frames, dest: dest, framesPerClip: framesPerClip, stopping: make(chan interface{}),
 	}
 }
 
@@ -36,9 +37,23 @@ func (proc *generateClipProcess) run() {
 			close(proc.stopping)
 			return
 		default:
+			proc.dest <- makeClip(proc.frames, proc.framesPerClip)
 			log.Debug("pending reading frame from stream")
 		}
 	}
+}
+
+func makeClip(frames chan video.Frame, count int) video.Clip {
+	clip := video.NewClip("", count)
+	i := 0
+	for f := range frames {
+		if i >= count {
+			break
+		}
+		clip.AppendFrame(f)
+		i++
+	}
+	return clip
 }
 
 func (proc *generateClipProcess) Stop() {}
