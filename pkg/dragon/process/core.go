@@ -81,13 +81,15 @@ const GB = MB * MB
 
 func renderStats(stats runtime.MemStats) {
 	unit := MB
-	outputFormat := "\n--------------------\nALLOC: %f %s\nTOTAL ALLOC: %f %s\nSYS: %f %s\nMALLOCS: %d\nFREES: %d"
+	outputFormat := "\n--------------------\nGO ROUTINES: %d\nALLOC: %f %s\nTOTAL ALLOC: %f %s\nSYS: %f %s\nMALLOCS: %d\nFREES: %d\nLIVE OBJS: %d"
 	log.Info(
 		outputFormat,
+		runtime.NumGoroutine(),
 		float64(stats.Alloc)/unit, resolveUnitLabel(unit),
 		float64(stats.TotalAlloc)/unit, resolveUnitLabel(unit),
 		float64(stats.Sys)/unit, resolveUnitLabel(unit),
 		stats.Mallocs, stats.Frees,
+		stats.Mallocs-stats.Frees,
 	)
 }
 
@@ -106,7 +108,7 @@ func resolveUnitLabel(unit float64) string {
 
 func (proc *persistCameraToDisk) Start() {
 	if proc.runtimeStatsEnabled {
-		proc.outputRuntimeStats.Start()
+		go proc.outputRuntimeStats.Start()
 	}
 	log.Info("Streaming video from camera [%s]", proc.cam.Title())
 	proc.streamProcess.Start()
