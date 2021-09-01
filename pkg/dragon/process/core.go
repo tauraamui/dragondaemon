@@ -2,7 +2,9 @@ package process
 
 import (
 	"context"
+	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/spf13/afero"
@@ -23,51 +25,32 @@ func NewCoreProcess(cam camera.Connection, writer video.ClipWriter) Process {
 }
 
 type persistCameraToDisk struct {
-	cam                camera.Connection
-	writer             video.ClipWriter
-	frames             chan video.Frame
-	clips              chan video.Clip
-	streamProcess      Process
-	generateClips      Process
-	persistClips       Process
-	outputRuntimeStats Process
+	cam                 camera.Connection
+	writer              video.ClipWriter
+	frames              chan video.Frame
+	clips               chan video.Clip
+	streamProcess       Process
+	generateClips       Process
+	persistClips        Process
+	runtimeStatsEnabled bool
+	outputRuntimeStats  Process
 }
 
 func (proc *persistCameraToDisk) Setup() {
+	runtimeStatsEnv := strings.ToLower(os.Getenv("DRAGON_RUNTIME_STATS"))
+	if runtimeStatsEnv == "1" || runtimeStatsEnv == "true" || runtimeStatsEnv == "yes" {
+		proc.runtimeStatsEnabled = true
+	}
 	proc.streamProcess = NewStreamConnProcess(proc.cam, proc.frames)
 	proc.generateClips = NewGenerateClipProcess(proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation())
 	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
-	outputRuntimeStatsProcess := Settings{
-		WaitForShutdownMsg: "",
-		Process:            outputRuntimeStats(),
+	if proc.runtimeStatsEnabled {
+		outputRuntimeStatsProcess := Settings{
+			WaitForShutdownMsg: "",
+			Process:            outputRuntimeStats(),
+		}
+		proc.outputRuntimeStats = New(outputRuntimeStatsProcess)
 	}
-	proc.outputRuntimeStats = New(outputRuntimeStatsProcess)
-
-	// writeClipsToDiskProcess := Settings{
-	// 	WaitForShutdownMsg: fmt.Sprintf("Stopping writing clips to disk from [%s] video stream...", proc.cam.Title()),
-	// 	Process:            WriteClipsToDiskProcess(proc.clips, proc.writer),
-	// }
-	// proc.writeClips = New(writeClipsToDiskProcess)
-
-	// generateClipsFromFramesProcess := Settings{
-	// 	WaitForShutdownMsg: fmt.Sprintf("Stopping generating clips from [%s] video stream...", proc.cam.Title()),
-	// 	Process: GenerateClipsProcess(
-	// 		proc.frames, proc.clips, proc.cam.FullPersistLocation(), proc.cam.FPS(), proc.cam.SPC(),
-	// 	),
-	// }
-	// proc.generateClips = New(generateClipsFromFramesProcess)
-
-	// streamProcess := Settings{
-	// 	WaitForShutdownMsg: fmt.Sprintf("Closing camera [%s] video stream...", proc.cam.Title()),
-	// 	Process:            StreamProcess(proc.cam, proc.frames),
-	// }
-	// proc.streamProcess = New(streamProcess)
-
-	// deleteProcess := Settings{
-	// 	WaitForShutdownMsg: fmt.Sprintf("Stopping deleting old saved clips for [%s]", proc.cam.Title()),
-	// 	Process:            DeleteOldClips(proc.cam),
-	// }
-	// proc.deleteClips = New(deleteProcess)
 }
 
 func outputRuntimeStats() func(context.Context) []chan interface{} {
@@ -122,7 +105,9 @@ func resolveUnitLabel(unit float64) string {
 }
 
 func (proc *persistCameraToDisk) Start() {
-	proc.outputRuntimeStats.Start()
+	if proc.runtimeStatsEnabled {
+		proc.outputRuntimeStats.Start()
+	}
 	log.Info("Streaming video from camera [%s]", proc.cam.Title())
 	proc.streamProcess.Start()
 	log.Info("Generating clips from camera [%s] video stream...", proc.cam.Title())
@@ -143,7 +128,9 @@ func (proc *persistCameraToDisk) Start() {
 func (proc *persistCameraToDisk) Stop() {
 	// proc.deleteClips.Stop()
 	// proc.writeClips.Stop()
-	proc.outputRuntimeStats.Stop()
+	if proc.runtimeStatsEnabled {
+		proc.outputRuntimeStats.Stop()
+	}
 	log.Info("Stopping writing clips to disk from camera [%s] video stream...", proc.cam.Title())
 	proc.persistClips.Stop()
 	log.Info("Stopping generating clips from camera [%s] video stream...", proc.cam.Title())
@@ -153,7 +140,9 @@ func (proc *persistCameraToDisk) Stop() {
 }
 
 func (proc *persistCameraToDisk) Wait() {
-	proc.outputRuntimeStats.Wait()
+	if proc.runtimeStatsEnabled {
+		proc.outputRuntimeStats.Wait()
+	}
 	log.Info("Waiting for writing clips to disk shutdown...")
 	proc.persistClips.Wait()
 	log.Info("Waiting for generating clips to shutdown...")
