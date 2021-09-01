@@ -60,12 +60,12 @@ func (proc *persistCameraToDisk) Setup() {
 }
 
 func (proc *persistCameraToDisk) Start() {
-	log.Info("Writing clips to disk from camera [%s] video stream...", proc.cam.Title())
-	proc.persistClips.Start()
-	log.Info("Generating clips from camera [%s] video stream...", proc.cam.Title())
-	proc.generateClips.Start()
 	log.Info("Streaming video from camera [%s]", proc.cam.Title())
 	proc.streamProcess.Start()
+	log.Info("Generating clips from camera [%s] video stream...", proc.cam.Title())
+	proc.generateClips.Start()
+	log.Info("Writing clips to disk from camera [%s] video stream...", proc.cam.Title())
+	proc.persistClips.Start()
 	// proc.deleteClips.Start()
 	// proc.writeClips.Start()
 	// proc.streamProcess.Start()

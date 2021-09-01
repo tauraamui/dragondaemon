@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -38,23 +37,31 @@ func (proc *generateClipProcess) run() {
 			close(proc.stopping)
 			return
 		default:
-			proc.dest <- makeClip(proc.frames, proc.framesPerClip, proc.persistLoc)
-			log.Debug("pending reading frame from stream")
+			clip := makeClip(proc.ctx, proc.frames, proc.framesPerClip, proc.persistLoc)
+			if clip != nil {
+				proc.dest <- clip
+			}
 		}
 	}
 }
 
-func makeClip(frames chan video.Frame, count int, persistLoc string) video.Clip {
+func makeClip(ctx context.Context, frames chan video.Frame, count int, persistLoc string) video.Clip {
 	clip := video.NewClip(persistLoc, count)
 	i := 0
 	for f := range frames {
-		if i >= count {
-			break
+		select {
+		case <-ctx.Done():
+			clip.Close()
+			return nil
+		default:
+			if i >= count {
+				return clip
+			}
+			clip.AppendFrame(f)
+			i++
 		}
-		clip.AppendFrame(f)
-		i++
 	}
-	return clip
+	return nil
 }
 
 func (proc *generateClipProcess) Stop() {

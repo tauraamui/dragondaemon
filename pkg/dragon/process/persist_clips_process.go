@@ -35,7 +35,12 @@ func (proc *persistClipProcess) run() {
 			close(proc.stopping)
 			return
 		default:
-			persistClip(<-proc.clips, proc.writer)
+			select {
+			case clip := <-proc.clips:
+				persistClip(clip, proc.writer)
+			default:
+				continue
+			}
 		}
 	}
 }
