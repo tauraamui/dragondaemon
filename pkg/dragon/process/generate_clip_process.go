@@ -57,5 +57,9 @@ func makeClip(frames chan video.Frame, count int, persistLoc string) video.Clip 
 	return clip
 }
 
-func (proc *generateClipProcess) Stop() {}
-func (proc *generateClipProcess) Wait() {}
+func (proc *generateClipProcess) Stop() {
+	proc.cancel()
+}
+func (proc *generateClipProcess) Wait() {
+	<-proc.stopping
+}

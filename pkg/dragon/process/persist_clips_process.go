@@ -44,5 +44,9 @@ func persistClip(clip video.Clip, writer video.ClipWriter) {
 	writer.Write(clip)
 }
 
-func (proc *persistClipProcess) Stop() {}
-func (proc *persistClipProcess) Wait() {}
+func (proc *persistClipProcess) Stop() {
+	proc.cancel()
+}
+func (proc *persistClipProcess) Wait() {
+	<-proc.stopping
+}
