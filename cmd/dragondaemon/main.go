@@ -92,7 +92,7 @@ func (service *Service) Manage() (string, error) {
 
 	log.Info("Starting dragon daemon...")
 
-	server := dragon.NewServer(config.DefaultResolver(), video.DefaultBackend())
+	server := dragon.NewServer(config.DefaultResolver(), video.ResolveBackend(os.Getenv("DRAGON_VIDEO_BACKEND")))
 	err := server.LoadConfiguration()
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to load config: %w", err).Error())

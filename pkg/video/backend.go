@@ -21,3 +21,12 @@ func DefaultBackend() Backend {
 func MockBackend() Backend {
 	return &mockVideoBackend{}
 }
+
+func ResolveBackend(t string) Backend {
+	switch t {
+	case "mock":
+		return MockBackend()
+	default:
+		return DefaultBackend()
+	}
+}
