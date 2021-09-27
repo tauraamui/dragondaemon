@@ -6,6 +6,26 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
+type mockFrame struct {
+	data          []byte
+	width, height int
+	isOpen        bool
+	isClosing     bool
+}
+
+func (m *mockFrame) DataRef() interface{} {
+	return m.data
+}
+
+func (m *mockFrame) Dimensions() video.FrameDimension {
+	return video.FrameDimension{W: m.width, H: m.height}
+}
+
+func (m *mockFrame) Close() {
+	m.isOpen = false
+	m.isClosing = true
+}
+
 type mockCameraConn struct {
 	uuid                string
 	title               string
@@ -15,7 +35,7 @@ type mockCameraConn struct {
 	fps                 int
 	spc                 int
 	frameReadIndex      int
-	framesToRead        []video.Frame
+	framesToRead        []mockFrame
 	readErr             error
 	isOpen              bool
 	isClosing           bool
@@ -51,11 +71,11 @@ func (m *mockCameraConn) SPC() int {
 }
 
 func (m *mockCameraConn) Read() (video.Frame, error) {
-	m.frameReadIndex++
+	defer func() { m.frameReadIndex++ }()
 	if m.frameReadIndex >= len(m.framesToRead) {
 		return nil, errors.New("run out of frames to read")
 	}
-	return m.framesToRead[m.frameReadIndex], m.readErr
+	return &m.framesToRead[m.frameReadIndex], m.readErr
 }
 
 func (m *mockCameraConn) IsOpen() bool {

@@ -3,7 +3,6 @@ package process_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/matryer/is"
 	"github.com/stretchr/testify/suite"
@@ -48,28 +47,15 @@ func TestNewStreamConnProcess(t *testing.T) {
 }
 
 func TestStreamConnProcessReadsFramesFromConn(t *testing.T) {
-	iss := is.New(t)
+	is := is.New(t)
 
 	testConn := mockCameraConn{
-		framesToRead: make([]video.Frame, 20),
-	}
-	readFrames := make(chan video.Frame)
-	proc := process.NewStreamConnProcess(&testConn, readFrames)
-	proc.Start()
-
-	done := make(chan interface{})
-	go func(is *is.I) {
-		defer close(done)
-	}(iss)
-
-	timeout := time.After(3 * time.Second)
-	select {
-	case <-timeout:
-		t.Fatal("timeout exceeded. reading frames from connection took too long...")
-	case <-done:
+		framesToRead: make([]mockFrame, 10),
 	}
 
-	proc.Stop()
-	proc.Wait()
-
+	for i := 0; i < 10; i++ {
+		frame, err := testConn.Read()
+		is.NoErr(err)
+		is.True(frame != nil)
+	}
 }
