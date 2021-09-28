@@ -58,16 +58,21 @@ func TestStreamConnProcessReadsFramesFromConn(t *testing.T) {
 	proc.Start()
 
 	timeout := time.After(3 * time.Second)
+	count := 0
 readFramesProcLoop:
-	for i := 0; i < clipsCount; i++ {
+	for {
 		select {
 		case <-timeout:
 			t.Fatal("test timed out took longer than 3 seconds to read frames")
 			break readFramesProcLoop
 		default:
+			if count >= 10 {
+				break readFramesProcLoop
+			}
 			f := <-readFrames
 			is.True(f != nil)
 		}
+		count++
 	}
 
 	proc.Stop()
