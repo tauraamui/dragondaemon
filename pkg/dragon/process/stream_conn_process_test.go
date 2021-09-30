@@ -85,6 +85,7 @@ readFrameProcLoop:
 	for {
 		select {
 		case <-timeout:
+			suite.T().Fatal("test timeout 3s limit exceeded")
 			break readFrameProcLoop
 		case f := <-readFrames:
 			is.True(f != nil)
