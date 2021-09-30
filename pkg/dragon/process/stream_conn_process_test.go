@@ -65,21 +65,22 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 
 	clipFrameCount := 36
 	testConn := mockCameraConn{isOpen: true, framesToRead: make([]mockFrame, clipFrameCount)}
-	readFrames := make(chan video.Frame)
+	// make test channel buffered to allow the send
+	// routine to optionally send, and our test reciever
+	// to optionally recieve without blocking so the loop
+	// proceeds and the timeout is checked
+	readFrames := make(chan video.Frame, 3)
 	proc := process.NewStreamConnProcess(&testConn, readFrames)
 
 	proc.Start()
 	timeout := time.After(3 * time.Second)
-	// readClipsCount := 0
-	// readFrameProcLoop:
 	readFrameCount := 0
 readFrameProcLoop:
 	for {
-		f := <-readFrames
 		select {
 		case <-timeout:
 			break readFrameProcLoop
-		default:
+		case f := <-readFrames:
 			is.True(f != nil)
 			readFrameCount++
 			if readFrameCount+1 >= clipFrameCount {
