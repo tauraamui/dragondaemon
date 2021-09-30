@@ -70,12 +70,13 @@ func (m *mockCameraConn) SPC() int {
 	return m.spc
 }
 
-func (m *mockCameraConn) Read() (video.Frame, error) {
-	defer func() { m.frameReadIndex++ }()
-	if m.frameReadIndex >= len(m.framesToRead) {
+func (m *mockCameraConn) Read() (frame video.Frame, err error) {
+	if m.frameReadIndex+1 >= len(m.framesToRead) {
 		return nil, errors.New("run out of frames to read")
 	}
-	return &m.framesToRead[m.frameReadIndex], m.readErr
+	frame, err = &m.framesToRead[m.frameReadIndex], m.readErr
+	m.frameReadIndex++
+	return
 }
 
 func (m *mockCameraConn) IsOpen() bool {
