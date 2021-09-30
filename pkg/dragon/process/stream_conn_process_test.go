@@ -64,7 +64,13 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 	is := is.New(suite.T())
 
 	clipFrameCount := 36
-	testConn := mockCameraConn{isOpen: true, framesToRead: make([]mockFrame, clipFrameCount)}
+	frames := []mockFrame{}
+	for i := 0; i < clipFrameCount; i++ {
+		frames = append(frames, mockFrame{
+			data: []byte{0x0A << i},
+		})
+	}
+	testConn := mockCameraConn{isOpen: true, framesToRead: frames}
 	// make test channel buffered to allow the send
 	// routine to optionally send, and our test reciever
 	// to optionally recieve without blocking so the loop
@@ -82,11 +88,13 @@ readFrameProcLoop:
 			break readFrameProcLoop
 		case f := <-readFrames:
 			is.True(f != nil)
+			data, ok := f.DataRef().([]byte)
+			is.True(ok)
+			is.Equal([]byte{0x0A << readFrameCount}, data)
 			readFrameCount++
 			if readFrameCount+1 >= clipFrameCount {
 				break readFrameProcLoop
 			}
-			continue
 		}
 	}
 	proc.Stop()
