@@ -1,6 +1,7 @@
 package process_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ type StreamConnProcessTestSuite struct {
 	suite.Suite
 	resetErrorLogsOverload func()
 	errorLogs              []string
+	onPostErrorLog         func()
 }
 
 func (suite *StreamConnProcessTestSuite) SetupSuite() {
@@ -37,6 +39,7 @@ func (suite *StreamConnProcessTestSuite) SetupTest() {
 	resetLogError := overloadErrorLog(
 		func(format string, a ...interface{}) {
 			suite.errorLogs = append(suite.errorLogs, fmt.Sprintf(format, a...))
+			suite.onPostErrorLog()
 		},
 	)
 	suite.resetErrorLogsOverload = resetLogError
@@ -100,4 +103,27 @@ readFrameProcLoop:
 	}
 	proc.Stop()
 	proc.Wait()
+}
+
+func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
+	is := is.New(suite.T())
+
+	testConn := mockCameraConn{
+		isOpen:  true,
+		readErr: errors.New("testing unable to read from mock camera stream"),
+	}
+
+	readFrames := make(chan video.Frame)
+	proc := process.NewStreamConnProcess(&testConn, readFrames)
+
+	suite.onPostErrorLog = func() {
+		proc.Stop()
+	}
+
+	proc.Start()
+	proc.Wait()
+
+	is.Equal(suite.errorLogs, []string{
+		"Unable to retrieve frame: run out of frames to read. Auto re-connecting is not yet implemented",
+	})
 }
