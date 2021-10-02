@@ -11,6 +11,7 @@ type mockFrame struct {
 	width, height int
 	isOpen        bool
 	isClosing     bool
+	onClose       func()
 }
 
 func (m *mockFrame) DataRef() interface{} {
@@ -24,6 +25,9 @@ func (m *mockFrame) Dimensions() video.FrameDimension {
 func (m *mockFrame) Close() {
 	m.isOpen = false
 	m.isClosing = true
+	if m.onClose != nil {
+		m.onClose()
+	}
 }
 
 type mockCameraConn struct {
@@ -36,6 +40,7 @@ type mockCameraConn struct {
 	spc                 int
 	frameReadIndex      int
 	framesToRead        []mockFrame
+	onPostRead          func()
 	readErr             error
 	isOpen              bool
 	isClosing           bool
@@ -71,6 +76,9 @@ func (m *mockCameraConn) SPC() int {
 }
 
 func (m *mockCameraConn) Read() (frame video.Frame, err error) {
+	if m.onPostRead != nil {
+		defer m.onPostRead()
+	}
 	if m.frameReadIndex+1 >= len(m.framesToRead) {
 		return nil, errors.New("run out of frames to read")
 	}

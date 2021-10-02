@@ -105,6 +105,58 @@ readFrameProcLoop:
 	proc.Wait()
 }
 
+func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFrameDueToNoReader() {
+	is := is.New(suite.T())
+
+	closedFramesCount := 0
+	incrCloseCount := func() { closedFramesCount++ }
+	firstFrame := mockFrame{
+		onClose: incrCloseCount,
+	}
+	secondFrame := mockFrame{
+		onClose: incrCloseCount,
+	}
+	thirdFrame := mockFrame{
+		onClose: incrCloseCount,
+	}
+	forthFrame := mockFrame{
+		onClose: incrCloseCount,
+	}
+	fithFrame := mockFrame{
+		onClose: incrCloseCount,
+	}
+	sixthFrame := mockFrame{
+		onClose: incrCloseCount,
+	}
+
+	readFrameCount := 0
+	testConn := mockCameraConn{isOpen: true, onPostRead: func() { readFrameCount++ }, framesToRead: []mockFrame{
+		firstFrame, secondFrame, thirdFrame, forthFrame, fithFrame, sixthFrame,
+	}}
+
+	readFrames := make(chan video.Frame, 2)
+	proc := process.NewStreamConnProcess(&testConn, readFrames)
+	proc.Start()
+
+	timeout := time.After(3 * time.Second)
+checkFrameReadCountLoop:
+	for {
+		select {
+		case <-timeout:
+			suite.T().Fatal("test timeout 3s limit exceeded")
+			break checkFrameReadCountLoop
+		default:
+			if readFrameCount >= 6 {
+				break checkFrameReadCountLoop
+			}
+		}
+	}
+	proc.Stop()
+	proc.Wait()
+
+	is.Equal(closedFramesCount, 3)
+}
+
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
 	is := is.New(suite.T())
 
