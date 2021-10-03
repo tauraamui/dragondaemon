@@ -48,7 +48,9 @@ func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
 				break sendFramesProcLoop
 			default:
 				*sentFramesCount++
-				framesChan <- &mockFrame{}
+				framesChan <- &mockFrame{
+					data: []byte{0x0A << *sentFramesCount},
+				}
 			}
 		}
 	}(ctx, time.After(3*time.Second), errChan, &sentFramesCount)
@@ -78,6 +80,12 @@ receiveClipsProcLoop:
 	is.Equal(len(generatedClips), numClipsToGen)
 	is.True(sentFramesCount >= numClipsToGen*framesPerClip)
 	for i := 0; i < numClipsToGen; i++ {
-		is.Equal(len(generatedClips[i].GetFrames()), framesPerClip)
+		clipsFrames := generatedClips[i].GetFrames()
+		is.Equal(len(clipsFrames), framesPerClip)
+
+		for j := 0; j < len(clipsFrames); j++ {
+			var value byte = 0x0A << (j + (framesPerClip * i) + 1)
+			is.Equal([]byte{value}, clipsFrames[j].DataRef())
+		}
 	}
 }
