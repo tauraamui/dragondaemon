@@ -37,16 +37,12 @@ func (proc *persistClipProcess) run() {
 		default:
 			select {
 			case clip := <-proc.clips:
-				persistClip(clip, proc.writer)
+				proc.writer.Write(clip)
 			default:
 				continue
 			}
 		}
 	}
-}
-
-func persistClip(clip video.Clip, writer video.ClipWriter) {
-	writer.Write(clip)
 }
 
 func (proc *persistClipProcess) Stop() {
