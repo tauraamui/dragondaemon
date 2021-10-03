@@ -49,20 +49,9 @@ func (proc *persistCameraToDisk) Start() {
 	proc.generateClips.Start()
 	log.Info("Writing clips to disk from camera [%s] video stream...", proc.cam.Title())
 	proc.persistClips.Start()
-	// proc.deleteClips.Start()
-	// proc.writeClips.Start()
-	// proc.streamProcess.Start()
-	// go func(clips chan video.Clip) {
-	// 	for clip := range clips {
-	// 		log.Info("Closing clip from camera [%s]", proc.cam.Title())
-	// 		clip.Close()
-	// 	}
-	// }(proc.clips)
 }
 
 func (proc *persistCameraToDisk) Stop() {
-	// proc.deleteClips.Stop()
-	// proc.writeClips.Stop()
 	log.Info("Stopping writing clips to disk from camera [%s] video stream...", proc.cam.Title())
 	proc.persistClips.Stop()
 	log.Info("Stopping generating clips from camera [%s] video stream...", proc.cam.Title())
