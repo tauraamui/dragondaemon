@@ -2,6 +2,7 @@ package process
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -25,6 +26,11 @@ func NewGenerateClipProcess(frames chan video.Frame, dest chan video.Clip, frame
 }
 
 func (proc *generateClipProcess) Setup() {}
+
+func (proc *generateClipProcess) RegisterCallback(code event, callback func()) error {
+	return errors.New("generate clip proc does not support event callbacks")
+}
+
 func (proc *generateClipProcess) Start() {
 	go proc.run()
 }

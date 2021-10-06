@@ -1,6 +1,8 @@
 package process
 
 import (
+	"errors"
+
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -30,8 +32,15 @@ type persistCameraToDisk struct {
 
 func (proc *persistCameraToDisk) Setup() {
 	proc.streamProcess = NewStreamConnProcess(proc.cam, proc.frames)
-	proc.generateClips = NewGenerateClipProcess(proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation())
+	proc.streamProcess.RegisterCallback(PROC_CAM_SWITCHED_OFF, func() {})
+	proc.generateClips = NewGenerateClipProcess(
+		proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
+	)
 	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
+}
+
+func (proc *persistCameraToDisk) RegisterCallback(code event, callback func()) error {
+	return errors.New("persist camera proc does not support event callbacks")
 }
 
 func (proc *persistCameraToDisk) Start() {

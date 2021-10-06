@@ -9,6 +9,7 @@ import (
 	"github.com/matryer/is"
 	"github.com/stretchr/testify/suite"
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -39,7 +40,9 @@ func (suite *StreamConnProcessTestSuite) SetupTest() {
 	resetLogError := overloadErrorLog(
 		func(format string, a ...interface{}) {
 			suite.errorLogs = append(suite.errorLogs, fmt.Sprintf(format, a...))
-			suite.onPostErrorLog()
+			if suite.onPostErrorLog != nil {
+				suite.onPostErrorLog()
+			}
 		},
 	)
 	suite.resetErrorLogsOverload = resetLogError
@@ -57,7 +60,7 @@ func TestStreamConnProcessTestSuite(t *testing.T) {
 func (suite *StreamConnProcessTestSuite) TestNewStreamConnProcess() {
 	is := is.New(suite.T())
 
-	testConn := mockCameraConn{}
+	testConn := mockCameraConn{schedule: schedule.NewSchedule(schedule.Week{})}
 	readFrames := make(chan video.Frame)
 	proc := process.NewStreamConnProcess(&testConn, readFrames)
 	is.True(proc != nil)
@@ -73,7 +76,9 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 			data: []byte{0x0A << i},
 		})
 	}
-	testConn := mockCameraConn{isOpen: true, framesToRead: frames}
+	testConn := mockCameraConn{
+		isOpen: true, framesToRead: frames, schedule: schedule.NewSchedule(schedule.Week{}),
+	}
 	// make test channel buffered to allow the send
 	// routine to optionally send, and our test reciever
 	// to optionally recieve without blocking so the loop
@@ -130,9 +135,13 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFram
 	}
 
 	readFrameCount := 0
-	testConn := mockCameraConn{isOpen: true, onPostRead: func() { readFrameCount++ }, framesToRead: []mockFrame{
-		firstFrame, secondFrame, thirdFrame, forthFrame, fithFrame, sixthFrame,
-	}}
+	testConn := mockCameraConn{
+		isOpen: true, onPostRead: func() { readFrameCount++ },
+		framesToRead: []mockFrame{
+			firstFrame, secondFrame, thirdFrame, forthFrame, fithFrame, sixthFrame,
+		},
+		schedule: schedule.NewSchedule(schedule.Week{}),
+	}
 
 	readFrames := make(chan video.Frame, 2)
 	proc := process.NewStreamConnProcess(&testConn, readFrames)
@@ -161,8 +170,9 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	is := is.New(suite.T())
 
 	testConn := mockCameraConn{
-		isOpen:  true,
-		readErr: errors.New("testing unable to read from mock camera stream"),
+		isOpen:   true,
+		readErr:  errors.New("testing unable to read from mock camera stream"),
+		schedule: schedule.NewSchedule(schedule.Week{}),
 	}
 
 	readFrames := make(chan video.Frame)
