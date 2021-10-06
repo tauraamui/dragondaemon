@@ -10,6 +10,10 @@ import (
 
 type Time time.Time
 
+func Now() Time {
+	return Time(TODAY)
+}
+
 var TODAY time.Time = time.Now()
 
 const stLayout = "15:04:05"
