@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -14,20 +15,24 @@ import (
 const PROC_CAM_SWITCHED_OFF = 0x51
 
 type streamConnProccess struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	callbacks map[Event]func()
-	stopping  chan interface{}
-	cam       camera.Connection
-	isOff     bool
-	wasOff    bool
-	dest      chan video.Frame
+	ctx         context.Context
+	cancel      context.CancelFunc
+	broadcaster *broadcast.Broadcaster
+	callbacks   map[Event]func()
+	stopping    chan interface{}
+	cam         camera.Connection
+	isOff       bool
+	wasOff      bool
+	dest        chan video.Frame
 }
 
-func NewStreamConnProcess(cam camera.Connection, dest chan video.Frame) Process {
+func NewStreamConnProcess(broadcaster *broadcast.Broadcaster, cam camera.Connection, dest chan video.Frame) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
-		ctx: ctx, cancel: cancel, callbacks: map[Event]func(){}, cam: cam, dest: dest, stopping: make(chan interface{}),
+		ctx: ctx, cancel: cancel,
+		broadcaster: broadcaster,
+		callbacks:   map[Event]func(){},
+		cam:         cam, dest: dest, stopping: make(chan interface{}),
 	}
 }
 
@@ -50,20 +55,16 @@ func (proc *streamConnProccess) run() {
 			close(proc.stopping)
 			return
 		default:
-			println("schedule", proc.cam.Schedule())
 			proc.isOff = !proc.cam.Schedule().IsOn(schedule.Now())
-			if proc.isOff && !proc.wasOff {
-				if switchedOffCallback := proc.callbacks[PROC_CAM_SWITCHED_OFF]; switchedOffCallback != nil {
-					switchedOffCallback()
+			if proc.isOff {
+				if !proc.wasOff {
+					proc.wasOff = true
+					proc.broadcaster.Send(PROC_CAM_SWITCHED_OFF)
 				}
-				proc.wasOff = true
 				continue
 			}
 
-			if !proc.isOff {
-				proc.wasOff = false
-			}
-
+			proc.wasOff = false
 			stream(proc.cam, proc.dest)
 		}
 	}

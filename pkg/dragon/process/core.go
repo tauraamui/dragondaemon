@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/spf13/afero"
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -13,31 +14,29 @@ var fs afero.Fs = afero.NewOsFs()
 
 func NewCoreProcess(cam camera.Connection, writer video.ClipWriter) Process {
 	return &persistCameraToDisk{
-		cam:    cam,
-		writer: writer,
-		frames: make(chan video.Frame, 3),
-		clips:  make(chan video.Clip, 3),
+		broadcaster: broadcast.New(0),
+		cam:         cam,
+		writer:      writer,
+		frames:      make(chan video.Frame, 3),
+		clips:       make(chan video.Clip, 3),
 	}
 }
 
 type persistCameraToDisk struct {
+	broadcaster   *broadcast.Broadcaster
 	cam           camera.Connection
 	writer        video.ClipWriter
 	frames        chan video.Frame
 	clips         chan video.Clip
-	events        chan Event
 	streamProcess Process
 	generateClips Process
 	persistClips  Process
 }
 
 func (proc *persistCameraToDisk) Setup() {
-	proc.streamProcess = NewStreamConnProcess(proc.cam, proc.frames)
-	proc.streamProcess.RegisterCallback(PROC_CAM_SWITCHED_OFF, func() {
-		proc.events <- PROC_FORCE_DUMP_CURRENT_CLIP
-	})
+	proc.streamProcess = NewStreamConnProcess(proc.broadcaster, proc.cam, proc.frames)
 	proc.generateClips = NewGenerateClipProcess(
-		proc.events, proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
+		proc.broadcaster.Listen(), proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
 	)
 	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
 }
