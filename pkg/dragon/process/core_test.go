@@ -138,6 +138,8 @@ func TestCoreProcessSetup(t *testing.T) {
 
 type mockProc struct {
 	onStart func()
+	onStop  func()
+	onWait  func()
 }
 
 func (m *mockProc) Setup() {}
@@ -148,9 +150,17 @@ func (m *mockProc) Start() {
 	}
 }
 
-func (m *mockProc) Stop() {}
+func (m *mockProc) Stop() {
+	if m.onStop != nil {
+		m.onStop()
+	}
+}
 
-func (m *mockProc) Wait() {}
+func (m *mockProc) Wait() {
+	if m.onWait != nil {
+		m.onWait()
+	}
+}
 
 func TestCoreProcessStart(t *testing.T) {
 	is := is.New(t)
@@ -170,6 +180,54 @@ func TestCoreProcessStart(t *testing.T) {
 	proc.persistClips = &mockProc{onStart: onPersistProcStart}
 
 	proc.Start()
+
+	is.True(streamProcCalled)
+	is.True(generateProcCalled)
+	is.True(persistProcCalled)
+}
+
+func TestCoreProcessStop(t *testing.T) {
+	is := is.New(t)
+	conn := mockCameraConn{}
+	writer := mockClipWriter{}
+	proc := NewCoreProcess(&conn, &writer).(*persistCameraToDisk)
+
+	streamProcCalled := false
+	onStreamProcStop := func() { streamProcCalled = true }
+	generateProcCalled := false
+	onGenerateProcStop := func() { generateProcCalled = true }
+	persistProcCalled := false
+	onPersistProcStop := func() { persistProcCalled = true }
+
+	proc.streamProcess = &mockProc{onStop: onStreamProcStop}
+	proc.generateClips = &mockProc{onStop: onGenerateProcStop}
+	proc.persistClips = &mockProc{onStop: onPersistProcStop}
+
+	proc.Stop()
+
+	is.True(streamProcCalled)
+	is.True(generateProcCalled)
+	is.True(persistProcCalled)
+}
+
+func TestCoreProcessWait(t *testing.T) {
+	is := is.New(t)
+	conn := mockCameraConn{}
+	writer := mockClipWriter{}
+	proc := NewCoreProcess(&conn, &writer).(*persistCameraToDisk)
+
+	streamProcCalled := false
+	onStreamProcWait := func() { streamProcCalled = true }
+	generateProcCalled := false
+	onGenerateProcWait := func() { generateProcCalled = true }
+	persistProcCalled := false
+	onPersistProcWait := func() { persistProcCalled = true }
+
+	proc.streamProcess = &mockProc{onWait: onStreamProcWait}
+	proc.generateClips = &mockProc{onWait: onGenerateProcWait}
+	proc.persistClips = &mockProc{onWait: onPersistProcWait}
+
+	proc.Wait()
 
 	is.True(streamProcCalled)
 	is.True(generateProcCalled)
