@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/matryer/is"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -39,6 +40,7 @@ type mockCameraConn struct {
 	fullPersistLocation string
 	maxClipAgeDays      int
 	fps                 int
+	schedule            schedule.Schedule
 	spc                 int
 	frameReadIndex      int
 	framesToRead        []mockFrame
@@ -71,6 +73,10 @@ func (m *mockCameraConn) MaxClipAgeDays() int {
 
 func (m *mockCameraConn) FPS() int {
 	return m.fps
+}
+
+func (m *mockCameraConn) Schedule() schedule.Schedule {
+	return m.schedule
 }
 
 func (m *mockCameraConn) SPC() int {

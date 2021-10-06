@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -16,6 +17,7 @@ type Connection interface {
 	FullPersistLocation() string
 	MaxClipAgeDays() int
 	FPS() int
+	Schedule() schedule.Schedule
 	SPC() int
 	Read() (video.Frame, error)
 	IsOpen() bool
@@ -66,6 +68,10 @@ func (c *connection) MaxClipAgeDays() int {
 
 func (c *connection) FPS() int {
 	return c.sett.FPS
+}
+
+func (c *connection) Schedule() schedule.Schedule {
+	return c.sett.Schedule
 }
 
 func (c *connection) SPC() int {
