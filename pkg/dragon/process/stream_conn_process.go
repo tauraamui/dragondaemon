@@ -18,7 +18,6 @@ type streamConnProccess struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	broadcaster *broadcast.Broadcaster
-	callbacks   map[Event]func()
 	stopping    chan interface{}
 	cam         camera.Connection
 	isOff       bool
@@ -31,17 +30,11 @@ func NewStreamConnProcess(broadcaster *broadcast.Broadcaster, cam camera.Connect
 	return &streamConnProccess{
 		ctx: ctx, cancel: cancel,
 		broadcaster: broadcaster,
-		callbacks:   map[Event]func(){},
 		cam:         cam, dest: dest, stopping: make(chan interface{}),
 	}
 }
 
 func (proc *streamConnProccess) Setup() {}
-
-func (proc *streamConnProccess) RegisterCallback(code Event, callback func()) error {
-	proc.callbacks[code] = callback
-	return nil
-}
 
 func (proc *streamConnProccess) Start() {
 	go proc.run()

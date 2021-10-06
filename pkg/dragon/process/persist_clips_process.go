@@ -2,7 +2,6 @@ package process
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/video"
@@ -24,10 +23,6 @@ func NewPersistClipProcess(clips chan video.Clip, writer video.ClipWriter) Proce
 }
 
 func (proc *persistClipProcess) Setup() {}
-
-func (proc *persistClipProcess) RegisterCallback(code Event, callback func()) error {
-	return errors.New("persist clip proc does not support event callbacks")
-}
 
 func (proc *persistClipProcess) Start() {
 	go proc.run()

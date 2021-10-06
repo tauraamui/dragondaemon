@@ -2,7 +2,6 @@ package process
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
@@ -37,10 +36,6 @@ func NewGenerateClipProcess(
 }
 
 func (proc *generateClipProcess) Setup() {}
-
-func (proc *generateClipProcess) RegisterCallback(code Event, callback func()) error {
-	return errors.New("generate clip proc does not support event callbacks")
-}
 
 func (proc *generateClipProcess) Start() {
 	go proc.run()

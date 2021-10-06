@@ -1,8 +1,6 @@
 package process
 
 import (
-	"errors"
-
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
@@ -39,10 +37,6 @@ func (proc *persistCameraToDisk) Setup() {
 		proc.broadcaster.Listen(), proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
 	)
 	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
-}
-
-func (proc *persistCameraToDisk) RegisterCallback(code Event, callback func()) error {
-	return errors.New("persist camera proc does not support event callbacks")
 }
 
 func (proc *persistCameraToDisk) Start() {

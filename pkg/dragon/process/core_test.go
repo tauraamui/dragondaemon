@@ -150,10 +150,6 @@ type mockProc struct {
 
 func (m *mockProc) Setup() {}
 
-func (m *mockProc) RegisterCallback(code Event, callback func()) error {
-	return errors.New("mock proc does not support callbacks")
-}
-
 func (m *mockProc) Start() {
 	if m.onStart != nil {
 		m.onStart()

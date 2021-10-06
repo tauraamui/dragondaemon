@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/matryer/is"
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -16,23 +17,23 @@ const framesPerClip = 60
 const persistLoc = "/testroot/clips"
 
 func TestNewGenerateClipProcess(t *testing.T) {
-	events := make(chan process.Event)
+	b := broadcast.New(0)
 	frames := make(chan video.Frame)
 	generatedClips := make(chan video.Clip)
 
 	is := is.New(t)
-	proc := process.NewGenerateClipProcess(events, frames, generatedClips, framesPerClip, persistLoc)
+	proc := process.NewGenerateClipProcess(b.Listen(), frames, generatedClips, framesPerClip, persistLoc)
 	is.True(proc != nil)
 }
 
 func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
-	eventsChan := make(chan process.Event)
+	b := broadcast.New(0)
 	framesChan := make(chan video.Frame)
 	generatedClipsChan := make(chan video.Clip)
 	numClipsToGen := 3
 
 	is := is.New(t)
-	proc := process.NewGenerateClipProcess(eventsChan, framesChan, generatedClipsChan, framesPerClip, persistLoc)
+	proc := process.NewGenerateClipProcess(b.Listen(), framesChan, generatedClipsChan, framesPerClip, persistLoc)
 	proc.Start()
 
 	ctx, cancel := context.WithCancel(context.Background())

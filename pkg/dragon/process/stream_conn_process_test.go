@@ -9,6 +9,7 @@ import (
 	"github.com/matryer/is"
 	"github.com/stretchr/testify/suite"
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -62,7 +63,7 @@ func (suite *StreamConnProcessTestSuite) TestNewStreamConnProcess() {
 
 	testConn := mockCameraConn{schedule: schedule.NewSchedule(schedule.Week{})}
 	readFrames := make(chan video.Frame)
-	proc := process.NewStreamConnProcess(&testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
 	is.True(proc != nil)
 }
 
@@ -84,7 +85,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 	// to optionally recieve without blocking so the loop
 	// proceeds and the timeout is checked
 	readFrames := make(chan video.Frame, 3)
-	proc := process.NewStreamConnProcess(&testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
 
 	proc.Start()
 	timeout := time.After(3 * time.Second)
@@ -144,7 +145,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFram
 	}
 
 	readFrames := make(chan video.Frame, 2)
-	proc := process.NewStreamConnProcess(&testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
 	proc.Start()
 
 	timeout := time.After(3 * time.Second)
@@ -176,7 +177,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	}
 
 	readFrames := make(chan video.Frame)
-	proc := process.NewStreamConnProcess(&testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
 
 	suite.onPostErrorLog = func() {
 		proc.Stop()
