@@ -6,6 +6,7 @@ import (
 
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/config"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -108,7 +109,7 @@ func connect(cancel context.Context, cam configdef.Camera, backend video.Backend
 		DateTimeFormat:  cam.DateTimeFormat,
 		DateTimeLabel:   cam.DateTimeLabel,
 		FPS:             cam.FPS,
-		Schedule:        cam.Schedule,
+		Schedule:        schedule.NewSchedule(cam.Week),
 		SecondsPerClip:  cam.SecondsPerClip,
 		PersistLocation: cam.PersistLoc,
 		MaxClipAgeDays:  cam.MaxClipAgeDays,

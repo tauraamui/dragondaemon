@@ -9,19 +9,19 @@ import (
 )
 
 type Camera struct {
-	Title           string            `json:"title" validate:"empty=false"`
-	Address         string            `json:"address"`
-	PersistLoc      string            `json:"persist_location" validate:"empty=false"`
-	MaxClipAgeDays  int               `json:"max_clip_age_days" validate:"gte=1 & lte=30"`
-	MockWriter      bool              `json:"mock_writer"`
-	MockCapturer    bool              `json:"mock_capturer"`
-	FPS             int               `json:"fps" validate:"gte=1 & lte=30"`
-	DateTimeLabel   bool              `json:"date_time_label"`
-	DateTimeFormat  string            `json:"date_time_format"`
-	SecondsPerClip  int               `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
-	Disabled        bool              `json:"disabled"`
-	Schedule        schedule.Schedule `json:"schedule"`
-	ReolinkAdvanced ReolinkAdvanced   `json:"reolink_advanced"`
+	Title           string          `json:"title" validate:"empty=false"`
+	Address         string          `json:"address"`
+	PersistLoc      string          `json:"persist_location" validate:"empty=false"`
+	MaxClipAgeDays  int             `json:"max_clip_age_days" validate:"gte=1 & lte=30"`
+	MockWriter      bool            `json:"mock_writer"`
+	MockCapturer    bool            `json:"mock_capturer"`
+	FPS             int             `json:"fps" validate:"gte=1 & lte=30"`
+	DateTimeLabel   bool            `json:"date_time_label"`
+	DateTimeFormat  string          `json:"date_time_format"`
+	SecondsPerClip  int             `json:"seconds_per_clip" validate:"gte=1 & lte=3"`
+	Disabled        bool            `json:"disabled"`
+	Week            schedule.Week   `json:"schedule"`
+	ReolinkAdvanced ReolinkAdvanced `json:"reolink_advanced"`
 }
 
 type ReolinkAdvanced struct {

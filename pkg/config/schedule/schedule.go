@@ -99,9 +99,7 @@ func (st *Time) String() string {
 	return fmt.Sprintf("%q", t.Format(stLayout))
 }
 
-// Schedule contains each day of the week and it's off and on time entries
-type Schedule struct {
-	hasRunSetup            bool
+type Week struct {
 	weekdayStringToWeekDay map[string]*OnOffTimes
 	Everyday               OnOffTimes `json:"everyday"`
 	Monday                 OnOffTimes `json:"monday"`
@@ -113,25 +111,22 @@ type Schedule struct {
 	Sunday                 OnOffTimes `json:"sunday"`
 }
 
-func (s *Schedule) setupState() {
-	if s.hasRunSetup {
-		return
-	}
-	s.weekdayStringToWeekDay = map[string]*OnOffTimes{
-		"Monday":    &s.Monday,
-		"Tuesday":   &s.Tuesday,
-		"Wednesday": &s.Wednesday,
-		"Thursday":  &s.Thursday,
-		"Friday":    &s.Friday,
-		"Saturday":  &s.Saturday,
-		"Sunday":    &s.Sunday,
+func (w *Week) init() {
+	w.weekdayStringToWeekDay = map[string]*OnOffTimes{
+		"Monday":    &w.Monday,
+		"Tuesday":   &w.Tuesday,
+		"Wednesday": &w.Wednesday,
+		"Thursday":  &w.Thursday,
+		"Friday":    &w.Friday,
+		"Saturday":  &w.Saturday,
+		"Sunday":    &w.Sunday,
 	}
 
 	// from today to a week before set each weekday time to have relative date
 	for i := 0; i < 7; i++ {
 		previousDay := TODAY.AddDate(0, 0, i*-1)
 		log.Debug("Setting relative date from TODAY for %s", previousDay.Weekday().String()) //nolint
-		previousDayRef := s.weekdayStringToWeekDay[previousDay.Weekday().String()]
+		previousDayRef := w.weekdayStringToWeekDay[previousDay.Weekday().String()]
 		if previousDayRef.On != nil {
 			*previousDayRef.On = Time(
 				time.Date(
@@ -162,16 +157,27 @@ func (s *Schedule) setupState() {
 			)
 		}
 	}
-	s.hasRunSetup = true
+}
+
+type Schedule interface {
+	IsOn(Time) bool
+}
+
+func NewSchedule(w Week) Schedule {
+	w.init()
+	return &schedule{week: w}
+}
+
+// Schedule contains each day of the week and it's off and on time entries
+type schedule struct {
+	week Week
 }
 
 // IsOn returns whether given time is within on period from schedule
-func (s *Schedule) IsOn(t Time) bool {
-	s.setupState()
-
+func (s *schedule) IsOn(t Time) bool {
 	for i := 0; i < 7; i++ {
 		previousDay := TODAY.AddDate(0, 0, i*-1)
-		previousDayRef := s.weekdayStringToWeekDay[previousDay.Weekday().String()]
+		previousDayRef := s.week.weekdayStringToWeekDay[previousDay.Weekday().String()]
 		empty, state := isTimeOnOrOff(t, previousDayRef)
 		if !empty {
 			return state
