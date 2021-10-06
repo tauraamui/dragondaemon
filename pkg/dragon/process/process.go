@@ -6,13 +6,13 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
-type event int
+type Event int
 
 const PROC_SHUTDOWN_EVT = 0x50
 
 type Process interface {
 	Setup()
-	RegisterCallback(code event, callback func()) error
+	RegisterCallback(code Event, callback func()) error
 	Start()
 	Stop()
 	Wait()
@@ -25,14 +25,14 @@ type Settings struct {
 
 func New(settings Settings) Process {
 	return &process{
-		callbacks:          map[event]func(){},
+		callbacks:          map[Event]func(){},
 		waitForShutdownMsg: settings.WaitForShutdownMsg,
 		process:            settings.Process,
 	}
 }
 
 type process struct {
-	callbacks          map[event]func()
+	callbacks          map[Event]func()
 	process            func(context.Context) []chan interface{}
 	waitForShutdownMsg string
 	canceller          context.CancelFunc
@@ -47,7 +47,7 @@ func (p *process) logShutdown() {
 
 func (p *process) Setup() {}
 
-func (p *process) RegisterCallback(code event, callback func()) error {
+func (p *process) RegisterCallback(code Event, callback func()) error {
 	p.callbacks[code] = callback
 	return nil
 }

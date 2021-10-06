@@ -16,21 +16,23 @@ const framesPerClip = 60
 const persistLoc = "/testroot/clips"
 
 func TestNewGenerateClipProcess(t *testing.T) {
+	events := make(chan process.Event)
 	frames := make(chan video.Frame)
 	generatedClips := make(chan video.Clip)
 
 	is := is.New(t)
-	proc := process.NewGenerateClipProcess(frames, generatedClips, framesPerClip, persistLoc)
+	proc := process.NewGenerateClipProcess(events, frames, generatedClips, framesPerClip, persistLoc)
 	is.True(proc != nil)
 }
 
 func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
+	eventsChan := make(chan process.Event)
 	framesChan := make(chan video.Frame)
 	generatedClipsChan := make(chan video.Clip)
 	numClipsToGen := 3
 
 	is := is.New(t)
-	proc := process.NewGenerateClipProcess(framesChan, generatedClipsChan, framesPerClip, persistLoc)
+	proc := process.NewGenerateClipProcess(eventsChan, framesChan, generatedClipsChan, framesPerClip, persistLoc)
 	proc.Start()
 
 	ctx, cancel := context.WithCancel(context.Background())

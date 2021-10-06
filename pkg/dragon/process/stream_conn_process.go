@@ -16,7 +16,7 @@ const PROC_CAM_SWITCHED_OFF = 0x51
 type streamConnProccess struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
-	callbacks map[event]func()
+	callbacks map[Event]func()
 	stopping  chan interface{}
 	cam       camera.Connection
 	isOff     bool
@@ -27,13 +27,13 @@ type streamConnProccess struct {
 func NewStreamConnProcess(cam camera.Connection, dest chan video.Frame) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
-		ctx: ctx, cancel: cancel, callbacks: map[event]func(){}, cam: cam, dest: dest, stopping: make(chan interface{}),
+		ctx: ctx, cancel: cancel, callbacks: map[Event]func(){}, cam: cam, dest: dest, stopping: make(chan interface{}),
 	}
 }
 
 func (proc *streamConnProccess) Setup() {}
 
-func (proc *streamConnProccess) RegisterCallback(code event, callback func()) error {
+func (proc *streamConnProccess) RegisterCallback(code Event, callback func()) error {
 	proc.callbacks[code] = callback
 	return nil
 }

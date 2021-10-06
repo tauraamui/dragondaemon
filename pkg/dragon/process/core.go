@@ -25,6 +25,7 @@ type persistCameraToDisk struct {
 	writer        video.ClipWriter
 	frames        chan video.Frame
 	clips         chan video.Clip
+	events        chan Event
 	streamProcess Process
 	generateClips Process
 	persistClips  Process
@@ -32,14 +33,16 @@ type persistCameraToDisk struct {
 
 func (proc *persistCameraToDisk) Setup() {
 	proc.streamProcess = NewStreamConnProcess(proc.cam, proc.frames)
-	proc.streamProcess.RegisterCallback(PROC_CAM_SWITCHED_OFF, func() {})
+	proc.streamProcess.RegisterCallback(PROC_CAM_SWITCHED_OFF, func() {
+		proc.events <- PROC_FORCE_DUMP_CURRENT_CLIP
+	})
 	proc.generateClips = NewGenerateClipProcess(
-		proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
+		proc.events, proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
 	)
 	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
 }
 
-func (proc *persistCameraToDisk) RegisterCallback(code event, callback func()) error {
+func (proc *persistCameraToDisk) RegisterCallback(code Event, callback func()) error {
 	return errors.New("persist camera proc does not support event callbacks")
 }
 
