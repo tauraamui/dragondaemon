@@ -26,6 +26,58 @@ func TestNewGenerateClipProcess(t *testing.T) {
 	is.True(proc != nil)
 }
 
+func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testing.T) {
+	b := broadcast.New(0)
+	framesChan := make(chan video.Frame)
+	generatedClipsChan := make(chan video.Clip)
+
+	is := is.New(t)
+	proc := process.NewGenerateClipProcess(b.Listen(), framesChan, generatedClipsChan, framesPerClip, persistLoc)
+	proc.Start()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error)
+	onLastClip := make(chan bool)
+	go func(ctx context.Context, timeout <-chan time.Time, onLastClip chan bool, done chan error, frames chan video.Frame) {
+		defer close(done)
+		for {
+			time.Sleep(1 * time.Microsecond)
+			select {
+			case <-timeout:
+				done <- errors.New("test timeout 3s limit exceeded")
+				return
+			case <-ctx.Done():
+				return
+			case yes := <-onLastClip:
+				if yes {
+					for i := 0; i < framesPerClip; i++ {
+						if i == (framesPerClip/2)+1 {
+							b.Send(process.CAM_SWITCHED_OFF_EVT)
+						}
+						frames <- &mockFrame{}
+					}
+				}
+			default:
+				frames <- &mockFrame{}
+			}
+		}
+	}(ctx, time.After(3*time.Second), onLastClip, done, framesChan)
+
+	clip := <-generatedClipsChan
+	is.Equal(len(clip.GetFrames()), framesPerClip)
+
+	clip1 := <-generatedClipsChan
+	is.Equal(len(clip1.GetFrames()), framesPerClip)
+
+	onLastClip <- true
+	clip2 := <-generatedClipsChan
+	frameCount := len(clip2.GetFrames())
+	is.True(frameCount < framesPerClip || frameCount <= framesPerClip/2)
+
+	cancel()
+	is.NoErr(<-done)
+}
+
 func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
 	b := broadcast.New(0)
 	framesChan := make(chan video.Frame)

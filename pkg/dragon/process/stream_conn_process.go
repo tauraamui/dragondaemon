@@ -12,7 +12,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
-const PROC_CAM_SWITCHED_OFF = 0x51
+const CAM_SWITCHED_OFF_EVT Event = 0x51
 
 type streamConnProccess struct {
 	ctx         context.Context
@@ -52,7 +52,7 @@ func (proc *streamConnProccess) run() {
 			if proc.isOff {
 				if !proc.wasOff {
 					proc.wasOff = true
-					proc.broadcaster.Send(PROC_CAM_SWITCHED_OFF)
+					proc.broadcaster.Send(CAM_SWITCHED_OFF_EVT)
 				}
 				continue
 			}

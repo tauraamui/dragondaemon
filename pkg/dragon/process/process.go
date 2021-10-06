@@ -8,7 +8,7 @@ import (
 
 type Event int
 
-const PROC_SHUTDOWN_EVT = 0x50
+const SHUTDOWN_EVT Event = 0x50
 
 type Process interface {
 	Setup()

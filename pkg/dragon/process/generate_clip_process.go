@@ -8,8 +8,6 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
-const PROC_FORCE_DUMP_CURRENT_CLIP = 0x52
-
 type generateClipProcess struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -68,7 +66,7 @@ func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan vid
 			return nil
 		case msg := <-listener.Ch:
 			if e, ok := msg.(Event); ok {
-				if e == PROC_CAM_SWITCHED_OFF {
+				if e == CAM_SWITCHED_OFF_EVT {
 					return clip
 				}
 			}
