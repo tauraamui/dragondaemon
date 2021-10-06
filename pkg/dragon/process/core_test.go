@@ -135,3 +135,43 @@ func TestCoreProcessSetup(t *testing.T) {
 	is.True(proc.generateClips != nil)
 	is.True(proc.persistClips != nil)
 }
+
+type mockProc struct {
+	onStart func()
+}
+
+func (m *mockProc) Setup() {}
+
+func (m *mockProc) Start() {
+	if m.onStart != nil {
+		m.onStart()
+	}
+}
+
+func (m *mockProc) Stop() {}
+
+func (m *mockProc) Wait() {}
+
+func TestCoreProcessStart(t *testing.T) {
+	is := is.New(t)
+	conn := mockCameraConn{}
+	writer := mockClipWriter{}
+	proc := NewCoreProcess(&conn, &writer).(*persistCameraToDisk)
+
+	streamProcCalled := false
+	onStreamProcStart := func() { streamProcCalled = true }
+	generateProcCalled := false
+	onGenerateProcStart := func() { generateProcCalled = true }
+	persistProcCalled := false
+	onPersistProcStart := func() { persistProcCalled = true }
+
+	proc.streamProcess = &mockProc{onStart: onStreamProcStart}
+	proc.generateClips = &mockProc{onStart: onGenerateProcStart}
+	proc.persistClips = &mockProc{onStart: onPersistProcStart}
+
+	proc.Start()
+
+	is.True(streamProcCalled)
+	is.True(generateProcCalled)
+	is.True(persistProcCalled)
+}
