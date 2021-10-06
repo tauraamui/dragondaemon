@@ -19,7 +19,7 @@ type Server interface {
 	LoadConfiguration() error
 	SetupProcesses()
 	RunProcesses()
-	Shutdown() chan interface{}
+	Shutdown() <-chan interface{}
 }
 
 func NewServer(cr config.Resolver, vb video.Backend) Server {
@@ -149,7 +149,7 @@ func (s *server) shutdown() {
 	close(s.shutdownDone)
 }
 
-func (s *server) Shutdown() chan interface{} {
+func (s *server) Shutdown() <-chan interface{} {
 	s.shutdownProcesses()
 	s.shutdown()
 	return s.shutdownDone
