@@ -25,7 +25,7 @@ func (s *server) SetupProcesses() {
 	for _, cam := range s.cameras {
 		proc := process.NewCoreProcess(cam, s.videoBackend.NewWriter())
 		proc.Setup()
-		s.coreProcesses = append(s.coreProcesses, proc)
+		s.coreProcesses[cam.UUID()] = proc
 	}
 }
 

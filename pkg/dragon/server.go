@@ -26,6 +26,7 @@ func NewServer(cr config.Resolver, vb video.Backend) Server {
 	return &server{
 		configResolver: cr,
 		videoBackend:   vb,
+		coreProcesses:  map[string]process.Process{},
 		shutdownDone:   make(chan interface{}),
 	}
 }
@@ -38,7 +39,7 @@ type server struct {
 	shutdownDone           chan interface{}
 	config                 configdef.Values
 	mu                     sync.Mutex
-	coreProcesses          []process.Process
+	coreProcesses          map[string]process.Process
 	cameras                []camera.Connection
 }
 
