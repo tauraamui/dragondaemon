@@ -55,7 +55,7 @@ func (proc *streamConnProccess) run() {
 			close(proc.stopping)
 			return
 		default:
-			proc.isOff = !proc.cam.Schedule().IsOn(schedule.Now())
+			proc.isOff = !proc.cam.Schedule().IsOn(schedule.Time(time.Now()))
 			if proc.isOff {
 				if !proc.wasOff {
 					proc.wasOff = true
