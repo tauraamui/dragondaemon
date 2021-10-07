@@ -58,19 +58,18 @@ func (proc *generateClipProcess) run() {
 func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan video.Frame, count int, persistLoc string) video.Clip {
 	clip := video.NewClip(persistLoc, count)
 	i := 0
-	for f := range frames {
+	for {
+		time.Sleep(1 * time.Microsecond)
 		select {
 		case <-ctx.Done():
 			// TODO(tauraamui): this shouldn't do this right? we should just return the clip here
 			clip.Close()
 			return nil
 		case msg := <-listener.Ch:
-			if e, ok := msg.(Event); ok {
-				if e == CAM_SWITCHED_OFF_EVT {
-					return clip
-				}
+			if e, ok := msg.(Event); ok && e == CAM_SWITCHED_OFF_EVT {
+				return clip
 			}
-		default:
+		case f := <-frames:
 			if i >= count {
 				return clip
 			}
@@ -78,7 +77,6 @@ func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan vid
 			i++
 		}
 	}
-	return nil
 }
 
 func (proc *generateClipProcess) Stop() {
