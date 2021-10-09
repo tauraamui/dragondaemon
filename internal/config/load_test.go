@@ -1,9 +1,11 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"testing"
 
+	"github.com/matryer/is"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,6 +78,22 @@ func (suite *LoadConfigTestSuite) TestLoadConfig() {
 	assert.Equal(suite.T(), true, config.Debug)
 	assert.Equal(suite.T(), "DJIF3fje943fi4jefgo0", config.Secret)
 	assert.ElementsMatch(suite.T(), config.Cameras, []configdef.Camera{})
+}
+
+func (suite *LoadConfigTestSuite) TestLoadConfigErrorOnResolvingUserConfigDir() {
+	userConfigDirRef := userConfigDir
+	userConfigDir = func() (string, error) {
+		return "", errors.New("test unable to resolve user config dir")
+	}
+	defer func() { userConfigDir = userConfigDirRef }()
+
+	is := is.New(suite.T())
+
+	_, err := suite.configResolver.Resolve()
+	is.True(err != nil) // we need resolve to fail here
+	is.Equal(
+		err.Error(), "unable to resolve config.json location: test unable to resolve user config dir",
+	)
 }
 
 func (suite *LoadConfigTestSuite) TestConfigLoadFailsValidationOnDupCameraTitles() {

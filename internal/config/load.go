@@ -80,7 +80,7 @@ func resolveConfigPath() (string, error) {
 
 	configParentDir, err := userConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve %s config file location: %w", configFileName, err)
+		return "", fmt.Errorf("unable to resolve %s location: %w", configFileName, err)
 	}
 
 	return filepath.Join(
