@@ -38,6 +38,7 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error)
 	onLastClip := make(chan bool)
+	clipsToGenerate := 30
 	go func(ctx context.Context, timeout <-chan time.Time, onLastClip chan bool, done chan error, frames chan video.Frame) {
 		defer close(done)
 		for {
@@ -63,16 +64,19 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 		}
 	}(ctx, time.After(3*time.Second), onLastClip, done, framesChan)
 
-	clip := <-generatedClipsChan
-	is.Equal(len(clip.GetFrames()), framesPerClip)
+	for i := 0; i < clipsToGenerate; i++ {
+		clip := <-generatedClipsChan
+		if i < clipsToGenerate-1 {
+			is.Equal(len(clip.GetFrames()), framesPerClip)
+		} else {
+			frameCount := len(clip.GetFrames())
+			is.True(frameCount < framesPerClip || frameCount <= framesPerClip/2)
+		}
 
-	clip1 := <-generatedClipsChan
-	is.Equal(len(clip1.GetFrames()), framesPerClip)
-
-	onLastClip <- true
-	clip2 := <-generatedClipsChan
-	frameCount := len(clip2.GetFrames())
-	is.True(frameCount < framesPerClip || frameCount <= framesPerClip/2)
+		if i == clipsToGenerate-2 {
+			onLastClip <- true
+		}
+	}
 
 	cancel()
 	is.NoErr(<-done)
