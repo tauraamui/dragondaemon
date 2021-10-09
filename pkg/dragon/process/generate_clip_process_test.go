@@ -56,6 +56,7 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 							b.Send(process.CAM_SWITCHED_OFF_EVT)
 							return
 						}
+						frames <- &mockFrame{}
 					}
 				}
 			default:
