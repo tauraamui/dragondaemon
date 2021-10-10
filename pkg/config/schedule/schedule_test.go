@@ -5,10 +5,41 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 )
+
+var defaultDate timeDate = timeDate{2021, 9, 13}
+
+func timeFromHoursAndMinutes(td timeDate, hour, minute int) Time {
+	return Time(time.Date(td.year, time.Month(td.month), td.day, hour, minute, 0, 0, time.UTC))
+}
+
+// used in place of unavailable named params langauge feature
+type args struct {
+	date         timeDate
+	hour, minute int
+}
+
+type timeDate struct {
+	year, month, day int
+}
+
+func (td timeDate) empty() bool {
+	if td.year == 0 || td.month == 0 || td.day == 0 {
+		return true
+	}
+	return false
+}
+
+func testTime(a args) Time {
+	date := func() timeDate {
+		if a.date.empty() {
+			return defaultDate
+		}
+		return a.date
+	}()
+	return timeFromHoursAndMinutes(date, a.hour, a.minute)
+}
 
 type ScheduleIsTimeOnOrOffTestSuite struct {
 	suite.Suite
@@ -25,117 +56,86 @@ func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterNilUnSpecifie
 	is.True(onOrOff)
 }
 
-var _ = Describe("Schedule", func() {
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsBeforeOff() {
+	is := is.New(suite.T())
+	currentTime := testTime(args{hour: 11, minute: 0})
+	offTime := testTime(args{hour: 12, minute: 0})
 
-	Context("Current time is after nil/unspecified time", func() {
-		XIt("Should return on", func() {
-			empty, onOrOff := isTimeOnOrOff(Time(time.Now()), nil)
-			Expect(empty).To(BeTrue())
-			Expect(onOrOff).To(BeTrue())
-		})
+	empty, onOrOff := isTimeOnOrOff(currentTime, &OnOffTimes{
+		Off: &offTime,
 	})
 
-	Context("Current time is before off", func() {
-		It("Should return on", func() {
-			currentTime := time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC)
-			offTime := Time(time.Date(2021, 9, 13, 12, 0, 0, 0, time.UTC))
+	is.True(!empty)  // should be a time entry for this day
+	is.True(onOrOff) // should be on
+}
 
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				Off: &offTime,
-			})
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOff() {
+	is := is.New(suite.T())
+	currentTime := testTime(args{hour: 13, minute: 0})
+	offTime := testTime(args{hour: 9, minute: 0})
 
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeTrue())
-		})
+	empty, onOrOff := isTimeOnOrOff(currentTime, &OnOffTimes{
+		Off: &offTime,
 	})
 
-	Context("Current time is after off", func() {
-		It("Should return off", func() {
-			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
-			offTime := Time(time.Date(2021, 9, 13, 9, 0, 0, 0, time.UTC))
+	is.True(!empty)   // should be a time entry for this day
+	is.True(!onOrOff) // should be off
+}
 
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				Off: &offTime,
-			})
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOn() {
+	is := is.New(suite.T())
+	currentTime := testTime(args{hour: 13, minute: 0})
+	onTime := testTime(args{hour: 11, minute: 0})
 
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeFalse())
-		})
+	empty, onOrOff := isTimeOnOrOff(currentTime, &OnOffTimes{
+		On: &onTime,
 	})
 
-	Context("Current time is after on", func() {
-		It("Should return on", func() {
-			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
-			onTime := Time(time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC))
+	is.True(!empty)
+	is.True(onOrOff) // should be on
+}
 
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				On: &onTime,
-			})
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsBeforeOnAndAfterOff() {
+	is := is.New(suite.T())
+	currentTime := testTime(args{hour: 13, minute: 0})
+	offTime := testTime(args{hour: 10, minute: 0})
+	onTime := testTime(args{hour: 14, minute: 0})
 
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeTrue())
-		})
+	empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
+		On:  &onTime,
+		Off: &offTime,
 	})
 
-	Context("Current time is after off", func() {
-		It("Should return off", func() {
-			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
-			offTime := Time(time.Date(2021, 9, 13, 11, 0, 0, 0, time.UTC))
+	is.True(!empty)   // should be a time entry for this day
+	is.True(!onOrOff) // should be off
+}
 
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				Off: &offTime,
-			})
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOnAndBeforeOff() {
+	is := is.New(suite.T())
+	currentTime := testTime(args{hour: 14, minute: 0})
+	offTime := testTime(args{hour: 17, minute: 0})
+	onTime := testTime(args{hour: 13, minute: 0})
 
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeFalse())
-		})
+	empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
+		On:  &onTime,
+		Off: &offTime,
 	})
 
-	Context("Current time is before on and after off", func() {
-		It("Should return off", func() {
-			currentTime := time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC)
-			offTime := Time(time.Date(2021, 9, 13, 10, 0, 0, 0, time.UTC))
-			onTime := Time(time.Date(2021, 9, 13, 14, 0, 0, 0, time.UTC))
+	is.True(!empty)  // should be a time entry for this day
+	is.True(onOrOff) // should be on
+}
 
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				On:  &onTime,
-				Off: &offTime,
-			})
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOnAndAfterOff() {
+	is := is.New(suite.T())
+	currentTime := testTime(args{hour: 14, minute: 0})
+	offTime := testTime(args{hour: 17, minute: 0})
+	onTime := testTime(args{hour: 13, minute: 0})
 
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeFalse())
-		})
+	empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
+		On:  &onTime,
+		Off: &offTime,
 	})
 
-	Context("Current time is after on before off", func() {
-		It("Should return on", func() {
-			currentTime := time.Date(2021, 9, 13, 14, 0, 0, 0, time.UTC)
-			offTime := Time(time.Date(2021, 9, 13, 17, 0, 0, 0, time.UTC))
-			onTime := Time(time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC))
-
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				On:  &onTime,
-				Off: &offTime,
-			})
-
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeTrue())
-		})
-	})
-
-	Context("Current time is after on after off", func() {
-		It("Should return on", func() {
-			currentTime := time.Date(2021, 9, 13, 18, 0, 0, 0, time.UTC)
-			offTime := Time(time.Date(2021, 9, 13, 13, 0, 0, 0, time.UTC))
-			onTime := Time(time.Date(2021, 9, 13, 14, 0, 0, 0, time.UTC))
-
-			empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-				On:  &onTime,
-				Off: &offTime,
-			})
-
-			Expect(empty).To(BeFalse())
-			Expect(onOrOff).To(BeTrue())
-		})
-	})
-})
+	is.True(!empty)  // should be a time entry for this day
+	is.True(onOrOff) // should be on
+}
