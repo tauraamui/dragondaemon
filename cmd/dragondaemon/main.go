@@ -33,7 +33,7 @@ type Service struct {
 func (service *Service) Setup() (string, error) {
 	log.Info("Setting up dragondaemon service...")
 
-	err := config.DefaultResolver().Create()
+	err := config.DefaultCreator().Create()
 	if err != nil {
 		if !errors.Is(err, configdef.ErrConfigAlreadyExists) {
 			return "", err
@@ -92,10 +92,9 @@ func (service *Service) Manage() (string, error) {
 
 	log.Info("Starting dragon daemon...")
 
-	server := dragon.NewServer(config.DefaultResolver(), video.ResolveBackend(os.Getenv("DRAGON_VIDEO_BACKEND")))
-	err := server.LoadConfiguration()
+	server, err := dragon.NewServer(config.DefaultResolver(), video.ResolveBackend(os.Getenv("DRAGON_VIDEO_BACKEND")))
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to load config: %w", err).Error())
+		log.Fatal(err.Error())
 	}
 
 	ctx, cancelStartup := context.WithCancel(context.Background())

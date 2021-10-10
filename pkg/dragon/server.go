@@ -2,6 +2,7 @@ package dragon
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/tauraamui/dragondaemon/pkg/camera"
@@ -16,25 +17,28 @@ import (
 type Server interface {
 	Connect() []error
 	ConnectWithCancel(context.Context) []error
-	LoadConfiguration() error
 	SetupProcesses()
 	RunProcesses()
 	Shutdown() <-chan interface{}
 }
 
-func NewServer(cr config.Resolver, vb video.Backend) Server {
-	return &server{
-		configResolver: cr,
-		videoBackend:   vb,
-		coreProcesses:  map[string]process.Process{},
-		shutdownDone:   make(chan interface{}),
+func NewServer(cr config.Resolver, vb video.Backend) (Server, error) {
+	c, err := cr.Resolve()
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve config: %w", err)
 	}
+
+	return &server{
+		config:        c,
+		videoBackend:  vb,
+		coreProcesses: map[string]process.Process{},
+		shutdownDone:  make(chan interface{}),
+	}, nil
 }
 
 type server struct {
 	runtimeStatsEnabled    bool
 	renderRuntimeStatsProc process.Process
-	configResolver         config.Resolver
 	videoBackend           video.Backend
 	shutdownDone           chan interface{}
 	config                 configdef.Values
@@ -127,16 +131,6 @@ func connect(cancel context.Context, cam configdef.Camera, backend video.Backend
 func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings, backend video.Backend) (camera.Connection, error) {
 	log.Info("Connecting to camera: [%s@%s]...", title, addr)
 	return camera.ConnectWithCancel(ctx, title, addr, sett, backend)
-}
-
-func (s *server) LoadConfiguration() error {
-	config, err := s.configResolver.Resolve()
-	if err != nil {
-		return err
-	}
-
-	s.config = config
-	return nil
 }
 
 func (s *server) shutdown() {
