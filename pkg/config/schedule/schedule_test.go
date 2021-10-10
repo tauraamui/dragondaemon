@@ -1,16 +1,34 @@
 package schedule
 
 import (
+	"testing"
 	"time"
 
+	"github.com/matryer/is"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/suite"
 )
+
+type ScheduleIsTimeOnOrOffTestSuite struct {
+	suite.Suite
+}
+
+func TestScheduleIsTimeOnOrOffTestSuite(t *testing.T) {
+	suite.Run(t, &ScheduleIsTimeOnOrOffTestSuite{})
+}
+
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterNilUnSpecifiedTime() {
+	is := is.New(suite.T())
+	empty, onOrOff := isTimeOnOrOff(Time(time.Now()), nil)
+	is.True(empty)
+	is.True(onOrOff)
+}
 
 var _ = Describe("Schedule", func() {
 
 	Context("Current time is after nil/unspecified time", func() {
-		It("Should return on", func() {
+		XIt("Should return on", func() {
 			empty, onOrOff := isTimeOnOrOff(Time(time.Now()), nil)
 			Expect(empty).To(BeTrue())
 			Expect(onOrOff).To(BeTrue())
