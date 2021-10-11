@@ -23,7 +23,7 @@ type ServerProcessTestSuite struct {
 
 func (suite *ServerProcessTestSuite) SetupTest() {
 	logging.CurrentLoggingLevel = logging.SilentLevel
-	suite.server = dragon.NewServer(testConfigResolver{
+	svr, err := dragon.NewServer(testConfigResolver{
 		resolveConfigs: func() configdef.Values {
 			return configdef.Values{
 				Cameras: []configdef.Camera{
@@ -32,6 +32,10 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 			}
 		},
 	}, video.MockBackend())
+	require.NotNil(suite.T(), svr)
+	require.NoError(suite.T(), err)
+
+	suite.server = svr
 
 	suite.infoLogs = []string{}
 	resetLogInfo := overloadInfoLog(
@@ -48,7 +52,6 @@ func (suite *ServerProcessTestSuite) TearDownTest() {
 }
 
 func (suite *ServerProcessTestSuite) TestRunProcesses() {
-	require.NoError(suite.T(), suite.server.LoadConfiguration())
 	require.Len(suite.T(), suite.server.Connect(), 0)
 	suite.server.SetupProcesses()
 	suite.server.RunProcesses()

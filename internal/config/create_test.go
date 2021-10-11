@@ -12,13 +12,13 @@ import (
 
 type CreateConfigTestSuite struct {
 	suite.Suite
-	configResolver configdef.Resolver
-	fs             afero.Fs
+	configCreateResolver configdef.CreateResolver
+	fs                   afero.Fs
 }
 
 func (suite *CreateConfigTestSuite) SetupSuite() {
 	suite.fs = afero.NewMemMapFs()
-	suite.configResolver = DefaultResolver()
+	suite.configCreateResolver = DefaultCreateResolver()
 
 	// use in memory FS in implementation for tests
 	fs = suite.fs
@@ -33,8 +33,8 @@ func (suite *CreateConfigTestSuite) TearDownTest() {
 }
 
 func (suite *CreateConfigTestSuite) TestConfigCreate() {
-	require.NoError(suite.T(), suite.configResolver.Create())
-	loadedConfig, err := suite.configResolver.Resolve()
+	require.NoError(suite.T(), suite.configCreateResolver.Create())
+	loadedConfig, err := suite.configCreateResolver.Resolve()
 
 	assert.NoError(suite.T(), err)
 	assert.EqualValues(suite.T(), configdef.Values{
@@ -43,8 +43,8 @@ func (suite *CreateConfigTestSuite) TestConfigCreate() {
 }
 
 func (suite *CreateConfigTestSuite) TestConfigCreateFailsDueToAlreadyExisting() {
-	require.NoError(suite.T(), suite.configResolver.Create())
-	err := suite.configResolver.Create()
+	require.NoError(suite.T(), suite.configCreateResolver.Create())
+	err := suite.configCreateResolver.Create()
 	assert.EqualError(
 		suite.T(), err,
 		"config file already exists",

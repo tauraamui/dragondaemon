@@ -95,7 +95,8 @@ func (tvc testVideoConnection) Close() error {
 }
 
 func TestNewServer(t *testing.T) {
-	s := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
+	s, err := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
+	require.NoError(t, err)
 	assert.NotNil(t, s, "new server's response cannot be nil pointer")
 }
 
@@ -104,9 +105,9 @@ func TestServerLoadConfig(t *testing.T) {
 	cb := func() {
 		configResolved = true
 	}
-	s := dragon.NewServer(testConfigResolver{resolveCallback: cb}, testVideoBackend{})
-	err := s.LoadConfiguration()
+	s, err := dragon.NewServer(testConfigResolver{resolveCallback: cb}, testVideoBackend{})
 
+	require.NotNil(t, s)
 	require.NoError(t, err, "Resolve returned error when this should be impossible")
 	assert.True(t, configResolved)
 }
@@ -122,7 +123,7 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 	)
 	defer resetLogWarn()
 
-	s := dragon.NewServer(
+	s, err := dragon.NewServer(
 		testConfigResolver{
 			resolveConfigs: func() configdef.Values {
 				return configdef.Values{
@@ -134,7 +135,9 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 		},
 		testVideoBackend{},
 	)
-	require.NoError(t, s.LoadConfiguration())
+
+	require.NotNil(t, s)
+	require.NoError(t, err)
 	require.Len(t, s.Connect(), 0)
 
 	assert.Len(t, warnLogs, 1)
@@ -144,18 +147,18 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
-	s := dragon.NewServer(testConfigResolver{
-		resolveError: errors.New("test unable to resolve config"),
+	s, err := dragon.NewServer(testConfigResolver{
+		resolveError: errors.New("test low level resolve error"),
 	}, testVideoBackend{})
-	err := s.LoadConfiguration()
-	require.EqualError(t, err, "test unable to resolve config")
+	assert.Nil(t, s)
+	assert.EqualError(t, err, "unable to resolve config: test low level resolve error")
 }
 
 func TestServerConnect(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
-	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
-	err := s.LoadConfiguration()
+	s, err := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
+	require.NotNil(t, s)
 	require.NoError(t, err)
 	errs := s.Connect()
 	assert.Len(t, errs, 0)
@@ -181,8 +184,9 @@ func (b testWaitsOnCancelVideoBackend) NewWriter() video.ClipWriter {
 func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
-	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
-	require.NoError(t, s.LoadConfiguration())
+	s, err := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
+	require.NotNil(t, s)
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan []error)
@@ -199,8 +203,9 @@ func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
-	s := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
-	require.NoError(t, s.LoadConfiguration())
+	s, err := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
+	require.NotNil(t, s)
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan []error)
@@ -228,8 +233,9 @@ func TestServerShutdown(t *testing.T) {
 	)
 	defer resetLogWarn()
 
-	s := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
-	require.NoError(t, s.LoadConfiguration())
+	s, err := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
+	require.NotNil(t, s)
+	require.NoError(t, err)
 	require.Len(t, s.Connect(), 0)
 
 	timeout := time.After(3 * time.Second)
