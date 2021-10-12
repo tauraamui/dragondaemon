@@ -208,15 +208,17 @@ func isTimeOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
 }
 
 func checkWOffTimeNoOnTime(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	empty, state = false, true
+
 	if t.Before(*weekday.Off) {
-		return false, true
+		empty, state = false, true
 	}
 
 	if t.After(*weekday.Off) {
-		return false, false
+		empty, state = false, false
 	}
 
-	return false, true
+	return empty, state
 }
 
 func checkWOnTimeNoOffTime(t Time, weekday *OnOffTimes) (empty bool, state bool) {
