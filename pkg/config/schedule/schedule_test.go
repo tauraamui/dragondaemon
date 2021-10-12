@@ -60,34 +60,24 @@ type test struct {
 func TestDifferentDayScheduleTimesMatchExpectedState(t *testing.T) {
 	tests := []test{
 		{
-			title: "current date+time before off should be on",
+			title: "current date+time before off after on should be on",
+			onTime: testTimePtr(args{
+				date: timeDate{
+					2021, 3, 13,
+				}, hour: 11, minute: 0,
+			}),
 			currentTime: testTime(args{
 				date: timeDate{
 					2021, 3, 15,
-				}, hour: 10, minute: 0,
+				}, hour: 7, minute: 0,
 			}),
 			offTime: testTimePtr(args{
 				date: timeDate{
-					2021, 3, 16,
+					2021, 3, 17,
 				}, hour: 3, minute: 0,
 			}),
 			isEmpty: false,
 			isOn:    true,
-		},
-		{
-			title: "current date+time after off should be off",
-			currentTime: testTime(args{
-				date: timeDate{
-					2021, 3, 15,
-				}, hour: 10, minute: 0,
-			}),
-			offTime: testTimePtr(args{
-				date: timeDate{
-					2021, 3, 13,
-				}, hour: 3, minute: 0,
-			}),
-			isEmpty: false,
-			isOn:    false,
 		},
 	}
 
