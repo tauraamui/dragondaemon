@@ -224,6 +224,11 @@ func checkWOnTimeNoOffTime(t Time, weekday *OnOffTimes) (empty bool, state bool)
 }
 
 func checkWOnTimeAndWOffTime(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	if t.Before(*weekday.On) {
+		if t.After(*weekday.Off) {
+			return false, false
+		}
+	}
 	return false, true
 }
 
