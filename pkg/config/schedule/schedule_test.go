@@ -46,11 +46,12 @@ func testTimePtr(a args) *Time {
 }
 
 type test struct {
-	skip        bool
-	title       string
-	currentTime Time
-	onTime      *Time
-	offTime     *Time
+	skip              bool
+	title             string
+	currentTime       Time
+	forceEmptyWeekday bool
+	onTime            *Time
+	offTime           *Time
 
 	isEmpty bool
 	isOn    bool
@@ -58,6 +59,13 @@ type test struct {
 
 func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 	tests := []test{
+		{
+			title:             "non empty weekday but with no times",
+			currentTime:       Time(time.Now()),
+			forceEmptyWeekday: true,
+			isEmpty:           true,
+			isOn:              false,
+		},
 		{
 			title:       "current time is after nil unspecified time should be on",
 			currentTime: Time(time.Now()),
@@ -126,7 +134,7 @@ func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 
 			is := is.NewRelaxed(t)
 			onOffTimes := &OnOffTimes{On: tt.onTime, Off: tt.offTime}
-			if tt.onTime == nil && tt.offTime == nil {
+			if !tt.forceEmptyWeekday && tt.onTime == nil && tt.offTime == nil {
 				onOffTimes = nil
 			}
 			empty, onOrOff := isTimeOnOrOff(tt.currentTime, onOffTimes)
