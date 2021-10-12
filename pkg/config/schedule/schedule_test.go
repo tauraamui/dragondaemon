@@ -24,6 +24,10 @@ func TestTimeFromJSON(t *testing.T) {
 	is.Equal(timeInst.Hour(), 14)
 	is.Equal(timeInst.Minute(), 15)
 	is.Equal(timeInst.Second(), 19)
+	is.Equal(timeInst.Nanosecond(), 0)
+	is.Equal(timeInst.Location(), time.UTC)
+	is.Equal(timeInst.String(), `"14:15:19"`)
+	is.Equal(timeInst.Weekday(), time.Monday)
 }
 
 type test struct {
