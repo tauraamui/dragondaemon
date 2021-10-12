@@ -240,23 +240,3 @@ type OnOffTimes struct {
 	Off *Time `json:"off"`
 	On  *Time `json:"on"`
 }
-
-// if weekday.On.After(*weekday.Off) {
-// 	if t.Before(*weekday.On) {
-// 		return false, false
-// 	}
-
-// 	if t.After(*weekday.On) {
-// 		return false, true
-// 	}
-// }
-
-// if weekday.Off.After(*weekday.On) {
-// 	if t.Before(*weekday.Off) {
-// 		return false, true
-// 	}
-
-// 	if t.After(*weekday.Off) {
-// 		return false, false
-// 	}
-// }

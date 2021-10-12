@@ -57,6 +57,30 @@ type test struct {
 	isOn    bool
 }
 
+func TestDifferentDayScheduleTimesMatchExpectedState(t *testing.T) {
+	tests := []test{
+		{
+			title: "current date+time before off should be on",
+			currentTime: testTime(args{
+				date: timeDate{
+					2021, 3, 15,
+				}, hour: 10, minute: 0,
+			}),
+			offTime: testTimePtr(args{
+				date: timeDate{
+					2021, 3, 16,
+				}, hour: 3, minute: 0,
+			}),
+			isEmpty: false,
+			isOn:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		runTableTestsTest(t, tt)
+	}
+}
+
 func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 	tests := []test{
 		{
@@ -127,19 +151,23 @@ func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.title, func(t *testing.T) {
-			if tt.skip {
-				t.Skip()
-			}
-
-			is := is.NewRelaxed(t)
-			onOffTimes := &OnOffTimes{On: tt.onTime, Off: tt.offTime}
-			if !tt.forceEmptyWeekday && tt.onTime == nil && tt.offTime == nil {
-				onOffTimes = nil
-			}
-			empty, onOrOff := isTimeOnOrOff(tt.currentTime, onOffTimes)
-			is.Equal(tt.isEmpty, empty) // check if there's a time entry for this day
-			is.Equal(tt.isOn, onOrOff)  // check if camera is on or not
-		})
+		runTableTestsTest(t, tt)
 	}
+}
+
+func runTableTestsTest(t *testing.T, tt test) {
+	t.Run(tt.title, func(t *testing.T) {
+		if tt.skip {
+			t.Skip()
+		}
+
+		is := is.NewRelaxed(t)
+		onOffTimes := &OnOffTimes{On: tt.onTime, Off: tt.offTime}
+		if !tt.forceEmptyWeekday && tt.onTime == nil && tt.offTime == nil {
+			onOffTimes = nil
+		}
+		empty, onOrOff := isTimeOnOrOff(tt.currentTime, onOffTimes)
+		is.Equal(tt.isEmpty, empty) // check if there's a time entry for this day
+		is.Equal(tt.isOn, onOrOff)  // check if camera is on or not
+	})
 }
