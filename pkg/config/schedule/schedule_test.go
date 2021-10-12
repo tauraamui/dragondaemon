@@ -7,6 +7,25 @@ import (
 	"github.com/matryer/is"
 )
 
+func TestTimeFromJSON(t *testing.T) {
+	todayRef := TODAY
+	resetToday := func() { TODAY = todayRef }
+	defer resetToday()
+
+	TODAY = time.Date(2021, 3, 1, 0, 0, 0, 0, time.UTC)
+	var timeInst Time
+	timeInst.UnmarshalJSON([]byte(`"14:15:19"`))
+
+	is := is.New(t)
+
+	is.Equal(timeInst.Year(), 2021)
+	is.Equal(int(timeInst.Month()), 3)
+	is.Equal(timeInst.Day(), 1)
+	is.Equal(timeInst.Hour(), 14)
+	is.Equal(timeInst.Minute(), 15)
+	is.Equal(timeInst.Second(), 19)
+}
+
 type test struct {
 	skip              bool
 	title             string

@@ -49,6 +49,21 @@ func (st *Time) After(u Time) bool {
 	return t.After(time.Time(u))
 }
 
+func (st *Time) Year() int {
+	t := time.Time(*st)
+	return t.Year()
+}
+
+func (st *Time) Month() time.Month {
+	t := time.Time(*st)
+	return t.Month()
+}
+
+func (st *Time) Day() int {
+	t := time.Time(*st)
+	return t.Day()
+}
+
 func (st *Time) Weekday() time.Weekday {
 	t := time.Time(*st)
 	return t.Weekday()
@@ -61,7 +76,7 @@ func (st *Time) Hour() int {
 
 func (st *Time) Minute() int {
 	t := time.Time(*st)
-	return t.Hour()
+	return t.Minute()
 }
 
 func (st *Time) Second() int {
