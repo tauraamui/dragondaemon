@@ -122,7 +122,7 @@ func TestDifferentDayScheduleTimesMatchExpectedState(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		runTableTestsTest(t, tt)
+		runIsTimeOnOrOffTest(t, tt)
 	}
 }
 
@@ -196,11 +196,11 @@ func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		runTableTestsTest(t, tt)
+		runIsTimeOnOrOffTest(t, tt)
 	}
 }
 
-func runTableTestsTest(t *testing.T, tt test) {
+func runIsTimeOnOrOffTest(t *testing.T, tt test) {
 	t.Run(tt.title, func(t *testing.T) {
 		if tt.skip {
 			t.Skip()
