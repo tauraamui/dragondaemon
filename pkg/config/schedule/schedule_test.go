@@ -49,7 +49,44 @@ func TestScheduleIsTimeOnOrOffTestSuite(t *testing.T) {
 	suite.Run(t, &ScheduleIsTimeOnOrOffTestSuite{})
 }
 
+type test struct {
+	title       string
+	currentTime Time
+	onTime      *Time
+	offTime     *Time
+
+	isEmpty bool
+	isOn    bool
+}
+
+func (suite *ScheduleIsTimeOnOrOffTestSuite) TestTimesMatchExpectedState() {
+	t := suite.T()
+
+	tests := []test{
+		{
+			title:       "current time is after nil unspecified time should be on",
+			currentTime: Time(time.Now()),
+			isEmpty:     true,
+			isOn:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+			onOffTimes := &OnOffTimes{On: tt.onTime, Off: tt.offTime}
+			if tt.onTime == nil && tt.offTime == nil {
+				onOffTimes = nil
+			}
+			empty, onOrOff := isTimeOnOrOff(tt.currentTime, onOffTimes)
+			is.Equal(tt.isEmpty, empty)
+			is.Equal(tt.isOn, onOrOff)
+		})
+	}
+}
+
 func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterNilUnSpecifiedTime() {
+	suite.T().Skip()
 	is := is.New(suite.T())
 	empty, onOrOff := isTimeOnOrOff(Time(time.Now()), nil)
 	is.True(empty)
