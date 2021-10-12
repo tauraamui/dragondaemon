@@ -14,21 +14,6 @@ var TODAY time.Time = time.Now()
 
 const stLayout = "15:04:05"
 
-func ParseTime(value string) (Time, error) {
-	nt, err := time.Parse(stLayout, value)
-	dt := time.Date(
-		TODAY.Year(),
-		TODAY.Month(),
-		TODAY.Day(),
-		nt.Hour(),
-		nt.Minute(),
-		nt.Second(),
-		nt.Nanosecond(),
-		nt.Location())
-	st := Time(dt)
-	return st, err
-}
-
 func (st *Time) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), `"`)
 	nt, err := time.Parse(stLayout, s)
