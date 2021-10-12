@@ -56,7 +56,7 @@ type test struct {
 	isOn    bool
 }
 
-func TestTimesMatchExpectedState(t *testing.T) {
+func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 	tests := []test{
 		{
 			title:       "current time is after nil unspecified time should be on",
@@ -77,6 +77,13 @@ func TestTimesMatchExpectedState(t *testing.T) {
 			offTime:     testTimePtr(args{hour: 9, minute: 0}),
 			isEmpty:     false,
 			isOn:        false,
+		},
+		{
+			title:       "current time is before on should be on",
+			currentTime: testTime(args{hour: 13, minute: 0}),
+			onTime:      testTimePtr(args{hour: 15, minute: 0}),
+			isEmpty:     false,
+			isOn:        true,
 		},
 		{
 			title:       "current time is after on should be on",
