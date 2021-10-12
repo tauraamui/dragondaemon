@@ -8,6 +8,8 @@ import (
 )
 
 func TestTimeFromJSON(t *testing.T) {
+	is := is.New(t)
+
 	todayRef := TODAY
 	resetToday := func() { TODAY = todayRef }
 	defer resetToday()
@@ -15,8 +17,6 @@ func TestTimeFromJSON(t *testing.T) {
 	TODAY = time.Date(2021, 3, 1, 0, 0, 0, 0, time.UTC)
 	var timeInst Time
 	timeInst.UnmarshalJSON([]byte(`"14:15:19"`))
-
-	is := is.New(t)
 
 	is.Equal(timeInst.Year(), 2021)
 	is.Equal(int(timeInst.Month()), 3)
@@ -28,6 +28,27 @@ func TestTimeFromJSON(t *testing.T) {
 	is.Equal(timeInst.Location(), time.UTC)
 	is.Equal(timeInst.String(), `"14:15:19"`)
 	is.Equal(timeInst.Weekday(), time.Monday)
+}
+
+func TestTimeSubAnotherTime(t *testing.T) {
+	is := is.New(t)
+
+	ft := testTime(args{hour: 17})
+	ft.UnmarshalJSON([]byte(`"17:00:00"`))
+	st := testTime(args{hour: 11})
+	st.UnmarshalJSON([]byte(`"11:00:00"`))
+
+	d := ft.Sub(time.Time(st))
+	is.Equal(d.Hours(), float64(6))
+}
+
+func TestTimeMarshalJSON(t *testing.T) {
+	is := is.New(t)
+
+	timeInst := testTime(args{hour: 8, minute: 27})
+	json, err := timeInst.MarshalJSON()
+	is.NoErr(err)
+	is.Equal(json, []byte(`"08:27:00"`))
 }
 
 type test struct {
