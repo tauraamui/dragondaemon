@@ -41,6 +41,11 @@ func testTime(a args) Time {
 	return timeFromHoursAndMinutes(date, a.hour, a.minute)
 }
 
+func testTimePtr(a args) *Time {
+	tt := testTime(a)
+	return &tt
+}
+
 type ScheduleIsTimeOnOrOffTestSuite struct {
 	suite.Suite
 }
@@ -69,6 +74,51 @@ func (suite *ScheduleIsTimeOnOrOffTestSuite) TestTimesMatchExpectedState() {
 			isEmpty:     true,
 			isOn:        true,
 		},
+		{
+			title:       "current time is before off should be on",
+			currentTime: testTime(args{hour: 11, minute: 0}),
+			offTime:     testTimePtr(args{hour: 12, minute: 0}),
+			isEmpty:     false,
+			isOn:        true,
+		},
+		{
+			title:       "current time is after off should be off",
+			currentTime: testTime(args{hour: 13, minute: 0}),
+			offTime:     testTimePtr(args{hour: 9, minute: 0}),
+			isEmpty:     false,
+			isOn:        false,
+		},
+		{
+			title:       "current time is after on should be on",
+			currentTime: testTime(args{hour: 13, minute: 0}),
+			onTime:      testTimePtr(args{hour: 11, minute: 0}),
+			isEmpty:     false,
+			isOn:        true,
+		},
+		{
+			title:       "current time is before on after off should be off",
+			currentTime: testTime(args{hour: 13, minute: 0}),
+			onTime:      testTimePtr(args{hour: 14, minute: 0}),
+			offTime:     testTimePtr(args{hour: 10, minute: 0}),
+			isEmpty:     false,
+			isOn:        false,
+		},
+		{
+			title:       "current time is after on before off should be on",
+			currentTime: testTime(args{hour: 14, minute: 0}),
+			offTime:     testTimePtr(args{hour: 17, minute: 0}),
+			onTime:      testTimePtr(args{hour: 13, minute: 0}),
+			isEmpty:     false,
+			isOn:        true,
+		},
+		{
+			title:       "current time is after on after off should be off",
+			currentTime: testTime(args{hour: 14, minute: 0}),
+			offTime:     testTimePtr(args{hour: 17, minute: 0}),
+			onTime:      testTimePtr(args{hour: 13, minute: 0}),
+			isEmpty:     false,
+			isOn:        true, // currently wrong, need to fix impl?
+		},
 	}
 
 	for _, tt := range tests {
@@ -79,100 +129,8 @@ func (suite *ScheduleIsTimeOnOrOffTestSuite) TestTimesMatchExpectedState() {
 				onOffTimes = nil
 			}
 			empty, onOrOff := isTimeOnOrOff(tt.currentTime, onOffTimes)
-			is.Equal(tt.isEmpty, empty)
-			is.Equal(tt.isOn, onOrOff)
+			is.Equal(tt.isEmpty, empty) // check if there's a time entry for this day
+			is.Equal(tt.isOn, onOrOff)  // check if camera is on or not
 		})
 	}
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterNilUnSpecifiedTime() {
-	suite.T().Skip()
-	is := is.New(suite.T())
-	empty, onOrOff := isTimeOnOrOff(Time(time.Now()), nil)
-	is.True(empty)
-	is.True(onOrOff)
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsBeforeOff() {
-	is := is.New(suite.T())
-	currentTime := testTime(args{hour: 11, minute: 0})
-	offTime := testTime(args{hour: 12, minute: 0})
-
-	empty, onOrOff := isTimeOnOrOff(currentTime, &OnOffTimes{
-		Off: &offTime,
-	})
-
-	is.True(!empty)  // should be a time entry for this day
-	is.True(onOrOff) // should be on
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOff() {
-	is := is.New(suite.T())
-	currentTime := testTime(args{hour: 13, minute: 0})
-	offTime := testTime(args{hour: 9, minute: 0})
-
-	empty, onOrOff := isTimeOnOrOff(currentTime, &OnOffTimes{
-		Off: &offTime,
-	})
-
-	is.True(!empty)   // should be a time entry for this day
-	is.True(!onOrOff) // should be off
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOn() {
-	is := is.New(suite.T())
-	currentTime := testTime(args{hour: 13, minute: 0})
-	onTime := testTime(args{hour: 11, minute: 0})
-
-	empty, onOrOff := isTimeOnOrOff(currentTime, &OnOffTimes{
-		On: &onTime,
-	})
-
-	is.True(!empty)
-	is.True(onOrOff) // should be on
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsBeforeOnAndAfterOff() {
-	is := is.New(suite.T())
-	currentTime := testTime(args{hour: 13, minute: 0})
-	offTime := testTime(args{hour: 10, minute: 0})
-	onTime := testTime(args{hour: 14, minute: 0})
-
-	empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-		On:  &onTime,
-		Off: &offTime,
-	})
-
-	is.True(!empty)   // should be a time entry for this day
-	is.True(!onOrOff) // should be off
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOnAndBeforeOff() {
-	is := is.New(suite.T())
-	currentTime := testTime(args{hour: 14, minute: 0})
-	offTime := testTime(args{hour: 17, minute: 0})
-	onTime := testTime(args{hour: 13, minute: 0})
-
-	empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-		On:  &onTime,
-		Off: &offTime,
-	})
-
-	is.True(!empty)  // should be a time entry for this day
-	is.True(onOrOff) // should be on
-}
-
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestCurrentTimeIsAfterOnAndAfterOff() {
-	is := is.New(suite.T())
-	currentTime := testTime(args{hour: 14, minute: 0})
-	offTime := testTime(args{hour: 17, minute: 0})
-	onTime := testTime(args{hour: 13, minute: 0})
-
-	empty, onOrOff := isTimeOnOrOff(Time(currentTime), &OnOffTimes{
-		On:  &onTime,
-		Off: &offTime,
-	})
-
-	is.True(!empty)  // should be a time entry for this day
-	is.True(onOrOff) // should be on
 }
