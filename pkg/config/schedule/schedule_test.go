@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	"github.com/stretchr/testify/suite"
 )
 
 var defaultDate timeDate = timeDate{2021, 9, 13}
@@ -46,14 +45,6 @@ func testTimePtr(a args) *Time {
 	return &tt
 }
 
-type ScheduleIsTimeOnOrOffTestSuite struct {
-	suite.Suite
-}
-
-func TestScheduleIsTimeOnOrOffTestSuite(t *testing.T) {
-	suite.Run(t, &ScheduleIsTimeOnOrOffTestSuite{})
-}
-
 type test struct {
 	title       string
 	currentTime Time
@@ -64,9 +55,7 @@ type test struct {
 	isOn    bool
 }
 
-func (suite *ScheduleIsTimeOnOrOffTestSuite) TestTimesMatchExpectedState() {
-	t := suite.T()
-
+func TestTimesMatchExpectedState(t *testing.T) {
 	tests := []test{
 		{
 			title:       "current time is after nil unspecified time should be on",
