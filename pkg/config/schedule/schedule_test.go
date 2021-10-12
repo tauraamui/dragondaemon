@@ -119,6 +119,26 @@ func TestDifferentDayScheduleTimesMatchExpectedState(t *testing.T) {
 			isEmpty: false,
 			isOn:    true,
 		},
+		{
+			title: "current date+time after off after on should be off",
+			onTime: testTimePtr(args{
+				date: timeDate{
+					2021, 3, 13,
+				}, hour: 11, minute: 0,
+			}),
+			offTime: testTimePtr(args{
+				date: timeDate{
+					2021, 3, 17,
+				}, hour: 3, minute: 0,
+			}),
+			currentTime: testTime(args{
+				date: timeDate{
+					2021, 3, 19,
+				}, hour: 7, minute: 0,
+			}),
+			isEmpty: false,
+			isOn:    false,
+		},
 	}
 
 	for _, tt := range tests {
