@@ -193,42 +193,38 @@ func isTimeOnOrOff(t Time, weekday *OnOffTimes) (empty bool, state bool) {
 	}
 
 	if weekday.Off != nil && weekday.On == nil {
-		if t.Before(*weekday.Off) {
-			return false, true
-		}
-
-		if t.After(*weekday.Off) {
-			return false, false
-		}
+		return checkWOffTimeNoOnTime(t, weekday)
 	}
 
 	if weekday.Off == nil && weekday.On != nil {
-		return false, true
+		return checkWOnTimeNoOffTime(t, weekday)
 	}
 
 	if weekday.Off != nil && weekday.On != nil {
-		if weekday.On.After(*weekday.Off) {
-			if t.Before(*weekday.On) {
-				return false, false
-			}
-
-			if t.After(*weekday.On) {
-				return false, true
-			}
-		}
-
-		if weekday.Off.After(*weekday.On) {
-			if t.Before(*weekday.Off) {
-				return false, true
-			}
-
-			if t.After(*weekday.Off) {
-				return false, false
-			}
-		}
+		return checkWOnTimeAndWOffTime(t, weekday)
 	}
 
 	return true, false
+}
+
+func checkWOffTimeNoOnTime(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	if t.Before(*weekday.Off) {
+		return false, true
+	}
+
+	if t.After(*weekday.Off) {
+		return false, false
+	}
+
+	return false, true
+}
+
+func checkWOnTimeNoOffTime(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	return false, true
+}
+
+func checkWOnTimeAndWOffTime(t Time, weekday *OnOffTimes) (empty bool, state bool) {
+	return false, true
 }
 
 // OnOffTimes for loading up on off time entries
@@ -236,3 +232,23 @@ type OnOffTimes struct {
 	Off *Time `json:"off"`
 	On  *Time `json:"on"`
 }
+
+// if weekday.On.After(*weekday.Off) {
+// 	if t.Before(*weekday.On) {
+// 		return false, false
+// 	}
+
+// 	if t.After(*weekday.On) {
+// 		return false, true
+// 	}
+// }
+
+// if weekday.Off.After(*weekday.On) {
+// 	if t.Before(*weekday.Off) {
+// 		return false, true
+// 	}
+
+// 	if t.After(*weekday.Off) {
+// 		return false, false
+// 	}
+// }

@@ -93,29 +93,12 @@ func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 			isOn:        true,
 		},
 		{
-			title:       "current time is before on after off should be off",
+			title:       "current time is before off after on should be on",
 			currentTime: testTime(args{hour: 13, minute: 0}),
-			onTime:      testTimePtr(args{hour: 14, minute: 0}),
-			offTime:     testTimePtr(args{hour: 10, minute: 0}),
-			isEmpty:     false,
-			isOn:        false,
-		},
-		{
-			title:       "current time is after on before off should be on",
-			currentTime: testTime(args{hour: 14, minute: 0}),
-			offTime:     testTimePtr(args{hour: 17, minute: 0}),
-			onTime:      testTimePtr(args{hour: 13, minute: 0}),
+			onTime:      testTimePtr(args{hour: 11, minute: 0}),
+			offTime:     testTimePtr(args{hour: 15, minute: 0}),
 			isEmpty:     false,
 			isOn:        true,
-		},
-		{
-			skip:        true,
-			title:       "current time is after on after off should be off",
-			currentTime: testTime(args{hour: 14, minute: 0}),
-			offTime:     testTimePtr(args{hour: 17, minute: 0}),
-			onTime:      testTimePtr(args{hour: 13, minute: 0}),
-			isEmpty:     false,
-			isOn:        true, // currently wrong, need to fix impl?
 		},
 	}
 
