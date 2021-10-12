@@ -46,6 +46,7 @@ func testTimePtr(a args) *Time {
 }
 
 type test struct {
+	skip        bool
 	title       string
 	currentTime Time
 	onTime      *Time
@@ -112,6 +113,10 @@ func TestTimesMatchExpectedState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
+			if tt.skip {
+				t.Skip()
+			}
+
 			is := is.NewRelaxed(t)
 			onOffTimes := &OnOffTimes{On: tt.onTime, Off: tt.offTime}
 			if tt.onTime == nil && tt.offTime == nil {
