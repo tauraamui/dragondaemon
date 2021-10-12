@@ -229,6 +229,7 @@ func checkWOnTimeAndWOffTime(t Time, weekday *OnOffTimes) (empty bool, state boo
 			return false, false
 		}
 	}
+
 	return false, true
 }
 

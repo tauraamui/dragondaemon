@@ -108,6 +108,14 @@ func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
 			isEmpty:     false,
 			isOn:        false,
 		},
+		{
+			title:       "current time is after on after off should be on",
+			currentTime: testTime(args{hour: 17, minute: 0}),
+			onTime:      testTimePtr(args{hour: 15, minute: 0}),
+			offTime:     testTimePtr(args{hour: 11, minute: 0}),
+			isEmpty:     false,
+			isOn:        true,
+		},
 	}
 
 	for _, tt := range tests {
