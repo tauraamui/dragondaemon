@@ -65,6 +65,9 @@ func TestSchedule(t *testing.T) {
 	resetToday := func() { TODAY = todayRef }
 	defer resetToday()
 
+	defaultToday := timeDate{2021, 3, 17}
+	scheduleDefaultToday := time.Time(testTime(args{date: defaultToday})) // wednesday
+
 	tests := []scheduleTest{
 		{
 			title:    "empty schedule should always be on",
@@ -74,7 +77,7 @@ func TestSchedule(t *testing.T) {
 		},
 		{
 			title: "current time after weekday with off after weekday with on should be off",
-			today: time.Time(testTime(args{date: timeDate{2021, 3, 17}})),
+			today: scheduleDefaultToday,
 			schedule: Week{
 				Monday: OnOffTimes{
 					On: testTimePtr(args{hour: 21}),
@@ -84,14 +87,14 @@ func TestSchedule(t *testing.T) {
 				},
 			},
 			timeNow: time.Time(testTime(args{
-				date: timeDate{2021, 3, 17},
+				date: defaultToday,
 				hour: 4, minute: 0,
 			})),
 			isOn: false,
 		},
 		{
 			title: "current time after weekday with on after weekday with off should be on",
-			today: time.Time(testTime(args{date: timeDate{2021, 3, 17}})),
+			today: scheduleDefaultToday,
 			schedule: Week{
 				Monday: OnOffTimes{
 					On: testTimePtr(args{hour: 21}),
@@ -101,10 +104,18 @@ func TestSchedule(t *testing.T) {
 				},
 			},
 			timeNow: time.Time(testTime(args{
-				date: timeDate{2021, 3, 17},
+				date: defaultToday,
 				hour: 4, minute: 0,
 			})),
 			isOn: false,
+		},
+		{
+			skip:  true,
+			title: "time is midday thursday, multiple previous day schedules should be off",
+			timeNow: time.Time(testTime(args{
+				date: defaultToday,
+				hour: 12, minute: 0,
+			})),
 		},
 	}
 
