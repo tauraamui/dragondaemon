@@ -110,12 +110,24 @@ func TestSchedule(t *testing.T) {
 			isOn: false,
 		},
 		{
-			skip:  true,
-			title: "time is midday thursday, multiple previous day schedules should be off",
+			title: "time is midday thursday, multiple previous day schedules should be on",
+			today: scheduleDefaultToday,
+			schedule: Week{
+				Monday: OnOffTimes{
+					Off: testTimePtr(args{hour: 9}),
+				},
+				Tuesday: OnOffTimes{
+					On: testTimePtr(args{hour: 13}),
+				},
+				Wednesday: OnOffTimes{
+					Off: testTimePtr(args{hour: 3}),
+				},
+			},
 			timeNow: time.Time(testTime(args{
 				date: defaultToday,
 				hour: 12, minute: 0,
 			})),
+			isOn: false,
 		},
 	}
 
