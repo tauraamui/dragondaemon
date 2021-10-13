@@ -51,7 +51,59 @@ func TestTimeMarshalJSON(t *testing.T) {
 	is.Equal(json, []byte(`"08:27:00"`))
 }
 
-type test struct {
+type scheduleTest struct {
+	skip     bool
+	title    string
+	today    time.Time
+	schedule Week
+	timeNow  time.Time
+	isOn     bool
+}
+
+func TestSchedule(t *testing.T) {
+	todayRef := TODAY
+	resetToday := func() { TODAY = todayRef }
+	defer resetToday()
+
+	tests := []scheduleTest{
+		{
+			today: time.Date(2021, 3, 17, 0, 0, 0, 0, time.UTC),
+			schedule: Week{
+				Monday: OnOffTimes{
+					On: testTimePtr(args{hour: 21}),
+				},
+				Tuesday: OnOffTimes{
+					Off: testTimePtr(args{hour: 10}),
+				},
+			},
+			timeNow: time.Time(testTime(args{
+				date: timeDate{2021, 3, 17},
+				hour: 4, minute: 0,
+			})),
+			isOn: false,
+		},
+	}
+
+	for _, tt := range tests {
+		runIsOnOrOffWithinSchedule(t, tt)
+	}
+}
+
+func runIsOnOrOffWithinSchedule(t *testing.T, tt scheduleTest) {
+	t.Run(tt.title, func(t *testing.T) {
+		if tt.skip {
+			t.Skip()
+		}
+
+		is := is.NewRelaxed(t)
+
+		TODAY = tt.today
+		scheduleInst := NewSchedule(tt.schedule)
+		is.Equal(scheduleInst.IsOn(Time(tt.timeNow)), tt.isOn)
+	})
+}
+
+type timeDifftest struct {
 	skip              bool
 	title             string
 	currentTime       Time
@@ -64,7 +116,7 @@ type test struct {
 }
 
 func TestDifferentDayScheduleTimesMatchExpectedState(t *testing.T) {
-	tests := []test{
+	tests := []timeDifftest{
 		{
 			title: "current date+time before off after on should be on",
 			onTime: testTimePtr(args{
@@ -153,7 +205,7 @@ func TestDifferentDayScheduleTimesMatchExpectedState(t *testing.T) {
 }
 
 func TestSameDayScheduleTimesMatchExpectedState(t *testing.T) {
-	tests := []test{
+	tests := []timeDifftest{
 		{
 			title:             "non empty weekday but with no times",
 			currentTime:       Time(time.Now()),
@@ -272,7 +324,7 @@ func testTimePtr(a args) *Time {
 	return &tt
 }
 
-func runIsTimeOnOrOffTest(t *testing.T, tt test) {
+func runIsTimeOnOrOffTest(t *testing.T, tt timeDifftest) {
 	t.Run(tt.title, func(t *testing.T) {
 		if tt.skip {
 			t.Skip()
