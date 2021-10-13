@@ -65,8 +65,8 @@ func TestSchedule(t *testing.T) {
 	resetToday := func() { TODAY = todayRef }
 	defer resetToday()
 
-	defaultToday := timeDate{2021, 3, 17}
-	scheduleDefaultToday := time.Time(testTime(args{date: defaultToday})) // wednesday
+	defaultToday := timeDate{2021, 3, 18}
+	scheduleDefaultToday := time.Time(testTime(args{date: defaultToday})) // thursday
 
 	tests := []scheduleTest{
 		{
@@ -117,17 +117,17 @@ func TestSchedule(t *testing.T) {
 					Off: testTimePtr(args{hour: 9}),
 				},
 				Tuesday: OnOffTimes{
-					On: testTimePtr(args{hour: 13}),
+					Off: testTimePtr(args{hour: 13}),
 				},
-				Wednesday: OnOffTimes{
-					Off: testTimePtr(args{hour: 3}),
+				Thursday: OnOffTimes{
+					On: testTimePtr(args{hour: 3}),
 				},
 			},
 			timeNow: time.Time(testTime(args{
 				date: defaultToday,
 				hour: 12, minute: 0,
 			})),
-			isOn: false,
+			isOn: true,
 		},
 	}
 
