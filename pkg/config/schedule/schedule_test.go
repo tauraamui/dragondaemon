@@ -67,6 +67,13 @@ func TestSchedule(t *testing.T) {
 
 	tests := []scheduleTest{
 		{
+			title:    "empty schedule should always be on",
+			today:    time.Date(2021, 3, 17, 0, 0, 0, 0, time.UTC),
+			schedule: Week{},
+			isOn:     true,
+		},
+		{
+			title: "current time after weekday with off after weekday with on should be off",
 			today: time.Date(2021, 3, 17, 0, 0, 0, 0, time.UTC),
 			schedule: Week{
 				Monday: OnOffTimes{
@@ -91,6 +98,10 @@ func TestSchedule(t *testing.T) {
 
 func runIsOnOrOffWithinSchedule(t *testing.T, tt scheduleTest) {
 	t.Run(tt.title, func(t *testing.T) {
+		if len(tt.title) == 0 {
+			t.Error("table tests must all have titles")
+		}
+
 		if tt.skip {
 			t.Skip()
 		}
