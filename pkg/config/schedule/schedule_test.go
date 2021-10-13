@@ -74,7 +74,24 @@ func TestSchedule(t *testing.T) {
 		},
 		{
 			title: "current time after weekday with off after weekday with on should be off",
-			today: time.Date(2021, 3, 17, 0, 0, 0, 0, time.UTC),
+			today: time.Time(testTime(args{date: timeDate{2021, 3, 17}})),
+			schedule: Week{
+				Monday: OnOffTimes{
+					On: testTimePtr(args{hour: 21}),
+				},
+				Tuesday: OnOffTimes{
+					Off: testTimePtr(args{hour: 10}),
+				},
+			},
+			timeNow: time.Time(testTime(args{
+				date: timeDate{2021, 3, 17},
+				hour: 4, minute: 0,
+			})),
+			isOn: false,
+		},
+		{
+			title: "current time after weekday with on after weekday with off should be on",
+			today: time.Time(testTime(args{date: timeDate{2021, 3, 17}})),
 			schedule: Week{
 				Monday: OnOffTimes{
 					On: testTimePtr(args{hour: 21}),
