@@ -31,12 +31,13 @@ type persistCameraToDisk struct {
 	persistClips  Process
 }
 
-func (proc *persistCameraToDisk) Setup() {
+func (proc *persistCameraToDisk) Setup() Process {
 	proc.streamProcess = NewStreamConnProcess(proc.broadcaster, proc.cam, proc.frames)
 	proc.generateClips = NewGenerateClipProcess(
 		proc.broadcaster.Listen(), proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
 	)
 	proc.persistClips = NewPersistClipProcess(proc.clips, proc.writer)
+	return proc
 }
 
 func (proc *persistCameraToDisk) Start() {

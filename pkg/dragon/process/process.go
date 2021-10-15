@@ -11,7 +11,7 @@ type Event int
 const SHUTDOWN_EVT Event = 0x50
 
 type Process interface {
-	Setup()
+	Setup() Process
 	Start()
 	Stop()
 	Wait()
@@ -42,7 +42,7 @@ func (p *process) logShutdown() {
 	}
 }
 
-func (p *process) Setup() {}
+func (p *process) Setup() Process { return p }
 
 func (p *process) Start() {
 	ctx, canceller := context.WithCancel(context.Background())

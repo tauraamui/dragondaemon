@@ -22,7 +22,7 @@ func NewPersistClipProcess(clips chan video.Clip, writer video.ClipWriter) Proce
 	}
 }
 
-func (proc *persistClipProcess) Setup() {}
+func (proc *persistClipProcess) Setup() Process { return proc }
 
 func (proc *persistClipProcess) Start() {
 	go proc.run()

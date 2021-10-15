@@ -91,7 +91,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 	readFrames := make(chan video.Frame, 3)
 	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
 
-	proc.Start()
+	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
 	readFrameCount := 0
 readFrameProcLoop:
@@ -142,7 +142,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	readFrames := make(chan video.Frame, 3)
 	proc := process.NewStreamConnProcess(broadcst, &testConn, readFrames)
 
-	proc.Start()
+	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
 readFrameProcLoop:
 	for {
@@ -201,8 +201,8 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFram
 
 	readFrames := make(chan video.Frame, 2)
 	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
-	proc.Start()
 
+	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
 checkFrameReadCountLoop:
 	for {
@@ -238,7 +238,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 		proc.Stop()
 	}
 
-	proc.Start()
+	proc.Setup().Start()
 	proc.Wait()
 
 	is.Equal(suite.errorLogs, []string{

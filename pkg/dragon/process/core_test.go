@@ -148,7 +148,7 @@ type mockProc struct {
 	onWait  func()
 }
 
-func (m *mockProc) Setup() {}
+func (m *mockProc) Setup() Process { return m }
 
 func (m *mockProc) Start() {
 	if m.onStart != nil {

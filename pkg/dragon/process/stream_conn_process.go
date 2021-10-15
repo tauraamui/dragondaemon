@@ -34,7 +34,7 @@ func NewStreamConnProcess(broadcaster *broadcast.Broadcaster, cam camera.Connect
 	}
 }
 
-func (proc *streamConnProccess) Setup() {}
+func (proc *streamConnProccess) Setup() Process { return proc }
 
 func (proc *streamConnProccess) Start() {
 	go proc.run()

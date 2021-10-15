@@ -33,7 +33,7 @@ func NewGenerateClipProcess(
 	}
 }
 
-func (proc *generateClipProcess) Setup() {}
+func (proc *generateClipProcess) Setup() Process { return proc }
 
 func (proc *generateClipProcess) Start() {
 	go proc.run()
