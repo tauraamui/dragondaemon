@@ -120,8 +120,6 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	schedule.TODAY = time.Date(2021, 3, 17, 0, 0, 0, 0, time.UTC)
 	suite.baseTime = time.Date(2021, 3, 17, 13, 0, 0, 0, time.UTC)
 
-	is := is.New(suite.T())
-
 	broadcst := broadcast.New(0)
 	listener := broadcst.Listen()
 
@@ -146,8 +144,6 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 
 	proc.Start()
 	timeout := time.After(3 * time.Second)
-	readFrameCount := 0
-	lastIterationGotMsg := false
 readFrameProcLoop:
 	for {
 		select {
@@ -156,19 +152,14 @@ readFrameProcLoop:
 			break readFrameProcLoop
 		case msg := <-listener.Ch:
 			if evt, ok := msg.(process.Event); ok && evt == process.CAM_SWITCHED_OFF_EVT {
-				lastIterationGotMsg = true
-				continue
-			}
-		case f := <-readFrames:
-			is.True(f != nil)
-			readFrameCount++
-		default:
-			if readFrameCount+1 > clipFrameCount/2 {
-				if !lastIterationGotMsg {
-					suite.T().Fatal("camera off event not ever sent")
+				if suite.timeSecondOffset != (clipFrameCount/2)+1 {
+					suite.T().Fatal(
+						fmt.Sprintf("camera off sent at wrong time: %ds in", suite.timeSecondOffset),
+					)
 				}
 				break readFrameProcLoop
 			}
+		case <-readFrames:
 		}
 	}
 	proc.Stop()
