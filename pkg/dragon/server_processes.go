@@ -31,7 +31,6 @@ func (s *server) SetupProcesses() {
 
 func outputRuntimeStats() func(context.Context) []chan interface{} {
 	return func(cancel context.Context) []chan interface{} {
-		var stopSignals []chan interface{}
 		stopping := make(chan interface{})
 	procLoop:
 		for {
@@ -46,8 +45,7 @@ func outputRuntimeStats() func(context.Context) []chan interface{} {
 				renderStats(stats)
 			}
 		}
-		stopSignals = append(stopSignals, stopping)
-		return stopSignals
+		return []chan interface{}{stopping}
 	}
 }
 

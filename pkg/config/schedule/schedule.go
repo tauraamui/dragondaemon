@@ -159,6 +159,7 @@ func (w *Week) init() {
 	}
 }
 
+// Schedule contains each day of the week and it's off and on time entries
 type Schedule interface {
 	IsOn(Time) bool
 }
@@ -168,7 +169,6 @@ func NewSchedule(w Week) Schedule {
 	return &schedule{week: w}
 }
 
-// Schedule contains each day of the week and it's off and on time entries
 type schedule struct {
 	week Week
 }
