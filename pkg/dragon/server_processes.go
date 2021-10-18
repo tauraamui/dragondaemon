@@ -8,6 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
+	"github.com/tauraamui/dragondaemon/pkg/camera"
+	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
@@ -26,6 +29,34 @@ func (s *server) SetupProcesses() {
 		proc := process.NewCoreProcess(cam, s.videoBackend.NewWriter())
 		proc.Setup()
 		s.coreProcesses[cam.UUID()] = proc
+	}
+}
+
+func monitorCameraOnState(conn camera.Connection, b *broadcast.Broadcaster) func(context.Context) []chan interface{} {
+	return func(c context.Context) []chan interface{} {
+		stopping := make(chan interface{})
+		t := time.NewTicker(1 * time.Minute)
+		wasOff := false
+	procLoop:
+		for {
+			time.Sleep(1 * time.Microsecond)
+			select {
+			case <-c.Done():
+				t.Stop()
+				close(stopping)
+				break procLoop
+			case <-t.C:
+				if conn.Schedule().IsOn(schedule.Time(time.Now())) {
+					wasOff = false
+				} else {
+					if !wasOff {
+						b.Send(process.CAM_SWITCHED_OFF_EVT)
+						wasOff = true
+					}
+				}
+			}
+		}
+		return []chan interface{}{}
 	}
 }
 
