@@ -65,6 +65,11 @@ func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan vid
 			// TODO(tauraamui): this shouldn't do this right? we should just return the clip here
 			clip.Close()
 			return nil
+			// TODO: this will only halt once for the current
+			// clip being written to at the moment of the state
+			// change, after that this will continue to generate
+			// clips, the assumption being that the frames from the
+			// stream process will have stopped being sent.
 		case msg := <-listener.Ch:
 			if e, ok := msg.(Event); ok && e == CAM_SWITCHED_OFF_EVT {
 				return clip

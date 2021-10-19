@@ -174,6 +174,8 @@ func TestCoreProcessStart(t *testing.T) {
 	writer := mockClipWriter{}
 	proc := NewCoreProcess(&conn, &writer).(*persistCameraToDisk)
 
+	monitorCamStateProcCalled := false
+	onMonitorCamStateProcStart := func() { monitorCamStateProcCalled = true }
 	streamProcCalled := false
 	onStreamProcStart := func() { streamProcCalled = true }
 	generateProcCalled := false
@@ -181,12 +183,14 @@ func TestCoreProcessStart(t *testing.T) {
 	persistProcCalled := false
 	onPersistProcStart := func() { persistProcCalled = true }
 
+	proc.monitorCameraOnState = &mockProc{onStart: onMonitorCamStateProcStart}
 	proc.streamProcess = &mockProc{onStart: onStreamProcStart}
 	proc.generateClips = &mockProc{onStart: onGenerateProcStart}
 	proc.persistClips = &mockProc{onStart: onPersistProcStart}
 
 	proc.Start()
 
+	is.True(monitorCamStateProcCalled)
 	is.True(streamProcCalled)
 	is.True(generateProcCalled)
 	is.True(persistProcCalled)
@@ -198,6 +202,8 @@ func TestCoreProcessStop(t *testing.T) {
 	writer := mockClipWriter{}
 	proc := NewCoreProcess(&conn, &writer).(*persistCameraToDisk)
 
+	monitorCamStateProcCalled := false
+	onMonitorCamStateProcStop := func() { monitorCamStateProcCalled = true }
 	streamProcCalled := false
 	onStreamProcStop := func() { streamProcCalled = true }
 	generateProcCalled := false
@@ -205,12 +211,14 @@ func TestCoreProcessStop(t *testing.T) {
 	persistProcCalled := false
 	onPersistProcStop := func() { persistProcCalled = true }
 
+	proc.monitorCameraOnState = &mockProc{onStop: onMonitorCamStateProcStop}
 	proc.streamProcess = &mockProc{onStop: onStreamProcStop}
 	proc.generateClips = &mockProc{onStop: onGenerateProcStop}
 	proc.persistClips = &mockProc{onStop: onPersistProcStop}
 
 	proc.Stop()
 
+	is.True(monitorCamStateProcCalled)
 	is.True(streamProcCalled)
 	is.True(generateProcCalled)
 	is.True(persistProcCalled)
@@ -222,6 +230,8 @@ func TestCoreProcessWait(t *testing.T) {
 	writer := mockClipWriter{}
 	proc := NewCoreProcess(&conn, &writer).(*persistCameraToDisk)
 
+	monitorCamStateProcCalled := false
+	onMonitorCamStateProcWait := func() { monitorCamStateProcCalled = true }
 	streamProcCalled := false
 	onStreamProcWait := func() { streamProcCalled = true }
 	generateProcCalled := false
@@ -229,12 +239,14 @@ func TestCoreProcessWait(t *testing.T) {
 	persistProcCalled := false
 	onPersistProcWait := func() { persistProcCalled = true }
 
+	proc.monitorCameraOnState = &mockProc{onWait: onMonitorCamStateProcWait}
 	proc.streamProcess = &mockProc{onWait: onStreamProcWait}
 	proc.generateClips = &mockProc{onWait: onGenerateProcWait}
 	proc.persistClips = &mockProc{onWait: onPersistProcWait}
 
 	proc.Wait()
 
+	is.True(monitorCamStateProcCalled)
 	is.True(streamProcCalled)
 	is.True(generateProcCalled)
 	is.True(persistProcCalled)

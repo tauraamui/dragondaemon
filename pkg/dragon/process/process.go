@@ -45,9 +45,11 @@ func (p *process) logShutdown() {
 func (p *process) Setup() Process { return p }
 
 func (p *process) Start() {
-	ctx, canceller := context.WithCancel(context.Background())
-	p.canceller = canceller
-	p.signals = append(p.signals, p.process(ctx)...)
+	go func() {
+		ctx, canceller := context.WithCancel(context.Background())
+		p.canceller = canceller
+		p.signals = append(p.signals, p.process(ctx)...)
+	}()
 }
 
 func (p *process) Stop() {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
-	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -20,8 +19,6 @@ type streamConnProccess struct {
 	broadcaster *broadcast.Broadcaster
 	stopping    chan interface{}
 	cam         camera.Connection
-	isOff       bool
-	wasOff      bool
 	dest        chan video.Frame
 }
 
@@ -48,16 +45,6 @@ func (proc *streamConnProccess) run() {
 			close(proc.stopping)
 			return
 		default:
-			proc.isOff = !proc.cam.Schedule().IsOn(schedule.Time(TimeNow()))
-			if proc.isOff {
-				if !proc.wasOff {
-					proc.wasOff = true
-					proc.broadcaster.Send(CAM_SWITCHED_OFF_EVT)
-				}
-				continue
-			}
-
-			proc.wasOff = false
 			stream(proc.cam, proc.dest)
 		}
 	}
