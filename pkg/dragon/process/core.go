@@ -41,7 +41,7 @@ func (proc *persistCameraToDisk) Setup() Process {
 		WaitForShutdownMsg: "",
 		Process:            sendEvtOnCameraStateChange(proc.broadcaster, proc.cam),
 	})
-	proc.streamProcess = NewStreamConnProcess(proc.broadcaster, proc.cam, proc.frames)
+	proc.streamProcess = NewStreamConnProcess(proc.broadcaster.Listen(), proc.cam, proc.frames)
 	proc.generateClips = NewGenerateClipProcess(
 		proc.broadcaster.Listen(), proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
 	)
@@ -97,6 +97,9 @@ func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection
 				break procLoop
 			case <-t.C:
 				if conn.Schedule().IsOn(schedule.Time(time.Now())) {
+					if wasOff {
+						b.Send(CAM_SWITCHED_ON_EVT)
+					}
 					wasOff = false
 				} else {
 					if !wasOff {
