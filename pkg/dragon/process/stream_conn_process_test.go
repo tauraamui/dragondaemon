@@ -67,7 +67,7 @@ func (suite *StreamConnProcessTestSuite) TestNewStreamConnProcess() {
 
 	testConn := mockCameraConn{schedule: schedule.NewSchedule(schedule.Week{})}
 	readFrames := make(chan video.Frame)
-	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 	is.True(proc != nil)
 }
 
@@ -89,7 +89,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 	// to optionally recieve without blocking so the loop
 	// proceeds and the timeout is checked
 	readFrames := make(chan video.Frame, 3)
-	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 
 	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
@@ -141,7 +141,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	// to optionally recieve without blocking so the loop
 	// proceeds and the timeout is checked
 	readFrames := make(chan video.Frame, 3)
-	proc := process.NewStreamConnProcess(broadcst, &testConn, readFrames)
+	proc := process.NewStreamConnProcess(listener, &testConn, readFrames)
 
 	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
@@ -202,7 +202,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFram
 	}
 
 	readFrames := make(chan video.Frame, 2)
-	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 
 	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
@@ -234,7 +234,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	}
 
 	readFrames := make(chan video.Frame)
-	proc := process.NewStreamConnProcess(broadcast.New(0), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 
 	suite.onPostErrorLog = func() {
 		proc.Stop()
