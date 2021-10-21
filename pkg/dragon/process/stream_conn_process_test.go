@@ -3,6 +3,7 @@ package process_test
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -117,75 +118,97 @@ readFrameProcLoop:
 }
 
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamOffEvent() {
-	b := broadcast.New(0)
-
-	totalFramesCount := 64
-	frames := make([]mockFrame, totalFramesCount)
-	testConn := mockCameraConn{
-		isOpen: true, framesToRead: frames, schedule: schedule.NewSchedule(schedule.Week{}),
+	maxLoopCount := 64
+	oc := syncedCounter{c: new(int)}
+	isOpen := func() bool {
+		oc.incr()
+		v := oc.v()
+		if v > maxLoopCount {
+			oc.set(maxLoopCount)
+		}
+		return true
 	}
 
-	readFrames := make(chan video.Frame, totalFramesCount)
+	rc := syncedCounter{c: new(int)}
+	connRead := func() (video.Frame, error) {
+		rc.incr()
+		return &mockFrame{}, nil
+	}
+	testConn := mockCameraConn{readFunc: connRead, isOpenFunc: isOpen}
+	fc := make(chan video.Frame)
 
-	timeout := time.After(3 * time.Second)
-	startReading := make(chan interface{})
-	doneReading := make(chan []error)
-	readFrameCount := 0
-	loopCount := 0
-
-	go func(b *broadcast.Broadcaster, s chan interface{}, d chan []error, fc chan video.Frame, tc int, rc, lc *int) {
-		defer close(d)
-		<-s
-		errs := []error{}
-		reachedTotal := false
-	readFrameProcLoop:
-		for {
-			time.Sleep(1 * time.Microsecond)
-			select {
-			case <-timeout:
-				errs = append(errs, errors.New("test timeout 3s limit exceeded"))
-				break readFrameProcLoop
-			case f := <-fc:
-				f.Close()
-				*lc++
-				*rc++
-				if *rc == tc/2 {
-					b.Send(process.CAM_SWITCHED_OFF_EVT)
-				}
-			default:
-				*lc++
-				if *lc == tc {
-					reachedTotal = true
-					break readFrameProcLoop
-				}
-			}
-		}
-		if !reachedTotal {
-			errs = append(errs, fmt.Errorf("counts did not reach total: [%dr/%dt]", *lc, tc))
-		}
-		d <- errs
-	}(b, startReading, doneReading, readFrames, totalFramesCount, &readFrameCount, &loopCount)
+	b := broadcast.New(0)
+	proc := process.NewStreamConnProcess(b.Listen(), &testConn, fc)
 
 	is := is.New(suite.T())
+	err := callW3sTimeout(func() { <-proc.Setup().Start() })
+	is.NoErr(err)
 
-	proc := process.NewStreamConnProcess(b.Listen(), &testConn, readFrames)
-	close(startReading)
+	err = callW3sTimeout(func() {
+		for {
+			time.Sleep(1 * time.Microsecond)
+			if rc.v() == maxLoopCount/2 {
+				b.Send(process.CAM_SWITCHED_OFF_EVT)
+			}
+			if oc.v() == maxLoopCount {
+				break
+			}
+		}
+	})
+	is.NoErr(err)
 
-	proc.Setup().Start()
+	is.Equal(oc.v(), maxLoopCount)
+	is.Equal(rc.v(), maxLoopCount/2)
 
-	errs := <-doneReading
-	ec := len(errs)
-	is.New(suite.T())
+	err = callW3sTimeout(func() { proc.Stop(); proc.Wait() })
+	is.NoErr(err)
+}
 
-	is.Equal(loopCount/2, readFrameCount)
-	for i := 0; i < ec; i++ {
-		if err := errs[i]; err != nil {
-			fmt.Printf("err: %s\n", err.Error())
-			suite.T().Fail()
+type syncedCounter struct {
+	mu sync.Mutex
+	c  *int
+}
+
+func (c *syncedCounter) set(v int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	*c.c = v
+}
+
+func (c *syncedCounter) v() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return *c.c
+}
+
+func (c *syncedCounter) incr() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	*c.c++
+}
+
+func callW3sTimeout(f func()) error {
+	return callWTimeout(f, time.After(3*time.Second), "test timeout 3s limit exceeded")
+}
+
+func callWTimeout(f func(), t <-chan time.Time, errmsg string) error {
+	done := make(chan interface{})
+	go func(d chan interface{}, f func()) {
+		defer close(d)
+		f()
+	}(done, f)
+
+	for {
+		select {
+		case <-t:
+			return errors.New(errmsg)
+		case <-done:
+			return nil
 		}
 	}
 }
 
+// TODO(tauraamui): actually move this test to the schedule package tests
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamTurnsOff() {
 	suite.T().Skip()
 	process.TimeNow = suite.timeNowQuery

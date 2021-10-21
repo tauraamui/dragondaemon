@@ -42,8 +42,10 @@ type mockCameraConn struct {
 	spc                 int
 	frameReadIndex      int
 	framesToRead        []mockFrame
+	readFunc            func() (video.Frame, error)
 	onPostRead          func()
 	readErr             error
+	isOpenFunc          func() bool
 	isOpen              bool
 	isClosing           bool
 	closeErr            error
@@ -85,6 +87,11 @@ func (m *mockCameraConn) Read() (frame video.Frame, err error) {
 	if m.onPostRead != nil {
 		defer m.onPostRead()
 	}
+
+	if m.readFunc != nil {
+		return m.readFunc()
+	}
+
 	if m.frameReadIndex+1 >= len(m.framesToRead) {
 		return nil, errors.New("run out of frames to read")
 	}
@@ -94,6 +101,9 @@ func (m *mockCameraConn) Read() (frame video.Frame, err error) {
 }
 
 func (m *mockCameraConn) IsOpen() bool {
+	if m.isOpenFunc != nil {
+		return m.isOpenFunc()
+	}
 	return m.isOpen
 }
 
