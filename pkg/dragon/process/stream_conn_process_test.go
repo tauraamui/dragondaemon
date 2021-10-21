@@ -119,27 +119,72 @@ readFrameProcLoop:
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamOffEvent() {
 	b := broadcast.New(0)
 
-	totalFramesCount := 0
+	totalFramesCount := 64
 	frames := make([]mockFrame, totalFramesCount)
 	testConn := mockCameraConn{
 		isOpen: true, framesToRead: frames, schedule: schedule.NewSchedule(schedule.Week{}),
 	}
 
-	readFrames := make(chan video.Frame, 3)
-	proc := process.NewStreamConnProcess(b.Listen(), &testConn, readFrames)
+	readFrames := make(chan video.Frame, totalFramesCount)
 
-	started := proc.Setup().Start()
-	// start stream process and wait for it to start
-	// however start could block forever so protect with short timeout
-	oneSec := time.After(1 * time.Second)
-procStartLoop:
-	for {
-		select {
-		case <-oneSec:
-			suite.T().Fatal("test timeout 1s limit exceeded")
-			break procStartLoop
-		case <-started:
-			break procStartLoop
+	timeout := time.After(3 * time.Second)
+	startReading := make(chan interface{})
+	doneReading := make(chan []error)
+	readFrameCount := 0
+	loopCount := 0
+
+	go func(b *broadcast.Broadcaster, s chan interface{}, d chan []error, fc chan video.Frame, tc int, rc, lc *int) {
+		defer close(d)
+		<-s
+		errs := []error{}
+		reachedTotal := false
+	readFrameProcLoop:
+		for {
+			time.Sleep(1 * time.Microsecond)
+			select {
+			case <-timeout:
+				errs = append(errs, errors.New("test timeout 3s limit exceeded"))
+				break readFrameProcLoop
+			case f := <-fc:
+				f.Close()
+				*lc++
+				*rc++
+				if *rc == tc/2 {
+					b.Send(process.CAM_SWITCHED_OFF_EVT)
+				}
+			default:
+				*lc++
+				if *lc > tc {
+					*lc = tc
+				}
+				if *lc != 0 && *lc == tc {
+					reachedTotal = true
+					break readFrameProcLoop
+				}
+			}
+		}
+		if !reachedTotal {
+			errs = append(errs, fmt.Errorf("counts did not reach total: [%dr/%dt]", *lc, tc))
+		}
+		d <- errs
+	}(b, startReading, doneReading, readFrames, totalFramesCount, &readFrameCount, &loopCount)
+
+	is := is.New(suite.T())
+
+	proc := process.NewStreamConnProcess(b.Listen(), &testConn, readFrames)
+	close(startReading)
+
+	proc.Setup().Start()
+
+	errs := <-doneReading
+	ec := len(errs)
+	is.New(suite.T())
+
+	is.Equal(loopCount/2, readFrameCount)
+	for i := 0; i < ec; i++ {
+		if err := errs[i]; err != nil {
+			fmt.Printf("err: %s\n", err.Error())
+			suite.T().Fail()
 		}
 	}
 }

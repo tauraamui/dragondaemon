@@ -60,7 +60,8 @@ func run(ctx context.Context, cam camera.Connection, d chan video.Frame, l broad
 			if e, ok := msg.(Event); ok {
 				if e == CAM_SWITCHED_OFF_EVT {
 					isOn = false
-				} else if e == CAM_SWITCHED_ON_EVT {
+				}
+				if e == CAM_SWITCHED_ON_EVT {
 					isOn = true
 				}
 			}
