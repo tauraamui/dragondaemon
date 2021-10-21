@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/matryer/is"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
@@ -113,6 +114,34 @@ readFrameProcLoop:
 	}
 	proc.Stop()
 	proc.Wait()
+}
+
+func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamOffEvent() {
+	b := broadcast.New(0)
+
+	totalFramesCount := 0
+	frames := make([]mockFrame, totalFramesCount)
+	testConn := mockCameraConn{
+		isOpen: true, framesToRead: frames, schedule: schedule.NewSchedule(schedule.Week{}),
+	}
+
+	readFrames := make(chan video.Frame, 3)
+	proc := process.NewStreamConnProcess(b.Listen(), &testConn, readFrames)
+
+	started := proc.Setup().Start()
+	// start stream process and wait for it to start
+	// however start could block forever so protect with short timeout
+	oneSec := time.After(1 * time.Second)
+procStartLoop:
+	for {
+		select {
+		case <-oneSec:
+			suite.T().Fatal("test timeout 1s limit exceeded")
+			break procStartLoop
+		case <-started:
+			break procStartLoop
+		}
+	}
 }
 
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamTurnsOff() {
@@ -225,8 +254,6 @@ checkFrameReadCountLoop:
 }
 
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
-	is := is.New(suite.T())
-
 	testConn := mockCameraConn{
 		isOpen:   true,
 		readErr:  errors.New("testing unable to read from mock camera stream"),
@@ -243,9 +270,11 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	proc.Setup().Start()
 	proc.Wait()
 
-	is.Equal(suite.errorLogs, []string{
+	assert.Contains(
+		suite.T(),
+		suite.errorLogs,
 		"Unable to retrieve frame: run out of frames to read. Auto re-connecting is not yet implemented",
-	})
+	)
 }
 
 func (suite *StreamConnProcessTestSuite) timeNowQuery() time.Time {
