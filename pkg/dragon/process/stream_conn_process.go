@@ -29,7 +29,8 @@ func NewStreamConnProcess(
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
-		ctx: ctx, cancel: cancel,
+		started: make(chan interface{}),
+		ctx:     ctx, cancel: cancel,
 		listener: l,
 		cam:      cam, dest: dest, stopping: make(chan interface{}),
 	}
@@ -44,9 +45,13 @@ func (proc *streamConnProccess) Start() <-chan interface{} {
 
 func run(ctx context.Context, cam camera.Connection, d chan video.Frame, l broadcast.Listener, s, stopping chan interface{}) {
 	isOn := true
+	started := false
 	for {
-		close(s)
 		time.Sleep(1 * time.Microsecond)
+		if !started {
+			close(s)
+			started = true
+		}
 		select {
 		case <-ctx.Done():
 			close(stopping)

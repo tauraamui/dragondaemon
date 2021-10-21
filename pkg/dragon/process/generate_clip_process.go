@@ -9,6 +9,7 @@ import (
 )
 
 type generateClipProcess struct {
+	started       chan interface{}
 	ctx           context.Context
 	cancel        context.CancelFunc
 	listener      *broadcast.Listener
@@ -24,7 +25,8 @@ func NewGenerateClipProcess(
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &generateClipProcess{
-		ctx: ctx, cancel: cancel,
+		started: make(chan interface{}),
+		ctx:     ctx, cancel: cancel,
 		listener: listener,
 		frames:   frames, dest: dest,
 		framesPerClip: framesPerClip,
@@ -35,13 +37,19 @@ func NewGenerateClipProcess(
 
 func (proc *generateClipProcess) Setup() Process { return proc }
 
-func (proc *generateClipProcess) Start() {
+func (proc *generateClipProcess) Start() <-chan interface{} {
 	go proc.run()
+	return proc.started
 }
 
 func (proc *generateClipProcess) run() {
+	started := false
 	for {
 		time.Sleep(1 * time.Microsecond)
+		if !started {
+			close(proc.started)
+			started = true
+		}
 		select {
 		case <-proc.ctx.Done():
 			close(proc.stopping)

@@ -11,9 +11,10 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
-func DeleteOldClips(cam camera.Connection) func(cancel context.Context) []chan interface{} {
+// TODO(tauraamui): re-write delete clip process
+func DeleteOldClips(cam camera.Connection) func(context.Context, chan interface{}) []chan interface{} {
 	lastDeleteInvokedAt := TimeNow()
-	return func(cancel context.Context) []chan interface{} {
+	return func(cancel context.Context, s chan interface{}) []chan interface{} {
 		var stopSignals []chan interface{}
 		log.Info("Deleting old saved clips for camera [%s]", cam.Title())
 		stopping := make(chan interface{})

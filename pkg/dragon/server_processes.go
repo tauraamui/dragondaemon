@@ -29,12 +29,17 @@ func (s *server) SetupProcesses() {
 	}
 }
 
-func outputRuntimeStats() func(context.Context) []chan interface{} {
-	return func(cancel context.Context) []chan interface{} {
+func outputRuntimeStats() func(context.Context, chan interface{}) []chan interface{} {
+	return func(cancel context.Context, s chan interface{}) []chan interface{} {
 		stopping := make(chan interface{})
+		started := false
 	procLoop:
 		for {
 			time.Sleep(1 * time.Second)
+			if !started {
+				close(s)
+				started = true
+			}
 			select {
 			case <-cancel.Done():
 				close(stopping)

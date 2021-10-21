@@ -49,7 +49,7 @@ func (proc *persistCameraToDisk) Setup() Process {
 	return proc
 }
 
-func (proc *persistCameraToDisk) Start() {
+func (proc *persistCameraToDisk) Start() <-chan interface{} {
 	log.Debug("Monitoring camera on/off state change")
 	proc.monitorCameraOnState.Start()
 	log.Info("Streaming video from camera [%s]", proc.cam.Title())
@@ -58,6 +58,8 @@ func (proc *persistCameraToDisk) Start() {
 	proc.generateClips.Start()
 	log.Info("Writing clips to disk from camera [%s] video stream...", proc.cam.Title())
 	proc.persistClips.Start()
+
+	return nil
 }
 
 func (proc *persistCameraToDisk) Stop() {
@@ -82,14 +84,19 @@ func (proc *persistCameraToDisk) Wait() {
 	proc.streamProcess.Wait()
 }
 
-func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection) func(context.Context) []chan interface{} {
-	return func(c context.Context) []chan interface{} {
+func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection) func(context.Context, chan interface{}) []chan interface{} {
+	return func(c context.Context, s chan interface{}) []chan interface{} {
 		stopping := make(chan interface{})
 		t := time.NewTicker(1 * time.Second)
 		wasOff := false
+		started := false
 	procLoop:
 		for {
 			time.Sleep(1 * time.Microsecond)
+			if !started {
+				close(s)
+				started = true
+			}
 			select {
 			case <-c.Done():
 				t.Stop()

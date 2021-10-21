@@ -143,17 +143,24 @@ func TestCoreProcessSetup(t *testing.T) {
 }
 
 type mockProc struct {
+	started chan interface{}
 	onStart func()
 	onStop  func()
 	onWait  func()
 }
 
-func (m *mockProc) Setup() Process { return m }
+func (m *mockProc) Setup() Process {
+	return m
+}
 
-func (m *mockProc) Start() {
+func (m *mockProc) Start() <-chan interface{} {
 	if m.onStart != nil {
 		m.onStart()
 	}
+	if m.started == nil {
+		m.started = make(chan interface{})
+	}
+	return m.started
 }
 
 func (m *mockProc) Stop() {
