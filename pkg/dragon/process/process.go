@@ -44,9 +44,19 @@ func (p *process) logShutdown() {
 	}
 }
 
-func (p *process) Setup() Process { return p }
+func (p *process) Setup() Process {
+	p.initStarted()
+	return p
+}
+
+func (p *process) initStarted() {
+	if p.started == nil {
+		p.started = make(chan interface{})
+	}
+}
 
 func (p *process) Start() <-chan interface{} {
+	p.initStarted()
 	go func(s chan interface{}) {
 		ctx, canceller := context.WithCancel(context.Background())
 		p.canceller = canceller
