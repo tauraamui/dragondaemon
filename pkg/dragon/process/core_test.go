@@ -160,6 +160,7 @@ func (m *mockProc) Start() <-chan interface{} {
 	if m.started == nil {
 		m.started = make(chan interface{})
 	}
+	defer close(m.started)
 	return m.started
 }
 
