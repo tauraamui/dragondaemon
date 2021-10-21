@@ -154,10 +154,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 				}
 			default:
 				*lc++
-				if *lc > tc {
-					*lc = tc
-				}
-				if *lc != 0 && *lc == tc {
+				if *lc == tc {
 					reachedTotal = true
 					break readFrameProcLoop
 				}
