@@ -119,7 +119,7 @@ readFrameProcLoop:
 
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamOffEvent() {
 	maxLoopCount := 64
-	oc := syncedCounter{c: new(int)}
+	oc := mutexCounter{}
 	isOpen := func() bool {
 		oc.incr()
 		v := oc.v()
@@ -129,7 +129,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 		return true
 	}
 
-	rc := syncedCounter{c: new(int)}
+	rc := mutexCounter{}
 	connRead := func() (video.Frame, error) {
 		rc.incr()
 		return &mockFrame{}, nil
@@ -164,27 +164,27 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	is.NoErr(err)
 }
 
-type syncedCounter struct {
+type mutexCounter struct {
 	mu sync.Mutex
-	c  *int
+	c  int
 }
 
-func (c *syncedCounter) set(v int) {
+func (c *mutexCounter) set(v int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	*c.c = v
+	c.c = v
 }
 
-func (c *syncedCounter) v() int {
+func (c *mutexCounter) v() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return *c.c
+	return c.c
 }
 
-func (c *syncedCounter) incr() {
+func (c *mutexCounter) incr() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	*c.c++
+	c.c++
 }
 
 func callW3sTimeout(f func()) error {
