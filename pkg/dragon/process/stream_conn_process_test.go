@@ -122,8 +122,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	oc := mutexCounter{}
 	isOpen := func() bool {
 		oc.incr()
-		v := oc.v()
-		if v > maxLoopCount {
+		if oc.v() > maxLoopCount {
 			oc.set(maxLoopCount)
 		}
 		return true
