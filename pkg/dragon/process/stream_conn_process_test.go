@@ -158,7 +158,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	is.NoErr(err)
 
 	is.Equal(oc.v(), maxLoopCount)
-	is.Equal(rc.v(), maxLoopCount/2)
+	is.Equal(rc.v(), maxLoopCount/2) // read frame count should be half of total loop count
 
 	err = callW3sTimeout(func() { proc.Stop(); proc.Wait() })
 	is.NoErr(err)
