@@ -3,8 +3,10 @@ package process
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/matryer/is"
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
@@ -258,4 +260,59 @@ func TestCoreProcessWait(t *testing.T) {
 	is.True(streamProcCalled)
 	is.True(generateProcCalled)
 	is.True(persistProcCalled)
+}
+
+func TestSendEventOnCameraStateChange(t *testing.T) {
+	tm := timeMachine{baseTime: time.Date(2021, 3, 17, 13, 0, 0, 0, time.UTC)}
+	TimeNow = tm.timeNowQuery
+	schedule.TODAY = time.Date(2021, 3, 17, 0, 0, 0, 0, time.UTC)
+
+	b := broadcast.New(0)
+	conn := mockCameraConn{
+		isOpen: true,
+	}
+
+	go sendEvtOnCameraStateChange(b, &conn)
+
+	is := is.New(t)
+	err := callW3sTimeout(func() {
+		for {
+			time.Sleep(1 * time.Second)
+			if tm.offset == 13 {
+				break
+			}
+		}
+	})
+	is.NoErr(err)
+}
+
+type timeMachine struct {
+	offset   int
+	baseTime time.Time
+}
+
+func (t *timeMachine) timeNowQuery() time.Time {
+	t.offset++
+	return t.baseTime.Add(time.Second * time.Duration(t.offset))
+}
+
+func callW3sTimeout(f func()) error {
+	return callWTimeout(f, time.After(3*time.Second), "test timeout 3s limit exceeded")
+}
+
+func callWTimeout(f func(), t <-chan time.Time, errmsg string) error {
+	done := make(chan interface{})
+	go func(d chan interface{}, f func()) {
+		defer close(d)
+		f()
+	}(done, f)
+
+	for {
+		select {
+		case <-t:
+			return errors.New(errmsg)
+		case <-done:
+			return nil
+		}
+	}
 }
