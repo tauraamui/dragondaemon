@@ -141,10 +141,9 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	proc := process.NewStreamConnProcess(b.Listen(), &testConn, fc)
 
 	is := is.New(suite.T())
-	err := callW3sTimeout(func() { <-proc.Setup().Start() })
-	is.NoErr(err)
+	proc.Setup().Start()
 
-	err = callW3sTimeout(func() {
+	err := callW3sTimeout(func() {
 		for {
 			time.Sleep(1 * time.Microsecond)
 			if rc.v() == maxLoopCount/2 {

@@ -2,6 +2,7 @@ package process
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -272,28 +273,31 @@ func TestSendEventOnCameraStateChange(t *testing.T) {
 		isOpen: true,
 	}
 
-	go sendEvtOnCameraStateChange(b, &conn)
-
-	is := is.New(t)
-	err := callW3sTimeout(func() {
-		for {
-			time.Sleep(1 * time.Second)
-			if tm.offset == 13 {
-				break
-			}
-		}
+	proc := New(Settings{
+		WaitForShutdownMsg: "",
+		Process:            sendEvtOnCameraStateChange(b, &conn),
 	})
-	is.NoErr(err)
+
+	proc.Setup().Start()
+	proc.Stop()
+	proc.Wait()
 }
 
 type timeMachine struct {
-	offset   int
+	mu       sync.Mutex
+	offset   *int
 	baseTime time.Time
 }
 
 func (t *timeMachine) timeNowQuery() time.Time {
-	t.offset++
-	return t.baseTime.Add(time.Second * time.Duration(t.offset))
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	*t.offset++
+	return t.baseTime.Add(time.Second * time.Duration(*t.offset))
+}
+
+func (t *timeMachine) v() int {
+	return *t.offset
 }
 
 func callW3sTimeout(f func()) error {
