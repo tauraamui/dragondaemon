@@ -222,9 +222,9 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	testConn := mockCameraConn{
 		isOpen: true, framesToRead: frames, schedule: schedule.NewSchedule(schedule.Week{
 			Wednesday: schedule.OnOffTimes{
-				Off: testTimePtr(args{
-					hour: 13, minute: 0, second: clipFrameCount / 2,
-				}),
+				// Off: testTimePtr(args{
+				// 	hour: 13, minute: 0, second: clipFrameCount / 2,
+				// }),
 			},
 		}),
 	}
@@ -344,42 +344,4 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 func (suite *StreamConnProcessTestSuite) timeNowQuery() time.Time {
 	suite.timeSecondOffset++
 	return suite.baseTime.Add(time.Second * time.Duration(suite.timeSecondOffset))
-}
-
-// used in place of unavailable named params langauge feature
-type args struct {
-	date                 timeDate
-	hour, minute, second int
-}
-
-type timeDate struct {
-	year, month, day int
-}
-
-func (td timeDate) empty() bool {
-	if td.year == 0 || td.month == 0 || td.day == 0 {
-		return true
-	}
-	return false
-}
-
-var defaultDate timeDate = timeDate{2021, 9, 13}
-
-func timeFromHoursAndMinutes(td timeDate, hour, minute, second int) schedule.Time {
-	return schedule.Time(time.Date(td.year, time.Month(td.month), td.day, hour, minute, second, 0, time.UTC))
-}
-
-func testTime(a args) schedule.Time {
-	date := func() timeDate {
-		if a.date.empty() {
-			return defaultDate
-		}
-		return a.date
-	}()
-	return timeFromHoursAndMinutes(date, a.hour, a.minute, a.second)
-}
-
-func testTimePtr(a args) *schedule.Time {
-	tt := testTime(a)
-	return &tt
 }

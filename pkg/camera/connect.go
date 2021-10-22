@@ -71,6 +71,9 @@ func (c *connection) FPS() int {
 }
 
 func (c *connection) Schedule() schedule.Schedule {
+	if c.sett.Schedule == nil {
+		c.sett.Schedule = schedule.NewSchedule(schedule.Week{})
+	}
 	return c.sett.Schedule
 }
 

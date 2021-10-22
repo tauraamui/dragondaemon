@@ -39,7 +39,7 @@ type persistCameraToDisk struct {
 func (proc *persistCameraToDisk) Setup() Process {
 	proc.monitorCameraOnState = New(Settings{
 		WaitForShutdownMsg: "",
-		Process:            sendEvtOnCameraStateChange(proc.broadcaster, proc.cam),
+		Process:            sendEvtOnCameraStateChange(proc.broadcaster, proc.cam, time.Second),
 	})
 	proc.streamProcess = NewStreamConnProcess(proc.broadcaster.Listen(), proc.cam, proc.frames)
 	proc.generateClips = NewGenerateClipProcess(
@@ -84,12 +84,13 @@ func (proc *persistCameraToDisk) Wait() {
 	proc.streamProcess.Wait()
 }
 
-func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection) func(context.Context, chan interface{}) []chan interface{} {
+func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection, d time.Duration) func(context.Context, chan interface{}) []chan interface{} {
 	return func(c context.Context, s chan interface{}) []chan interface{} {
 		stopping := make(chan interface{})
-		t := time.NewTicker(1 * time.Second)
+		t := time.NewTicker(1 * d)
 		wasOff := false
 		started := false
+		sch := conn.Schedule()
 	procLoop:
 		for {
 			time.Sleep(1 * time.Microsecond)
@@ -103,7 +104,7 @@ func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection
 				close(stopping)
 				break procLoop
 			case <-t.C:
-				if conn.Schedule().IsOn(schedule.Time(time.Now())) {
+				if sch.IsOn(schedule.Time(TimeNow())) {
 					if wasOff {
 						b.Send(CAM_SWITCHED_ON_EVT)
 					}
