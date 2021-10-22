@@ -140,7 +140,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	proc := process.NewStreamConnProcess(b.Listen(), &testConn, fc)
 
 	is := is.New(suite.T())
-	proc.Setup().Start()
+	<-proc.Setup().Start()
 
 	err := callW3sTimeout(func() {
 		for {
@@ -148,7 +148,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 			if rc.v() == maxLoopCount/2 {
 				b.Send(process.CAM_SWITCHED_OFF_EVT)
 			}
-			if oc.v() == maxLoopCount {
+			if oc.v() >= maxLoopCount {
 				break
 			}
 		}
