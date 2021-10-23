@@ -8,7 +8,9 @@ import (
 )
 
 type I interface {
+	AsKind(Kind) I
 	Error() string
+	ErrorMsg() string
 	Msg(string) I
 	WithParam(string, interface{}) I
 	WithParams(map[string]interface{}) I
@@ -17,6 +19,8 @@ type I interface {
 
 type Kind string
 
+const NA = Kind("N/A")
+
 type x struct {
 	kind   Kind
 	errMsg string
@@ -24,18 +28,36 @@ type x struct {
 	params map[string]interface{}
 }
 
+func Errorf(format string, values ...interface{}) I {
+	return New(NA, fmt.Errorf(format, values...).Error())
+}
+
 func New(k Kind, es string) I {
 	i := x{kind: k, errMsg: es}
-	e := fmt.Errorf("KIND: %s | %s", i.kind, i.errMsg)
-	i.error = errors.WithStack(e)
+	i.format()
 	return &i
 }
 
+func (x *x) format() {
+	x.error = errors.WithStack(errors.New(x.ToString()))
+}
+
+func (x *x) AsKind(k Kind) I {
+	defer x.format()
+	x.kind = k
+	return x
+}
+
 func (x *x) Error() string {
-	return ""
+	return x.error.Error()
+}
+
+func (x *x) ErrorMsg() string {
+	return x.errMsg
 }
 
 func (x *x) Msg(m string) I {
+	defer x.format()
 	x.errMsg = m
 	return x
 }
@@ -44,6 +66,7 @@ func (x *x) Msg(m string) I {
 // as the param values. Passing nil instead of a map will
 // clear the params completely.
 func (x *x) WithParams(p map[string]interface{}) I {
+	defer x.format()
 	if p == nil {
 		x.params = p
 		return x
@@ -65,6 +88,7 @@ func mergeParams(p1, p2 map[string]interface{}) {
 // WithParam will append the param key/value pair passed in
 // to the internal map.
 func (x *x) WithParam(key string, v interface{}) I {
+	defer x.format()
 	if x.params == nil {
 		x.params = map[string]interface{}{}
 	}
@@ -73,11 +97,11 @@ func (x *x) WithParam(key string, v interface{}) I {
 }
 
 func (x *x) ToString() string {
-	logMsg := fmt.Sprintf("Kind: %s, Msg: %s", x.kind, x.errMsg)
+	logMsg := fmt.Sprintf("Kind: %s | %s", x.kind, x.errMsg)
 
 	params := []string{}
 	for k, v := range x.params {
-		params = append(params, fmt.Sprintf("%s: {%+v}", strings.ToUpper(k), v))
+		params = append(params, fmt.Sprintf("%s: {%+v}", k, v))
 	}
 	return fmt.Sprintf("%s%s", logMsg, func() string {
 		if len(params) != 0 {
