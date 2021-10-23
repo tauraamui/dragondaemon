@@ -14,20 +14,23 @@ func TestNewErrorGivesErrInstance(t *testing.T) {
 	is.True(err != nil)
 }
 
+const TestError = xerror.Kind("test_error")
+const TestParamsError = xerror.Kind("test_params_error")
+
 func TestNewErrorGivesErrWhichPrintsOutExpectedString(t *testing.T) {
 	is := is.New(t)
 
-	err := xerror.New("TEST_ERROR", "this was caused by something bad: some other wrapped error")
+	err := xerror.New(TestError, "this was caused by something bad: some other wrapped error")
 	is.True(err != nil)
 
 	is.Equal(err.Error(), "Kind: TEST_ERROR | this was caused by something bad: some other wrapped error")
 }
 
-func TestNewErrorWithParamsGivesErrWhichPrintsOutExpectedString(t *testing.T) {
+func TestNewErrorWithParamGivesErrWhichPrintsOutExpectedString(t *testing.T) {
 	is := is.New(t)
 
 	err := xerror.New(
-		"TEST_PARAMS_ERROR", "fake request failed",
+		TestParamsError, "fake request failed",
 	).WithParam("test-request-trace-id", "31257919-40e6-496b-bb53-b71999222b0b")
 	is.True(err != nil)
 

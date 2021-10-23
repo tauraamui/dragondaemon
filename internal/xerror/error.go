@@ -101,7 +101,7 @@ func (x *x) WithParam(key string, v interface{}) I {
 }
 
 func (x *x) toString() string {
-	logMsg := fmt.Sprintf("Kind: %s | %s", x.kind, x.errMsg)
+	logMsg := fmt.Sprintf("Kind: %s | %s", strings.ToUpper(string(x.kind)), x.errMsg)
 
 	params := []string{}
 	for k, v := range x.params {
