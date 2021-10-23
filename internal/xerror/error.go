@@ -9,12 +9,12 @@ import (
 
 type I interface {
 	AsKind(Kind) I
+	ToError() error
 	Error() string
 	ErrorMsg() string
 	Msg(string) I
 	WithParam(string, interface{}) I
 	WithParams(map[string]interface{}) I
-	ToString() string
 }
 
 type Kind string
@@ -39,13 +39,17 @@ func New(k Kind, es string) I {
 }
 
 func (x *x) format() {
-	x.error = errors.WithStack(errors.New(x.ToString()))
+	x.error = errors.WithStack(errors.New(x.toString()))
 }
 
 func (x *x) AsKind(k Kind) I {
 	defer x.format()
 	x.kind = k
 	return x
+}
+
+func (x *x) ToError() error {
+	return x.error
 }
 
 func (x *x) Error() string {
@@ -96,7 +100,7 @@ func (x *x) WithParam(key string, v interface{}) I {
 	return x
 }
 
-func (x *x) ToString() string {
+func (x *x) toString() string {
 	logMsg := fmt.Sprintf("Kind: %s | %s", x.kind, x.errMsg)
 
 	params := []string{}
