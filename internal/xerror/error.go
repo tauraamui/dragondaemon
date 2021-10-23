@@ -13,6 +13,7 @@ type I interface {
 	Error() string
 	ErrorMsg() string
 	Msg(string) I
+	WithStackTrace() I
 	WithParam(string, interface{}) I
 	WithParams(map[string]interface{}) I
 }
@@ -22,10 +23,11 @@ type Kind string
 const NA = Kind("N/A")
 
 type x struct {
-	kind   Kind
-	errMsg string
-	error  error
-	params map[string]interface{}
+	kind       Kind
+	errMsg     string
+	error      error
+	stackTrace bool
+	params     map[string]interface{}
 }
 
 func Errorf(format string, values ...interface{}) I {
@@ -33,7 +35,7 @@ func Errorf(format string, values ...interface{}) I {
 }
 
 func New(k Kind, es string) I {
-	i := x{kind: k, errMsg: es}
+	i := x{kind: k, errMsg: es, stackTrace: false}
 	i.format()
 	return &i
 }
@@ -53,6 +55,9 @@ func (x *x) ToError() error {
 }
 
 func (x *x) Error() string {
+	if x.stackTrace {
+		return fmt.Sprintf("%+v", x.error)
+	}
 	return x.error.Error()
 }
 
@@ -63,6 +68,11 @@ func (x *x) ErrorMsg() string {
 func (x *x) Msg(m string) I {
 	defer x.format()
 	x.errMsg = m
+	return x
+}
+
+func (x *x) WithStackTrace() I {
+	x.stackTrace = true
 	return x
 }
 
