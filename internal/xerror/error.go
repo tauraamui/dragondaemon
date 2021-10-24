@@ -31,10 +31,14 @@ type x struct {
 }
 
 func Errorf(format string, values ...interface{}) I {
-	return New(NA, fmt.Errorf(format, values...).Error())
+	return New(fmt.Errorf(format, values...).Error())
 }
 
-func New(k Kind, es string) I {
+func New(es string) I {
+	return NewWithKind(NA, es)
+}
+
+func NewWithKind(k Kind, es string) I {
 	i := x{kind: k, errMsg: es, stackTrace: false}
 	i.format()
 	return &i
