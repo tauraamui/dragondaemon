@@ -45,7 +45,11 @@ func NewWithKind(k Kind, es string) I {
 }
 
 func (x *x) format() {
-	x.error = errors.WithStack(errors.New(x.toString()))
+	err := errors.New(x.toString())
+	if x.stackTrace {
+		err = errors.WithStack(err)
+	}
+	x.error = err
 }
 
 func (x *x) AsKind(k Kind) I {
@@ -76,6 +80,7 @@ func (x *x) Msg(m string) I {
 }
 
 func (x *x) WithStackTrace() I {
+	defer x.format()
 	x.stackTrace = true
 	return x
 }
