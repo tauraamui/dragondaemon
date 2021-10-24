@@ -20,13 +20,31 @@ const TestParamsError = xerror.Kind("test_params_error")
 func TestNewErrorGivesErrWhichPrintsOutExpectedString(t *testing.T) {
 	is := is.New(t)
 
+	err := xerror.New("fake db update failed")
+	is.True(err != nil)
+
+	is.Equal(err.Error(), "fake db update failed")
+}
+
+func TestNewErrorWithParamGivesErrWhichPrintsOutExpectedString(t *testing.T) {
+	is := is.New(t)
+
+	err := xerror.New("fake db update failed").WithParam("trace-request-id", "efw4fv32f")
+	is.True(err != nil)
+
+	is.Equal(err.Error(), "Kind: N/A | fake db update failed, Params: [trace-request-id: {efw4fv32f}]")
+}
+
+func TestNewErrorWithKindGivesErrWhichPrintsOutExpectedString(t *testing.T) {
+	is := is.New(t)
+
 	err := xerror.NewWithKind(TestError, "this was caused by something bad: some other wrapped error")
 	is.True(err != nil)
 
 	is.Equal(err.Error(), "Kind: TEST_ERROR | this was caused by something bad: some other wrapped error")
 }
 
-func TestNewErrorWithParamGivesErrWhichPrintsOutExpectedString(t *testing.T) {
+func TestNewErrorWithKindAndParamGivesErrWhichPrintsOutExpectedString(t *testing.T) {
 	is := is.New(t)
 
 	err := xerror.NewWithKind(

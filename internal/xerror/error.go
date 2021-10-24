@@ -121,7 +121,7 @@ func (x *x) WithParam(key string, v interface{}) I {
 
 func (x *x) toString() string {
 	logMsg := x.errMsg
-	if x.kind != NA {
+	if x.kind != NA || len(x.params) > 0 {
 		logMsg = fmt.Sprintf("Kind: %s | %s", strings.ToUpper(string(x.kind)), x.errMsg)
 	}
 
