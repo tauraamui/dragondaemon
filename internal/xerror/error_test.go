@@ -35,6 +35,14 @@ func TestErrorMsgMatchesGivenErrorMsg(t *testing.T) {
 	})
 }
 
+func TestErrorToError(t *testing.T) {
+	is := is.New(t)
+
+	nativeErr := xerror.NewWithKind("NATIVE_ERR", "native error").ToError()
+	is.True(nativeErr != nil)
+	is.Equal(nativeErr.Error(), "Kind: NATIVE_ERR | native error")
+}
+
 type xerrorTest struct {
 	skip       bool
 	title      string
