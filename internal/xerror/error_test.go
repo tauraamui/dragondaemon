@@ -150,6 +150,22 @@ func TestNewErrorAndErrorfsOutputsExpectedString(t *testing.T) {
 			err:      xerror.Errorf("too many seconds %d/60 elapsed", 112),
 			expected: "too many seconds 112/60 elapsed",
 		},
+		{
+			title:    "errorf with stack trace prints out msg string",
+			err:      xerror.Errorf("too many seconds %d/60 elapsed", 112).WithStackTrace(),
+			expected: "too many seconds 112/60 elapsed",
+			customEval: func(s string) error {
+				if !strings.Contains(s, "too many seconds 112/60 elapsed") {
+					return errors.New("error msg does not include header section")
+				}
+
+				if !strings.Contains(s, "/xerror.(*x).format") {
+					return errors.New("error msg does probably not contain stack trace")
+				}
+
+				return nil
+			},
+		},
 	}
 
 	for _, tt := range tests {
