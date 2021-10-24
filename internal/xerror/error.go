@@ -14,7 +14,12 @@ type I interface {
 	ErrorMsg() string
 	Msg(string) I
 	WithStackTrace() I
+	// WithParam will append the param key/value pair passed in
+	// to the internal map.
 	WithParam(string, interface{}) I
+	// WithParams will set or merge given params map to use
+	// as the param values. Passing nil instead of a map will
+	// clear the params completely.
 	WithParams(map[string]interface{}) I
 }
 
@@ -87,20 +92,15 @@ func (x *x) WithStackTrace() I {
 	return x
 }
 
-// WithParams will set or merge given params map to use
-// as the param values. Passing nil instead of a map will
-// clear the params completely.
 func (x *x) WithParams(p map[string]interface{}) I {
 	defer x.format()
-	if p == nil {
-		x.params = p
-		return x
-	}
 
 	if x.params != nil {
 		mergeParams(x.params, p)
 		return x
 	}
+
+	x.params = p
 	return x
 }
 

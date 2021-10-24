@@ -46,6 +46,16 @@ func TestNewErrorOutputsExpectedString(t *testing.T) {
 			err:      xerror.NewWithKind(TestParamsError, "fake db update failed").WithParam("trace-request-id", "wdgrte4fg"),
 			expected: "Kind: TEST_PARAMS_ERROR | fake db update failed, Params: [trace-request-id: {wdgrte4fg}]",
 		},
+		{
+			title: "new error with not assigned kind and with params prints out msg string with not assigned kind and with params",
+			err: xerror.New("fake db update failed").WithParams(
+				map[string]interface{}{
+					"trace-request-id": "fr495fre",
+					"request-ip":       "39.49.13.45",
+				},
+			),
+			expected: "Kind: N/A | fake db update failed, Params: [trace-request-id: {fr495fre} | request-ip: {39.49.13.45}]",
+		},
 	}
 
 	for _, tt := range tests {
