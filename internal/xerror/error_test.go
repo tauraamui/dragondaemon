@@ -19,6 +19,22 @@ func TestNewErrorGivesErrInstance(t *testing.T) {
 const TestError = xerror.Kind("test_error")
 const TestParamsError = xerror.Kind("test_params_error")
 
+func TestErrorMsgMatchesGivenErrorMsg(t *testing.T) {
+	t.Run("error msg matches given initial msg but doesn't include context", func(t *testing.T) {
+		is := is.New(t)
+
+		err := xerror.NewWithKind("MUTABLE_ERR", "test error message")
+		is.Equal(err.ErrorMsg(), "test error message")
+	})
+
+	t.Run("error msg matches msg which replaces initial msg", func(t *testing.T) {
+		is := is.New(t)
+
+		err := xerror.NewWithKind("MUTABLE_ERR", "test error message").Msg("replaced message!")
+		is.Equal(err.ErrorMsg(), "replaced message!")
+	})
+}
+
 type xerrorTest struct {
 	skip       bool
 	title      string
@@ -48,6 +64,21 @@ func TestNewErrorOutputsExpectedString(t *testing.T) {
 			title:    "new error with kind and param prints out msg string with assigned kind and with param",
 			err:      xerror.NewWithKind(TestParamsError, "fake db update failed").WithParam("trace-request-id", "wdgrte4fg"),
 			expected: "Kind: TEST_PARAMS_ERROR | fake db update failed, Params: [trace-request-id: {wdgrte4fg}]",
+		},
+		{
+			title:    "new error with kind but then has kind changed prints out msg string with new assigned kind",
+			err:      xerror.NewWithKind(TestParamsError, "fake db update failed").AsKind("CHANGED_KIND"),
+			expected: "Kind: CHANGED_KIND | fake db update failed",
+		},
+		{
+			title:    "new error with not assigned kind but then has kind changed prints out msg string with new assigned kind",
+			err:      xerror.New("fake db update failed").AsKind("FROM_NONE_TO_CHANGED_KIND"),
+			expected: "Kind: FROM_NONE_TO_CHANGED_KIND | fake db update failed",
+		},
+		{
+			title:    "new error with msg but has msg updated prints out msg string with new content",
+			err:      xerror.New("fake db update failed").Msg("err msg content replaced with this!"),
+			expected: "err msg content replaced with this!",
 		},
 		{
 			title: "new error with not assigned kind and with params prints out msg string with not assigned kind and with params",
