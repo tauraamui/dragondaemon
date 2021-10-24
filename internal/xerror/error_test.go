@@ -17,40 +17,54 @@ func TestNewErrorGivesErrInstance(t *testing.T) {
 const TestError = xerror.Kind("test_error")
 const TestParamsError = xerror.Kind("test_params_error")
 
-func TestNewErrorGivesErrWhichPrintsOutExpectedString(t *testing.T) {
-	is := is.New(t)
-
-	err := xerror.New("fake db update failed")
-	is.True(err != nil)
-
-	is.Equal(err.Error(), "fake db update failed")
+type xerrorTest struct {
+	skip     bool
+	title    string
+	err      error
+	expected string
 }
 
-func TestNewErrorWithParamGivesErrWhichPrintsOutExpectedString(t *testing.T) {
-	is := is.New(t)
+func TestNewErrorOutputsExpectedString(t *testing.T) {
+	tests := []xerrorTest{
+		{
+			title:    "simple new error just prints out msg string",
+			err:      xerror.New("fake db update failed"),
+			expected: "fake db update failed",
+		},
+		{
+			title:    "new error with param prints out msg string with not assigned kind and with param",
+			err:      xerror.New("fake db update failed").WithParam("trace-request-id", "efw4fv32f"),
+			expected: "Kind: N/A | fake db update failed, Params: [trace-request-id: {efw4fv32f}]",
+		},
+		{
+			title:    "new error with kind prints out msg string with assigned kind",
+			err:      xerror.NewWithKind(TestError, "fake db update failed"),
+			expected: "Kind: TEST_ERROR | fake db update failed",
+		},
+		{
+			title:    "new error with kind and param prints out msg string with assigned kind and with param",
+			err:      xerror.NewWithKind(TestParamsError, "fake db update failed").WithParam("trace-request-id", "wdgrte4fg"),
+			expected: "Kind: TEST_PARAMS_ERROR | fake db update failed, Params: [trace-request-id: {wdgrte4fg}]",
+		},
+	}
 
-	err := xerror.New("fake db update failed").WithParam("trace-request-id", "efw4fv32f")
-	is.True(err != nil)
-
-	is.Equal(err.Error(), "Kind: N/A | fake db update failed, Params: [trace-request-id: {efw4fv32f}]")
+	for _, tt := range tests {
+		runTest(t, tt)
+	}
 }
 
-func TestNewErrorWithKindGivesErrWhichPrintsOutExpectedString(t *testing.T) {
-	is := is.New(t)
+func runTest(t *testing.T, tt xerrorTest) {
+	t.Run(tt.title, func(t *testing.T) {
+		if len(tt.title) == 0 {
+			t.Error("table tests must all have titles")
+		}
 
-	err := xerror.NewWithKind(TestError, "this was caused by something bad: some other wrapped error")
-	is.True(err != nil)
+		if tt.skip {
+			t.Skip()
+		}
 
-	is.Equal(err.Error(), "Kind: TEST_ERROR | this was caused by something bad: some other wrapped error")
-}
+		is := is.NewRelaxed(t)
 
-func TestNewErrorWithKindAndParamGivesErrWhichPrintsOutExpectedString(t *testing.T) {
-	is := is.New(t)
-
-	err := xerror.NewWithKind(
-		TestParamsError, "fake request failed",
-	).WithParam("test-request-trace-id", "31257919-40e6-496b-bb53-b71999222b0b")
-	is.True(err != nil)
-
-	is.Equal(err.Error(), "Kind: TEST_PARAMS_ERROR | fake request failed, Params: [test-request-trace-id: {31257919-40e6-496b-bb53-b71999222b0b}]")
+		is.Equal(tt.err.Error(), tt.expected)
+	})
 }
