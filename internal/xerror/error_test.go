@@ -51,7 +51,7 @@ type xerrorTest struct {
 	customEval func(string) error
 }
 
-func TestNewErrorOutputsExpectedString(t *testing.T) {
+func TestNewErrorAndErrorfsOutputsExpectedString(t *testing.T) {
 	tests := []xerrorTest{
 		{
 			title:    "simple new error just prints out msg string",
@@ -97,6 +97,21 @@ func TestNewErrorOutputsExpectedString(t *testing.T) {
 				},
 			),
 			expected: "Kind: N/A | fake db update failed, Params: [trace-request-id: {fr495fre} | request-ip: {39.49.13.45}]",
+			customEval: func(s string) error {
+				if !strings.Contains(s, "Kind: N/A | fake db update failed, Params: [") {
+					return errors.New("error msg does not include header section")
+				}
+
+				if !strings.Contains(s, "trace-request-id: {fr495fre}") {
+					return errors.New("error msg params do not contain trace request id entry")
+				}
+
+				if !strings.Contains(s, "request-ip: {39.49.13.45}") {
+					return errors.New("error msg params do not contain request ip entry")
+				}
+
+				return nil
+			},
 		},
 		{
 			title: " new error with not assigned kind has param and then with params and prints out expected string",
@@ -129,6 +144,11 @@ func TestNewErrorOutputsExpectedString(t *testing.T) {
 
 				return nil
 			},
+		},
+		{
+			title:    "errorf prints out msg string",
+			err:      xerror.Errorf("too many seconds %d/60 elapsed", 112),
+			expected: "too many seconds 112/60 elapsed",
 		},
 	}
 
