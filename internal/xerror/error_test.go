@@ -172,6 +172,11 @@ func TestNewErrorAndErrorfsOutputsExpectedString(t *testing.T) {
 			err:      fmt.Errorf("wrapped err: %w", xerror.Errorf("not enough rocks %d/30 in bucket", 19).AsKind("CUSTOM_ERROR")),
 			expected: "wrapped err: Kind: CUSTOM_ERROR | not enough rocks 19/30 in bucket",
 		},
+		{
+			title:    "custom error wrapped in custom error includes each one's context information",
+			err:      xerror.Errorf("wrapped custom err: %w", xerror.NewWithKind("WRAPPED_ERROR", "not enough rocks")),
+			expected: "wrapped custom err: Kind: WRAPPED_ERROR | not enough rocks",
+		},
 	}
 
 	for _, tt := range tests {
