@@ -2,6 +2,7 @@ package xerror
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/matryer/is"
@@ -40,4 +41,15 @@ func TestNewErrorWithoutStackTraceWithReplacedPrinter(t *testing.T) {
 	})
 
 	is.Equal(xerr.Error(), "fake db update failed")
+}
+
+// basic test to check stack trace output, if necessary might
+// improve using regex pattern matching
+func TestNewErrorWithStackTraceWithoutReplacedPrinter(t *testing.T) {
+	is := is.New(t)
+
+	err := New("fake db update failed").WithStackTrace()
+	is.True(err != nil)
+
+	is.True(strings.Contains(err.Error(), "/xerror.(*x).format"))
 }
