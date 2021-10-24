@@ -1,6 +1,7 @@
 package xerror_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -165,6 +166,11 @@ func TestNewErrorAndErrorfsOutputsExpectedString(t *testing.T) {
 
 				return nil
 			},
+		},
+		{
+			title:    "errorf wrapped in native error includes xerr's context information",
+			err:      fmt.Errorf("wrapped err: %w", xerror.Errorf("not enough rocks %d/30 in bucket", 19).AsKind("CUSTOM_ERROR")),
+			expected: "wrapped err: Kind: CUSTOM_ERROR | not enough rocks 19/30 in bucket",
 		},
 	}
 
