@@ -111,12 +111,16 @@ func (x *x) WithParam(key string, v interface{}) I {
 }
 
 func (x *x) toString() string {
-	logMsg := fmt.Sprintf("Kind: %s | %s", strings.ToUpper(string(x.kind)), x.errMsg)
+	logMsg := x.errMsg
+	if x.kind != NA {
+		logMsg = fmt.Sprintf("Kind: %s | %s", strings.ToUpper(string(x.kind)), x.errMsg)
+	}
 
 	params := []string{}
 	for k, v := range x.params {
 		params = append(params, fmt.Sprintf("%s: {%+v}", k, v))
 	}
+
 	return fmt.Sprintf("%s%s", logMsg, func() string {
 		if len(params) != 0 {
 			return fmt.Sprintf(", Params: [%+v]", strings.Join(params, " | "))
