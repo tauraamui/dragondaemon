@@ -23,11 +23,12 @@ type Kind string
 const NA = Kind("N/A")
 
 type x struct {
-	kind       Kind
-	errMsg     string
-	error      error
-	stackTrace bool
-	params     map[string]interface{}
+	kind         Kind
+	errMsg       string
+	error        error
+	stackTrace   bool
+	stackPrinter func(error) string
+	params       map[string]interface{}
 }
 
 func Errorf(format string, values ...interface{}) I {
@@ -39,16 +40,18 @@ func New(es string) I {
 }
 
 func NewWithKind(k Kind, es string) I {
-	i := x{kind: k, errMsg: es, stackTrace: false}
+	i := x{
+		kind: k, errMsg: es, stackTrace: false,
+		stackPrinter: func(e error) string {
+			return fmt.Sprintf("%+v", e)
+		},
+	}
 	i.format()
 	return &i
 }
 
 func (x *x) format() {
 	err := errors.New(x.toString())
-	if x.stackTrace {
-		err = errors.WithStack(err)
-	}
 	x.error = err
 }
 
@@ -64,7 +67,7 @@ func (x *x) ToError() error {
 
 func (x *x) Error() string {
 	if x.stackTrace {
-		return fmt.Sprintf("%+v", x.error)
+		return x.stackPrinter(x.error)
 	}
 	return x.error.Error()
 }
@@ -80,7 +83,6 @@ func (x *x) Msg(m string) I {
 }
 
 func (x *x) WithStackTrace() I {
-	defer x.format()
 	x.stackTrace = true
 	return x
 }
