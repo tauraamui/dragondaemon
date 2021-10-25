@@ -15,6 +15,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 	"golang.org/x/term"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -103,7 +104,7 @@ func Setup() error {
 func Destroy() error {
 	dbFilePath, err := resolveDBPath(uc)
 	if err != nil {
-		return fmt.Errorf("unable to delete database file: %w", err)
+		return xerror.Errorf("unable to delete database file: %w", err)
 	}
 
 	return fs.Remove(dbFilePath)
@@ -118,12 +119,12 @@ func Connect() (*gorm.DB, error) {
 	log.Debug("Connecting to DB: %s", dbPath) //nolint
 	db, err := openDBConnection(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open db connection: %w", err)
+		return nil, xerror.Errorf("unable to open db connection: %w", err)
 	}
 
 	err = models.AutoMigrate(db)
 	if err != nil {
-		return nil, fmt.Errorf("unable to run automigrations: %w", err)
+		return nil, xerror.Errorf("unable to run automigrations: %w", err)
 	}
 
 	return db, nil
@@ -150,7 +151,7 @@ func resolveDBPath(uc func() (string, error)) (string, error) {
 
 	databaseParentDir, err := uc()
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve %s database file location: %w", databaseFileName, err)
+		return "", xerror.Errorf("unable to resolve %s database file location: %w", databaseFileName, err)
 	}
 
 	return filepath.Join(
