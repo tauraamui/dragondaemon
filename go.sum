@@ -166,6 +166,8 @@ github.com/tauraamui/xerror v0.0.0-20211027165938-a4bc3bc6552d h1:gHAgjSodUB49Sy
 github.com/tauraamui/xerror v0.0.0-20211027165938-a4bc3bc6552d/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
 github.com/tauraamui/xerror v0.0.0-20211027200109-a054957e567c h1:rzW61JzSRxQuYS0fMpBpzoylKtrry4nhZsXEKVKiPeE=
 github.com/tauraamui/xerror v0.0.0-20211027200109-a054957e567c/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
+github.com/tauraamui/xerror v0.0.0-20211027201245-7be9e626485f h1:uMzLx++jqIVB5xASd5C0xJoLVcRP0uktZg8c4WUiKOM=
+github.com/tauraamui/xerror v0.0.0-20211027201245-7be9e626485f/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
