@@ -19,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tacusci/logging/v2 v2.1.1
 	github.com/takama/daemon v1.0.0
-	github.com/tauraamui/xerror v0.0.0-20211024231613-aa14a9ecaa6b
+	github.com/tauraamui/xerror v0.0.0-20211027200109-a054957e567c
 	gocv.io/x/gocv v0.26.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb
