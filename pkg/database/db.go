@@ -29,8 +29,8 @@ const (
 )
 
 var (
-	ErrCreateDBFile    = errors.New("unable to create database file")
-	ErrDBAlreadyExists = errors.New("database file already exists")
+	ErrCreateDBFile    = xerror.New("unable to create database file")
+	ErrDBAlreadyExists = xerror.New("database file already exists")
 )
 
 var uc = os.UserCacheDir
@@ -85,15 +85,15 @@ func Setup() error {
 	}
 	rootUsername, err := askForUsername()
 	if err != nil {
-		return fmt.Errorf("failed to prompt for root username: %w", err)
+		return xerror.Errorf("failed to prompt for root username: %w", err)
 	}
 
 	rootPassword, err := askForPassword(0)
 	if err != nil {
-		return fmt.Errorf("failed to prompt for root password: %w", err)
+		return xerror.Errorf("failed to prompt for root password: %w", err)
 	}
 	if err := createRootUser(db, rootUsername, rootPassword); err != nil {
-		return fmt.Errorf("unable to create root user entry: %w", err)
+		return xerror.Errorf("unable to create root user entry: %w", err)
 	}
 
 	log.Info("Created root admin user") //nolint
@@ -172,12 +172,12 @@ func createFile() error {
 
 		_, err := fs.Create(path)
 		if err != nil {
-			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
+			return xerror.Errorf("%v: %w", ErrCreateDBFile, err)
 		}
 		return nil
 	}
 
-	return fmt.Errorf("%w: %s", ErrDBAlreadyExists, path)
+	return xerror.Errorf("%w: %s", ErrDBAlreadyExists, path)
 }
 
 func askForUsername() (string, error) {
@@ -187,12 +187,12 @@ func askForUsername() (string, error) {
 func askForPassword(attempts int) (string, error) {
 	password, err := promptForValueEchoOff("Root user password")
 	if err != nil {
-		return "", fmt.Errorf("unable to prompt for root password : %w", err)
+		return "", xerror.Errorf("unable to prompt for root password : %w", err)
 	}
 
 	repeatedPassword, err := promptForValueEchoOff("Repeat root user password")
 	if err != nil {
-		return "", fmt.Errorf("unable to prompt for root password : %w", err)
+		return "", xerror.Errorf("unable to prompt for root password : %w", err)
 	}
 
 	if strings.Compare(password, repeatedPassword) != 0 {
@@ -201,7 +201,7 @@ func askForPassword(attempts int) (string, error) {
 		}
 		attempts++
 		if attempts >= 3 {
-			return "", errors.New("tried entering new password at least 3 times")
+			return "", xerror.New("tried entering new password at least 3 times")
 		}
 		return askForPassword(attempts)
 	}
