@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 )
 
 const (
@@ -80,7 +80,7 @@ func resolveConfigPath() (string, error) {
 
 	configParentDir, err := userConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve %s location: %w", configFileName, err)
+		return "", xerror.Errorf("unable to resolve %s location: %w", configFileName, err)
 	}
 
 	return filepath.Join(

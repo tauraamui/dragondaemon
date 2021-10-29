@@ -144,7 +144,7 @@ func (service *Service) Manage() (string, error) {
 	// 	}
 
 	// 	if err := settings.Validate(); err != nil {
-	// 		logging.Fatal(fmt.Errorf("settings validation failed: %w", err).Error())
+	// 		logging.Fatal(xerror.Errorf("settings validation failed: %w", err).Error())
 	// 	}
 
 	// 	mediaServer.Connect(

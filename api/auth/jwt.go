@@ -2,10 +2,10 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/tauraamui/xerror"
 )
 
 type customClaims struct {
@@ -40,7 +40,7 @@ func ValidateToken(secret, tokenString string) (string, error) {
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("unable to validate token: %w", err)
+		return "", xerror.Errorf("unable to validate token: %w", err)
 	}
 
 	return checkClaims(token.Claims)

@@ -3,11 +3,11 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 )
@@ -39,17 +39,17 @@ func writeConfigToDisk(data []byte, path string, overwrite bool) error {
 
 	file, err := fs.OpenFile(path, flags, 0666)
 	if err != nil {
-		return fmt.Errorf("unable to create/open file: %w", err)
+		return xerror.Errorf("unable to create/open file: %w", err)
 	}
 	defer file.Close()
 
 	bc, err := file.Write(data)
 	if err != nil {
-		return fmt.Errorf("unable to write config to file: %s: %w", path, err)
+		return xerror.Errorf("unable to write config to file: %s: %w", path, err)
 	}
 
 	if bc != len(data) {
-		return fmt.Errorf("unable to write full config data to file: %s: %w", path, err)
+		return xerror.Errorf("unable to write full config data to file: %s: %w", path, err)
 	}
 
 	return nil

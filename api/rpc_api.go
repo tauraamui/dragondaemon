@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -15,6 +14,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/media"
+	"github.com/tauraamui/xerror"
 	"gorm.io/gorm"
 )
 
@@ -62,7 +62,7 @@ type MediaServer struct {
 func New(interrupt chan os.Signal, server *media.Server, opts Options) (*MediaServer, error) {
 	db, err := db.Connect()
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect to DB, try running the setup: %w", err)
+		return nil, xerror.Errorf("unable to connect to DB, try running the setup: %w", err)
 	}
 	return &MediaServer{
 		interrupt:     interrupt,

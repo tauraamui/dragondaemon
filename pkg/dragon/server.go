@@ -2,7 +2,6 @@ package dragon
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/tauraamui/dragondaemon/pkg/camera"
@@ -12,6 +11,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 type Server interface {
@@ -25,7 +25,7 @@ type Server interface {
 func NewServer(cr config.Resolver, vb video.Backend) (Server, error) {
 	c, err := cr.Resolve()
 	if err != nil {
-		return nil, fmt.Errorf("unable to resolve config: %w", err)
+		return nil, xerror.Errorf("unable to resolve config: %w", err)
 	}
 
 	return &server{

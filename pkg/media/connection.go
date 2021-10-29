@@ -18,6 +18,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 	"gocv.io/x/gocv"
 )
 
@@ -206,7 +207,7 @@ func (c *Connection) resolveSizeOnDisk() (s string, err error) {
 		return
 	}
 
-	log.Error(fmt.Errorf("unable to load disk size from cache: %w", err).Error())
+	log.Error(xerror.Errorf("unable to load disk size from cache: %w", err).Error())
 
 	if s, err = calcSizeOnDisk(filepath.Join(c.sett.PersistLocation, c.title)); err == nil {
 		err = cacheSizeOnDisk(c.cache, s)
@@ -228,7 +229,7 @@ func loadSizeOnDiskFromCache(cache *bigcache.BigCache) (string, error) {
 	}
 	s, err := cache.Get(sizeOnDisk)
 	if err != nil {
-		return "", fmt.Errorf("unable to retrieve size from cache: %w", err)
+		return "", xerror.Errorf("unable to retrieve size from cache: %w", err)
 	}
 	return string(s), nil
 }
@@ -365,7 +366,7 @@ func connectReolinkControl(
 ) (conn *reolinkapi.Camera, err error) {
 	conn, err = reolinkapi.NewCamera(username, password, addr)
 	if err != nil {
-		err = fmt.Errorf("unable to connect to camera API: %w", err)
+		err = xerror.Errorf("unable to connect to camera API: %w", err)
 	}
 	return
 }
@@ -377,7 +378,7 @@ var newCache = func() (*bigcache.BigCache, error) {
 var initCache = func() (cache *bigcache.BigCache, err error) {
 	cache, err = newCache()
 	if err != nil {
-		err = fmt.Errorf("unable to initialise connection cache: %w", err)
+		err = xerror.Errorf("unable to initialise connection cache: %w", err)
 	}
 	return
 }

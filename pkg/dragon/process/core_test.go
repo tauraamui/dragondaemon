@@ -2,7 +2,6 @@ package process
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 type mockFrame struct {
@@ -304,7 +304,7 @@ func TestSendEventOnCameraStateChange(t *testing.T) {
 				if v == offTimeSeconds+1 {
 					return nil
 				}
-				return fmt.Errorf("seconds %d do not match target %d", v, offTimeSeconds)
+				return xerror.Errorf("seconds %d do not match target %d", v, offTimeSeconds)
 			}
 		}
 		return errors.New("early error return did not occur")

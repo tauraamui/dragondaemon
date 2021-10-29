@@ -8,6 +8,7 @@ import (
 
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 type Connection interface {
@@ -45,7 +46,7 @@ func (c *connection) Read() (video.Frame, error) {
 	defer c.mu.Unlock()
 	frame := c.backend.NewFrame()
 	if err := c.vc.Read(frame); err != nil {
-		return nil, fmt.Errorf("unable to read frame from connection: %w", err)
+		return nil, xerror.Errorf("unable to read frame from connection: %w", err)
 	}
 	return frame, nil
 }
@@ -103,7 +104,7 @@ func (c *connection) Close() error {
 func connect(ctx context.Context, title, addr string, settings Settings, backend video.Backend) (Connection, error) {
 	vc, err := video.ConnectWithCancel(ctx, addr, backend)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to connect to camera [%s]: %w", title, err)
+		return nil, xerror.Errorf("Unable to connect to camera [%s]: %w", title, err)
 	}
 	return &connection{
 		uuid:    vc.UUID(),

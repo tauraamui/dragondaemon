@@ -145,7 +145,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	err := callW3sTimeout(func() {
 		for {
 			time.Sleep(1 * time.Microsecond)
-			if rc.v() == maxLoopCount/2 {
+			if rc.v() >= maxLoopCount/2 {
 				b.Send(process.CAM_SWITCHED_OFF_EVT)
 			}
 			if oc.v() >= maxLoopCount {
