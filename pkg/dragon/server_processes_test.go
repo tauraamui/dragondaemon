@@ -16,7 +16,7 @@ import (
 
 type ServerProcessTestSuite struct {
 	suite.Suite
-	server                dragon.Server
+	server                *dragon.Server
 	infoLogs              []string
 	resetInfoLogsOverload func()
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/log"
 )
 
-func (s *server) SetupProcesses() {
+func (s *Server) SetupProcesses() {
 	runtimeStatsEnv := strings.ToLower(os.Getenv("DRAGON_RUNTIME_STATS"))
 	if runtimeStatsEnv == "1" || runtimeStatsEnv == "true" || runtimeStatsEnv == "yes" {
 		s.runtimeStatsEnabled = true
@@ -85,7 +85,7 @@ func resolveUnitLabel(unit float64) string {
 	return "N/A"
 }
 
-func (s *server) RunProcesses() {
+func (s *Server) RunProcesses() {
 	if s.runtimeStatsEnabled && s.renderRuntimeStatsProc != nil {
 		s.renderRuntimeStatsProc.Start()
 	}
@@ -94,7 +94,7 @@ func (s *server) RunProcesses() {
 	}
 }
 
-func (s *server) shutdownProcesses() {
+func (s *Server) shutdownProcesses() {
 	if s.runtimeStatsEnabled && s.renderRuntimeStatsProc != nil {
 		s.renderRuntimeStatsProc.Stop()
 		s.renderRuntimeStatsProc.Wait()

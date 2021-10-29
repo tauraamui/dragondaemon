@@ -207,13 +207,13 @@ func (service *Service) Manage() (string, error) {
 	return "Shutdown successful... BYE! 👋", nil
 }
 
-func startupServer(ctx context.Context, server dragon.Server) {
+func startupServer(ctx context.Context, server *dragon.Server) {
 	connectToCameras(ctx, server)
 	server.SetupProcesses()
 	server.RunProcesses()
 }
 
-func connectToCameras(ctx context.Context, server dragon.Server) {
+func connectToCameras(ctx context.Context, server *dragon.Server) {
 	errs := server.ConnectWithCancel(ctx)
 	for _, err := range errs {
 		log.Error(err.Error())

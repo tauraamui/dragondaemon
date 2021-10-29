@@ -240,7 +240,7 @@ func TestServerShutdown(t *testing.T) {
 
 	timeout := time.After(3 * time.Second)
 	done := make(chan interface{})
-	go func(t *testing.T, s dragon.Server, done chan interface{}) {
+	go func(t *testing.T, s *dragon.Server, done chan interface{}) {
 		defer close(done)
 		<-s.Shutdown()
 	}(t, s, done)

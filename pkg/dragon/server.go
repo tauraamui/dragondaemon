@@ -14,21 +14,21 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
-type Server interface {
-	Connect() []error
-	ConnectWithCancel(context.Context) []error
-	SetupProcesses()
-	RunProcesses()
-	Shutdown() <-chan interface{}
-}
+// type Server interface {
+// 	Connect() []error
+// 	ConnectWithCancel(context.Context) []error
+// 	SetupProcesses()
+// 	RunProcesses()
+// 	Shutdown() <-chan interface{}
+// }
 
-func NewServer(cr config.Resolver, vb video.Backend) (Server, error) {
+func NewServer(cr config.Resolver, vb video.Backend) (*Server, error) {
 	c, err := cr.Resolve()
 	if err != nil {
 		return nil, fmt.Errorf("unable to resolve config: %w", err)
 	}
 
-	return &server{
+	return &Server{
 		config:        c,
 		videoBackend:  vb,
 		coreProcesses: map[string]process.Process{},
@@ -36,7 +36,7 @@ func NewServer(cr config.Resolver, vb video.Backend) (Server, error) {
 	}, nil
 }
 
-type server struct {
+type Server struct {
 	runtimeStatsEnabled    bool
 	renderRuntimeStatsProc process.Process
 	videoBackend           video.Backend
@@ -47,11 +47,11 @@ type server struct {
 	cameras                []camera.Connection
 }
 
-func (s *server) Connect() []error {
+func (s *Server) Connect() []error {
 	return s.connect(context.Background())
 }
 
-func (s *server) ConnectWithCancel(cancel context.Context) []error {
+func (s *Server) ConnectWithCancel(cancel context.Context) []error {
 	return s.connect(cancel)
 }
 
@@ -60,7 +60,7 @@ type connectResult struct {
 	err error
 }
 
-func (s *server) connect(cancel context.Context) []error {
+func (s *Server) connect(cancel context.Context) []error {
 	connAndError := make(chan connectResult)
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.config.Cameras))
@@ -87,7 +87,7 @@ func (s *server) connect(cancel context.Context) []error {
 	return s.recieveConnsToTrack(connAndError)
 }
 
-func (s *server) recieveConnsToTrack(connAndError chan connectResult) []error {
+func (s *Server) recieveConnsToTrack(connAndError chan connectResult) []error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -133,7 +133,7 @@ func connectToCamera(ctx context.Context, title, addr string, sett camera.Settin
 	return camera.ConnectWithCancel(ctx, title, addr, sett, backend)
 }
 
-func (s *server) shutdown() {
+func (s *Server) shutdown() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, cam := range s.cameras {
@@ -143,7 +143,7 @@ func (s *server) shutdown() {
 	close(s.shutdownDone)
 }
 
-func (s *server) Shutdown() <-chan interface{} {
+func (s *Server) Shutdown() <-chan interface{} {
 	s.shutdownProcesses()
 	s.shutdown()
 	return s.shutdownDone
