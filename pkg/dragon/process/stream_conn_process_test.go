@@ -120,12 +120,17 @@ readFrameProcLoop:
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamOffEvent() {
 	maxLoopCount := 64
 	oc := mutexCounter{}
-	isOpen := func() bool {
-		oc.incr()
+	isOpen := func() (open bool) {
+		open = true
 		if oc.v() > maxLoopCount {
 			oc.set(maxLoopCount)
+			return
 		}
-		return true
+		if oc.v() == maxLoopCount {
+			return
+		}
+		oc.incr()
+		return
 	}
 
 	rc := mutexCounter{}
