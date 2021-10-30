@@ -122,6 +122,11 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	oc := mutexCounter{}
 	isOpen := func() (open bool) {
 		open = true
+		// DEVNOTE(tauraamui):
+		// yeah yeah this should never happen, don't
+		// judge me I just want to wish upon a star
+		// and banish all multithreaded based issues
+		// with non-determinism in these tests...
 		if oc.v() > maxLoopCount {
 			oc.set(maxLoopCount)
 			return
