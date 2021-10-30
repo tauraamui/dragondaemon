@@ -1,10 +1,9 @@
 package media
 
 import (
-	"errors"
-
 	"github.com/tauraamui/dragondaemon/common"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 )
 
 // APIFetchActiveConnections returns list of current active connection titles
@@ -39,5 +38,5 @@ func (s *Server) APIRebootConnection(cameraUUID string) error {
 		}
 	}
 
-	return errors.New("unable to find Reolink contoller for any connection")
+	return xerror.New("unable to find Reolink contoller for any connection")
 }

@@ -2,7 +2,6 @@ package dragon_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 type testConfigResolver struct {
@@ -22,7 +22,7 @@ type testConfigResolver struct {
 }
 
 func (tcc testConfigResolver) Create() error {
-	return errors.New("create not implemented")
+	return xerror.New("create not implemented")
 }
 
 func (tcc testConfigResolver) Resolve() (configdef.Values, error) {
@@ -44,7 +44,7 @@ func (tcc testConfigResolver) Resolve() (configdef.Values, error) {
 }
 
 func (tcc testConfigResolver) Destroy() error {
-	return errors.New("destroy not implemented")
+	return xerror.New("destroy not implemented")
 }
 
 type testVideoBackend struct {
@@ -148,7 +148,7 @@ func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s, err := dragon.NewServer(testConfigResolver{
-		resolveError: errors.New("test low level resolve error"),
+		resolveError: xerror.New("test low level resolve error"),
 	}, testVideoBackend{})
 	assert.Nil(t, s)
 	assert.EqualError(t, err, "unable to resolve config: test low level resolve error")
@@ -169,7 +169,7 @@ type testWaitsOnCancelVideoBackend struct {
 
 func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string) (video.Connection, error) {
 	<-ctx.Done()
-	return testVideoConnection{}, errors.New("test unable to connect, context cancelled")
+	return testVideoConnection{}, xerror.New("test unable to connect, context cancelled")
 }
 
 func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {

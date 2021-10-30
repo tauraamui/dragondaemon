@@ -1,7 +1,6 @@
 package process_test
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -16,6 +15,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 func overloadErrorLog(overload func(string, ...interface{})) func() {
@@ -199,7 +199,7 @@ func callWTimeout(f func(), t <-chan time.Time, errmsg string) error {
 	for {
 		select {
 		case <-t:
-			return errors.New(errmsg)
+			return xerror.New(errmsg)
 		case <-done:
 			return nil
 		}
@@ -265,7 +265,7 @@ checkFrameReadCountLoop:
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
 	testConn := mockCameraConn{
 		isOpen:   true,
-		readErr:  errors.New("testing unable to read from mock camera stream"),
+		readErr:  xerror.New("testing unable to read from mock camera stream"),
 		schedule: schedule.NewSchedule(schedule.Week{}),
 	}
 

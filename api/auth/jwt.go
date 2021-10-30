@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -49,11 +48,11 @@ func ValidateToken(secret, tokenString string) (string, error) {
 func checkClaims(claims jwt.Claims) (string, error) {
 	cc, ok := claims.(*customClaims)
 	if !ok {
-		return "", errors.New("unable to parse claims")
+		return "", xerror.New("unable to parse claims")
 	}
 
 	if cc.ExpiresAt < TimeNow().UTC().Unix() {
-		return "", errors.New("auth token has expired")
+		return "", xerror.New("auth token has expired")
 	}
 
 	return cc.UserUUID, nil

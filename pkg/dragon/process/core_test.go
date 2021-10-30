@@ -1,7 +1,6 @@
 package process
 
 import (
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -95,7 +94,7 @@ func (m *mockCameraConn) Read() (frame video.Frame, err error) {
 		defer m.onPostRead()
 	}
 	if m.frameReadIndex+1 >= len(m.framesToRead) {
-		return nil, errors.New("run out of frames to read")
+		return nil, xerror.New("run out of frames to read")
 	}
 	frame, err = &m.framesToRead[m.frameReadIndex], m.readErr
 	m.frameReadIndex++
@@ -307,7 +306,7 @@ func TestSendEventOnCameraStateChange(t *testing.T) {
 				return xerror.Errorf("seconds %d do not match target %d", v, offTimeSeconds)
 			}
 		}
-		return errors.New("early error return did not occur")
+		return xerror.New("early error return did not occur")
 	})
 
 	is := is.New(t)
@@ -356,7 +355,7 @@ func callWTimeout(f func() error, t <-chan time.Time, errmsg string) error {
 	for {
 		select {
 		case <-t:
-			return errors.New(errmsg)
+			return xerror.New(errmsg)
 		case e := <-err:
 			return e
 		case <-done:

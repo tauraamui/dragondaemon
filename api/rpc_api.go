@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -107,7 +106,7 @@ func ShutdownRPC(m *MediaServer) error {
 	if m != nil && m.httpServer != nil {
 		return m.httpServer.Close()
 	}
-	return errors.New("API server not running")
+	return xerror.New("API server not running")
 }
 
 func (m *MediaServer) Authenticate(authContents []string, resp *string) error {
@@ -185,11 +184,11 @@ func validateSession(signingSecret string, sess Session) (string, error) {
 
 func validateAuth(auth []string) error {
 	if len(auth) == 0 {
-		return errors.New("cannot retrieve username and password from blank input")
+		return xerror.New("cannot retrieve username and password from blank input")
 	}
 
 	if len(auth[0]) == 0 || len(auth[1]) == 0 {
-		return errors.New("unable to correctly retrieve username and password from malformed input")
+		return xerror.New("unable to correctly retrieve username and password from malformed input")
 	}
 
 	return nil

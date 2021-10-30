@@ -2,13 +2,13 @@ package camera_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 type testVideoBackend struct {
@@ -107,7 +107,7 @@ func TestConnectWithCancelReturnsConnectionAndNoError(t *testing.T) {
 
 func TestConnectReturnsNoConnectionAndError(t *testing.T) {
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
-		onConnectError: errors.New("test error"),
+		onConnectError: xerror.New("test error"),
 	})
 	assert.EqualError(t, err, "Unable to connect to camera [FakeCamera]: test error")
 	assert.Nil(t, conn)
@@ -125,7 +125,7 @@ func TestConnectReadReturnsFrameAndNoError(t *testing.T) {
 
 func TestConnectReadReturnsNoFrameAndError(t *testing.T) {
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
-		onConnectionReadError: errors.New("test error"),
+		onConnectionReadError: xerror.New("test error"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, conn)

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"testing"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
+	"github.com/tauraamui/xerror"
 )
 
 type LoadConfigTestSuite struct {
@@ -83,7 +83,7 @@ func (suite *LoadConfigTestSuite) TestLoadConfig() {
 func (suite *LoadConfigTestSuite) TestLoadConfigErrorOnResolvingUserConfigDir() {
 	userConfigDirRef := userConfigDir
 	userConfigDir = func() (string, error) {
-		return "", errors.New("test unable to resolve user config dir")
+		return "", xerror.New("test unable to resolve user config dir")
 	}
 	defer func() { userConfigDir = userConfigDirRef }()
 

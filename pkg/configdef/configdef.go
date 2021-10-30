@@ -1,8 +1,6 @@
 package configdef
 
 import (
-	"errors"
-
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/xerror"
 	"gopkg.in/dealancer/validate.v2"
@@ -45,7 +43,7 @@ func (v Values) runValidate() error {
 	const validationErrorHeader = "validation failed: %w"
 	defaultPersistLocToDot(v.Cameras)
 	if hasDupCameraTitles(v.Cameras) {
-		return xerror.Errorf(validationErrorHeader, errors.New("camera titles must be unique"))
+		return xerror.Errorf(validationErrorHeader, xerror.New("camera titles must be unique"))
 	}
 	return validate.Validate(&v)
 }

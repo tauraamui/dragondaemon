@@ -2,11 +2,11 @@ package video
 
 import (
 	"context"
-	"errors"
 	"os"
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/tauraamui/xerror"
 	"gocv.io/x/gocv"
 )
 
@@ -99,7 +99,7 @@ func (w *openCVClipWriter) reset() {
 
 func (w *openCVClipWriter) Write(clip Clip) error {
 	if len(clip.GetFrames()) == 0 {
-		return errors.New("cannot write empty clip")
+		return xerror.New("cannot write empty clip")
 	}
 	if err := w.init(clip); err != nil {
 		return err
@@ -116,7 +116,7 @@ func (w *openCVClipWriter) Write(clip Clip) error {
 func (w *openCVClipWriter) writeFrame(frame Frame) error {
 	mat, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
-		return errors.New("must pass OpenCV frame to OpenCV writer")
+		return xerror.New("must pass OpenCV frame to OpenCV writer")
 	}
 	return w.vw.Write(*mat)
 }
@@ -140,7 +140,7 @@ func (c *openCVConnection) connect(cancel context.Context, addr string) error {
 		c.isOpen = true
 		return nil
 	case <-cancel.Done():
-		return errors.New("connection cancelled")
+		return xerror.New("connection cancelled")
 	}
 }
 
@@ -176,13 +176,13 @@ func (c *openCVConnection) UUID() string {
 func (c *openCVConnection) Read(frame Frame) error {
 	mat, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
-		return errors.New("must pass OpenCV frame to OpenCV connection read")
+		return xerror.New("must pass OpenCV frame to OpenCV connection read")
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	ok = readFromVideoConnection(c.vc, mat)
 	if !ok {
-		return errors.New("unable to read from video connection")
+		return xerror.New("unable to read from video connection")
 	}
 	return nil
 }

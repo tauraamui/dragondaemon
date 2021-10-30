@@ -2,7 +2,6 @@ package media
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -218,14 +217,14 @@ func (c *Connection) resolveSizeOnDisk() (s string, err error) {
 
 func cacheSizeOnDisk(cache *bigcache.BigCache, size string) error {
 	if cache == nil {
-		return errors.New("nil pointer to cache")
+		return xerror.New("nil pointer to cache")
 	}
 	return cache.Set(sizeOnDisk, []byte(size))
 }
 
 func loadSizeOnDiskFromCache(cache *bigcache.BigCache) (string, error) {
 	if cache == nil {
-		return "", errors.New("nil pointer to cache")
+		return "", xerror.New("nil pointer to cache")
 	}
 	s, err := cache.Get(sizeOnDisk)
 	if err != nil {

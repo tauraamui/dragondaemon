@@ -2,7 +2,6 @@ package video
 
 import (
 	"context"
-	"errors"
 	"image"
 	"image/color"
 	"image/draw"
@@ -50,7 +49,7 @@ func (mvc *mockVideoConnection) UUID() string {
 func (mvc *mockVideoConnection) Read(frame Frame) error {
 	frameMatRef, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
-		return errors.New("must pass OpenCV frame to MockVideo connection read")
+		return xerror.New("must pass OpenCV frame to MockVideo connection read")
 	}
 
 	if !mvc.renderedBaseFrameCanvas {
