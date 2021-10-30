@@ -1,8 +1,10 @@
 package config
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/matryer/is"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,11 +14,13 @@ import (
 
 type CreateConfigTestSuite struct {
 	suite.Suite
+	is                   *is.I
 	configCreateResolver configdef.CreateResolver
 	fs                   afero.Fs
 }
 
 func (suite *CreateConfigTestSuite) SetupSuite() {
+	suite.is = is.New(suite.T())
 	suite.fs = afero.NewMemMapFs()
 	suite.configCreateResolver = DefaultCreateResolver()
 
@@ -29,7 +33,7 @@ func (suite *CreateConfigTestSuite) TearDownSuite() {
 }
 
 func (suite *CreateConfigTestSuite) TearDownTest() {
-	suite.fs.RemoveAll("/")
+	suite.is.NoErr(suite.fs.RemoveAll("/"))
 }
 
 func (suite *CreateConfigTestSuite) TestConfigCreate() {
@@ -43,14 +47,10 @@ func (suite *CreateConfigTestSuite) TestConfigCreate() {
 }
 
 func (suite *CreateConfigTestSuite) TestConfigCreateFailsDueToAlreadyExisting() {
-	require.NoError(suite.T(), suite.configCreateResolver.Create())
+	suite.is.NoErr(suite.configCreateResolver.Create())
 	err := suite.configCreateResolver.Create()
-	assert.EqualError(
-		suite.T(), err,
-		"config file already exists",
-	)
-
-	assert.ErrorIs(suite.T(), err, configdef.ErrConfigAlreadyExists)
+	suite.is.Equal(err.Error(), "config file already exists")
+	suite.is.True(errors.Is(err, configdef.ErrConfigAlreadyExists))
 }
 
 func TestCreateConfigTestSuite(t *testing.T) {

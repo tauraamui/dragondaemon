@@ -67,7 +67,7 @@ func (suite *LoadConfigTestSuite) overwriteTestConfig(config string) {
 
 func (suite *LoadConfigTestSuite) TearDownTest() {
 	require.NoError(suite.T(), suite.configFile.Close())
-	suite.fs.Remove(suite.path)
+	require.NoError(suite.T(), suite.fs.Remove(suite.path))
 }
 
 func (suite *LoadConfigTestSuite) TestLoadConfig() {

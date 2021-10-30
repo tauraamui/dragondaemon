@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/matryer/is"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,12 +19,14 @@ import (
 
 type DeleteOldClipsTestSuite struct {
 	suite.Suite
+	is               *is.I
 	fs               afero.Fs
 	timeMinuteOffset int
 }
 
 func (suite *DeleteOldClipsTestSuite) SetupSuite() {
 	logging.CurrentLoggingLevel = logging.SilentLevel
+	suite.is = is.New(suite.T())
 	suite.fs = afero.NewMemMapFs()
 	fs = suite.fs
 }
@@ -35,11 +38,11 @@ func (suite *DeleteOldClipsTestSuite) TearDownSuite() {
 
 func (suite *DeleteOldClipsTestSuite) SetupTest() {
 	suite.timeMinuteOffset = 0
-	suite.fs.MkdirAll("/testroot/clips/FakeCamera", os.ModePerm|os.ModeDir)
+	suite.is.NoErr(suite.fs.MkdirAll("/testroot/clips/FakeCamera", os.ModePerm|os.ModeDir))
 }
 
 func (suite *DeleteOldClipsTestSuite) TearDownTest() {
-	suite.fs.RemoveAll("/")
+	suite.is.NoErr(suite.fs.RemoveAll("/"))
 }
 
 func TestDeleteOldClipsTestSuite(t *testing.T) {

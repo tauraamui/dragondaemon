@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
@@ -45,7 +46,9 @@ func (proc *persistClipProcess) run() {
 		default:
 			select {
 			case clip := <-proc.clips:
-				proc.writer.Write(clip)
+				if err := proc.writer.Write(clip); err != nil {
+					log.Error(err.Error())
+				}
 			default:
 				continue
 			}

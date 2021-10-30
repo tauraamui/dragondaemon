@@ -4,21 +4,23 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/matryer/is"
 	"github.com/stretchr/testify/assert"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 )
 
 func TestValidateEmptyConfigPasses(t *testing.T) {
+	is := is.New(t)
 	// TODO(tauraamui): return this to actually be empty again
 	// once this root field has been removed
 	body := `{}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.NoError(t, config.RunValidate())
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.NoErr(config.RunValidate())
 }
 
 func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -32,12 +34,12 @@ func TestValidatePopulatedConfigPassesValidation(t *testing.T) {
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.NoError(t, config.RunValidate())
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.NoErr(config.RunValidate())
 }
 
 func TestValidatePopulatedConfigFailsValidationForMissingPersistLocation(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -50,12 +52,12 @@ func TestValidatePopulatedConfigFailsValidationForMissingPersistLocation(t *test
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.EqualError(t, config.RunValidate(), `Validation error in field "PersistLoc" of type "string" using validator "empty=false"`)
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.Equal(config.RunValidate().Error(), `Validation error in field "PersistLoc" of type "string" using validator "empty=false"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForNonUniqueCameraTitles(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -76,12 +78,12 @@ func TestValidatePopulatedConfigFailsValiationForNonUniqueCameraTitles(t *testin
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.EqualError(t, config.RunValidate(), "validation failed: camera titles must be unique")
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.Equal(config.RunValidate().Error(), "validation failed: camera titles must be unique")
 }
 
 func TestValidatePopulatedConfigFailsValiationForMaxClipAgeDays(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -95,12 +97,12 @@ func TestValidatePopulatedConfigFailsValiationForMaxClipAgeDays(t *testing.T) {
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.EqualError(t, config.RunValidate(), `Validation error in field "MaxClipAgeDays" of type "int" using validator "lte=30"`)
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.Equal(config.RunValidate().Error(), `Validation error in field "MaxClipAgeDays" of type "int" using validator "lte=30"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForFPSLessThan1(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -114,12 +116,12 @@ func TestValidatePopulatedConfigFailsValiationForFPSLessThan1(t *testing.T) {
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.EqualError(t, config.RunValidate(), `Validation error in field "FPS" of type "int" using validator "gte=1"`)
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.Equal(config.RunValidate().Error(), `Validation error in field "FPS" of type "int" using validator "gte=1"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForFPSMoreThan30(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -133,12 +135,12 @@ func TestValidatePopulatedConfigFailsValiationForFPSMoreThan30(t *testing.T) {
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
+	is.NoErr(json.Unmarshal([]byte(body), &config))
 	assert.EqualError(t, config.RunValidate(), `Validation error in field "FPS" of type "int" using validator "lte=30"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForSPCLessThan1(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -152,12 +154,12 @@ func TestValidatePopulatedConfigFailsValiationForSPCLessThan1(t *testing.T) {
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
+	is.NoErr(json.Unmarshal([]byte(body), &config))
 	assert.EqualError(t, config.RunValidate(), `Validation error in field "SecondsPerClip" of type "int" using validator "gte=1"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForSPCMoreThan3(t *testing.T) {
+	is := is.New(t)
 	body := `{
 			"max_clip_age_in_days": 1,
 			"cameras": [
@@ -171,12 +173,12 @@ func TestValidatePopulatedConfigFailsValiationForSPCMoreThan3(t *testing.T) {
 			]
 		}`
 	config := configdef.Values{}
-	json.Unmarshal([]byte(body), &config)
-
-	assert.EqualError(t, config.RunValidate(), `Validation error in field "SecondsPerClip" of type "int" using validator "lte=3"`)
+	is.NoErr(json.Unmarshal([]byte(body), &config))
+	is.Equal(config.RunValidate().Error(), `Validation error in field "SecondsPerClip" of type "int" using validator "lte=3"`)
 }
 
 func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {
+	is := is.New(t)
 	cameras := []configdef.Camera{}
 	assert.False(t, configdef.HasDupCameraTitles(cameras))
 
@@ -186,10 +188,11 @@ func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {
 		{Title: "TestCam3"},
 	}
 
-	assert.False(t, configdef.HasDupCameraTitles(cameras))
+	is.True(configdef.HasDupCameraTitles(cameras) == false)
 }
 
 func TestHasDupCameraTitlesDoesFindDuplicates(t *testing.T) {
+	is := is.New(t)
 	cameras := []configdef.Camera{
 		{Title: "TestCam1"},
 		{Title: "TestCam2"},
@@ -198,10 +201,11 @@ func TestHasDupCameraTitlesDoesFindDuplicates(t *testing.T) {
 		{Title: "TestCam4"},
 	}
 
-	assert.True(t, configdef.HasDupCameraTitles(cameras))
+	is.True(configdef.HasDupCameraTitles(cameras))
 }
 
 func TestHasDupCameraTitlesDoesFindDuplicateWithLargeGap(t *testing.T) {
+	is := is.New(t)
 	cameras := []configdef.Camera{
 		{Title: "TestCam1"},
 		{Title: "TestCam2"},
@@ -215,5 +219,5 @@ func TestHasDupCameraTitlesDoesFindDuplicateWithLargeGap(t *testing.T) {
 		{Title: "TestCam10"},
 	}
 
-	assert.True(t, configdef.HasDupCameraTitles(cameras))
+	is.True(configdef.HasDupCameraTitles(cameras))
 }

@@ -16,7 +16,7 @@ func TestTimeFromJSON(t *testing.T) {
 
 	TODAY = time.Date(2021, 3, 1, 0, 0, 0, 0, time.UTC)
 	var timeInst Time
-	timeInst.UnmarshalJSON([]byte(`"14:15:19"`))
+	is.NoErr(timeInst.UnmarshalJSON([]byte(`"14:15:19"`)))
 
 	is.Equal(timeInst.Year(), 2021)
 	is.Equal(int(timeInst.Month()), 3)
@@ -34,9 +34,9 @@ func TestTimeSubAnotherTime(t *testing.T) {
 	is := is.New(t)
 
 	ft := testTime(args{hour: 17})
-	ft.UnmarshalJSON([]byte(`"17:00:00"`))
+	is.NoErr(ft.UnmarshalJSON([]byte(`"17:00:00"`)))
 	st := testTime(args{hour: 11})
-	st.UnmarshalJSON([]byte(`"11:00:00"`))
+	is.NoErr(st.UnmarshalJSON([]byte(`"11:00:00"`)))
 
 	d := ft.Sub(time.Time(st))
 	is.Equal(d.Hours(), float64(6))

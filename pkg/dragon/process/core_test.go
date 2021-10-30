@@ -113,10 +113,6 @@ func (m *mockCameraConn) Close() error {
 	return m.closeErr
 }
 
-func (m *mockCameraConn) reset() {
-	m.frameReadIndex = 0
-}
-
 type mockClipWriter struct {
 	writtenClips []video.Clip
 	writeErr     error

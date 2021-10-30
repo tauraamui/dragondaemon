@@ -113,7 +113,3 @@ func (m *mockCameraConn) IsClosing() bool {
 func (m *mockCameraConn) Close() error {
 	return m.closeErr
 }
-
-func (m *mockCameraConn) reset() {
-	m.frameReadIndex = 0
-}

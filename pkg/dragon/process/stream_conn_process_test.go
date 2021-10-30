@@ -26,7 +26,6 @@ func overloadErrorLog(overload func(string, ...interface{})) func() {
 
 type StreamConnProcessTestSuite struct {
 	suite.Suite
-	baseTime               time.Time
 	timeSecondOffset       int
 	resetErrorLogsOverload func()
 	errorLogs              []string
@@ -294,9 +293,4 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 		suite.errorLogs,
 		"Unable to retrieve frame: run out of frames to read. Auto re-connecting is not yet implemented",
 	)
-}
-
-func (suite *StreamConnProcessTestSuite) timeNowQuery() time.Time {
-	suite.timeSecondOffset++
-	return suite.baseTime.Add(time.Second * time.Duration(suite.timeSecondOffset))
 }
