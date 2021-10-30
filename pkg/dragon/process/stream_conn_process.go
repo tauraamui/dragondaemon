@@ -2,13 +2,13 @@ package process
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 const CAM_SWITCHED_OFF_EVT Event = 0x51
@@ -77,7 +77,7 @@ func stream(cam camera.Connection, frames chan video.Frame) {
 	log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
 	frame, err := cam.Read()
 	if err != nil {
-		log.Error(fmt.Errorf("Unable to retrieve frame: %w. Auto re-connecting is not yet implemented", err).Error())
+		log.Error(xerror.Errorf("Unable to retrieve frame: %w. Auto re-connecting is not yet implemented", err).Error())
 		return
 	}
 	select {

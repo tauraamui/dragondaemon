@@ -15,6 +15,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 	"golang.org/x/term"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -28,8 +29,8 @@ const (
 )
 
 var (
-	ErrCreateDBFile    = errors.New("unable to create database file")
-	ErrDBAlreadyExists = errors.New("database file already exists")
+	ErrCreateDBFile    = xerror.New("unable to create database file")
+	ErrDBAlreadyExists = xerror.New("database file already exists")
 )
 
 var uc = os.UserCacheDir
@@ -84,15 +85,15 @@ func Setup() error {
 	}
 	rootUsername, err := askForUsername()
 	if err != nil {
-		return fmt.Errorf("failed to prompt for root username: %w", err)
+		return xerror.Errorf("failed to prompt for root username: %w", err)
 	}
 
 	rootPassword, err := askForPassword(0)
 	if err != nil {
-		return fmt.Errorf("failed to prompt for root password: %w", err)
+		return xerror.Errorf("failed to prompt for root password: %w", err)
 	}
 	if err := createRootUser(db, rootUsername, rootPassword); err != nil {
-		return fmt.Errorf("unable to create root user entry: %w", err)
+		return xerror.Errorf("unable to create root user entry: %w", err)
 	}
 
 	log.Info("Created root admin user") //nolint
@@ -103,7 +104,7 @@ func Setup() error {
 func Destroy() error {
 	dbFilePath, err := resolveDBPath(uc)
 	if err != nil {
-		return fmt.Errorf("unable to delete database file: %w", err)
+		return xerror.Errorf("unable to delete database file: %w", err)
 	}
 
 	return fs.Remove(dbFilePath)
@@ -118,12 +119,12 @@ func Connect() (*gorm.DB, error) {
 	log.Debug("Connecting to DB: %s", dbPath) //nolint
 	db, err := openDBConnection(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open db connection: %w", err)
+		return nil, xerror.Errorf("unable to open db connection: %w", err)
 	}
 
 	err = models.AutoMigrate(db)
 	if err != nil {
-		return nil, fmt.Errorf("unable to run automigrations: %w", err)
+		return nil, xerror.Errorf("unable to run automigrations: %w", err)
 	}
 
 	return db, nil
@@ -150,7 +151,7 @@ func resolveDBPath(uc func() (string, error)) (string, error) {
 
 	databaseParentDir, err := uc()
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve %s database file location: %w", databaseFileName, err)
+		return "", xerror.Errorf("unable to resolve %s database file location: %w", databaseFileName, err)
 	}
 
 	return filepath.Join(
@@ -171,12 +172,12 @@ func createFile() error {
 
 		_, err := fs.Create(path)
 		if err != nil {
-			return fmt.Errorf("%v: %w", ErrCreateDBFile, err)
+			return xerror.Errorf("%v: %w", ErrCreateDBFile, err)
 		}
 		return nil
 	}
 
-	return fmt.Errorf("%w: %s", ErrDBAlreadyExists, path)
+	return xerror.Errorf("%w: %s", ErrDBAlreadyExists, path)
 }
 
 func askForUsername() (string, error) {
@@ -186,12 +187,12 @@ func askForUsername() (string, error) {
 func askForPassword(attempts int) (string, error) {
 	password, err := promptForValueEchoOff("Root user password")
 	if err != nil {
-		return "", fmt.Errorf("unable to prompt for root password : %w", err)
+		return "", xerror.Errorf("unable to prompt for root password : %w", err)
 	}
 
 	repeatedPassword, err := promptForValueEchoOff("Repeat root user password")
 	if err != nil {
-		return "", fmt.Errorf("unable to prompt for root password : %w", err)
+		return "", xerror.Errorf("unable to prompt for root password : %w", err)
 	}
 
 	if strings.Compare(password, repeatedPassword) != 0 {
@@ -200,7 +201,7 @@ func askForPassword(attempts int) (string, error) {
 		}
 		attempts++
 		if attempts >= 3 {
-			return "", errors.New("tried entering new password at least 3 times")
+			return "", xerror.New("tried entering new password at least 3 times")
 		}
 		return askForPassword(attempts)
 	}

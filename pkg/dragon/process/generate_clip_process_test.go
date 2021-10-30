@@ -2,7 +2,6 @@ package process_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 // 30 fps * 2 seconds per clip
@@ -45,7 +45,7 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 			time.Sleep(1 * time.Microsecond)
 			select {
 			case <-timeout:
-				done <- errors.New("test timeout 3s limit exceeded")
+				done <- xerror.New("test timeout 3s limit exceeded")
 				return
 			case <-ctx.Done():
 				return
@@ -101,7 +101,7 @@ func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
 		for {
 			select {
 			case <-timeout:
-				errs <- errors.New("test timeout 3s limit exceeded")
+				errs <- xerror.New("test timeout 3s limit exceeded")
 				break sendFramesProcLoop
 			case <-ctx.Done():
 				errs <- nil

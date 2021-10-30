@@ -2,11 +2,11 @@ package media
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/tauraamui/xerror"
 )
 
 type testMockProcess struct {
@@ -97,7 +97,7 @@ var _ = Describe("Server", func() {
 			It("Should error on connecting to stream and not track a connection", func() {
 				resetOpenVidCapOverload := OverloadOpenVideoCapture(
 					func(string, string, int, bool, string, bool) (VideoCapturable, error) {
-						return nil, errors.New("test fail to open connection")
+						return nil, xerror.New("test fail to open connection")
 					},
 				)
 				defer resetOpenVidCapOverload()

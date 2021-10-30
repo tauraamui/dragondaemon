@@ -1,8 +1,6 @@
 package api
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -15,6 +13,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/media"
+	"github.com/tauraamui/xerror"
 	"gorm.io/gorm"
 )
 
@@ -62,7 +61,7 @@ type MediaServer struct {
 func New(interrupt chan os.Signal, server *media.Server, opts Options) (*MediaServer, error) {
 	db, err := db.Connect()
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect to DB, try running the setup: %w", err)
+		return nil, xerror.Errorf("unable to connect to DB, try running the setup: %w", err)
 	}
 	return &MediaServer{
 		interrupt:     interrupt,
@@ -107,7 +106,7 @@ func ShutdownRPC(m *MediaServer) error {
 	if m != nil && m.httpServer != nil {
 		return m.httpServer.Close()
 	}
-	return errors.New("API server not running")
+	return xerror.New("API server not running")
 }
 
 func (m *MediaServer) Authenticate(authContents []string, resp *string) error {
@@ -185,11 +184,11 @@ func validateSession(signingSecret string, sess Session) (string, error) {
 
 func validateAuth(auth []string) error {
 	if len(auth) == 0 {
-		return errors.New("cannot retrieve username and password from blank input")
+		return xerror.New("cannot retrieve username and password from blank input")
 	}
 
 	if len(auth[0]) == 0 || len(auth[1]) == 0 {
-		return errors.New("unable to correctly retrieve username and password from malformed input")
+		return xerror.New("unable to correctly retrieve username and password from malformed input")
 	}
 
 	return nil

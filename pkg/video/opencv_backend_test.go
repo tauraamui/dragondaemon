@@ -2,7 +2,6 @@ package video
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/internal/videotest"
+	"github.com/tauraamui/xerror"
 	"gocv.io/x/gocv"
 )
 
@@ -105,7 +105,7 @@ func TestConnectWithImmediateCancelInvoke(t *testing.T) {
 func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 	resetOpenVidCap := overloadOpenVidCap(
 		func(addr string) (*gocv.VideoCapture, error) {
-			return nil, errors.New("test connect error")
+			return nil, xerror.New("test connect error")
 		},
 	)
 	defer resetOpenVidCap()

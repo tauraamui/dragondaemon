@@ -1,7 +1,6 @@
 package process_test
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -16,6 +15,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 func overloadErrorLog(overload func(string, ...interface{})) func() {
@@ -120,12 +120,22 @@ readFrameProcLoop:
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFramesAfterCamOffEvent() {
 	maxLoopCount := 64
 	oc := mutexCounter{}
-	isOpen := func() bool {
-		oc.incr()
+	isOpen := func() (open bool) {
+		open = true
+		// DEVNOTE(tauraamui):
+		// yeah yeah this should never happen, don't
+		// judge me I just want to wish upon a star
+		// and banish all multithreaded based issues
+		// with non-determinism in these tests...
 		if oc.v() > maxLoopCount {
 			oc.set(maxLoopCount)
+			return
 		}
-		return true
+		if oc.v() == maxLoopCount {
+			return
+		}
+		oc.incr()
+		return
 	}
 
 	rc := mutexCounter{}
@@ -145,7 +155,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	err := callW3sTimeout(func() {
 		for {
 			time.Sleep(1 * time.Microsecond)
-			if rc.v() == maxLoopCount/2 {
+			if rc.v() >= maxLoopCount/2 {
 				b.Send(process.CAM_SWITCHED_OFF_EVT)
 			}
 			if oc.v() >= maxLoopCount {
@@ -199,7 +209,7 @@ func callWTimeout(f func(), t <-chan time.Time, errmsg string) error {
 	for {
 		select {
 		case <-t:
-			return errors.New(errmsg)
+			return xerror.New(errmsg)
 		case <-done:
 			return nil
 		}
@@ -265,7 +275,7 @@ checkFrameReadCountLoop:
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
 	testConn := mockCameraConn{
 		isOpen:   true,
-		readErr:  errors.New("testing unable to read from mock camera stream"),
+		readErr:  xerror.New("testing unable to read from mock camera stream"),
 		schedule: schedule.NewSchedule(schedule.Week{}),
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 )
 
 // TODO(tauraamui): re-write delete clip process
@@ -44,7 +45,7 @@ func delete(cam camera.Connection, lastRun time.Time) time.Time {
 	if TimeNow().After(lastRun.Add(5 * time.Minute)) {
 		err := removeOldClipDirsByDate(cam.FullPersistLocation(), cam.MaxClipAgeDays())
 		if err != nil {
-			log.Error(fmt.Errorf("error occurred whilst removing old clip dirs: %w", err).Error())
+			log.Error(xerror.Errorf("error occurred whilst removing old clip dirs: %w", err).Error())
 		}
 		return TimeNow()
 	}
@@ -64,7 +65,7 @@ func removeOldClipDirsByDate(path string, maxClipAgeDays int) error {
 
 	dir, err := fs.Open(path)
 	if err != nil {
-		return fmt.Errorf("unable to open dir %s: %w", path, err)
+		return xerror.Errorf("unable to open dir %s: %w", path, err)
 	}
 
 	names, err := dir.Readdirnames(-1)
@@ -75,14 +76,14 @@ func removeOldClipDirsByDate(path string, maxClipAgeDays int) error {
 	for _, name := range names {
 		date, err := strToDate(name)
 		if err != nil {
-			log.Error(fmt.Errorf("unable to resolve date from dir name %s: %w", name, err).Error())
+			log.Error(xerror.Errorf("unable to resolve date from dir name %s: %w", name, err).Error())
 			continue
 		}
 		if date.Before(time.Now().AddDate(0, 0, -1*maxClipAgeDays)) {
 			if err := deleteDirAndContent(filepath.FromSlash(
 				fmt.Sprintf("%s/%s", path, name),
 			)); err != nil {
-				log.Error(fmt.Errorf("unable to remove dir %s: %w", name, err).Error())
+				log.Error(xerror.Errorf("unable to remove dir %s: %w", name, err).Error())
 			}
 		}
 	}
@@ -104,11 +105,11 @@ func verifyDirPath(path string) error {
 
 	pathIsDir, err := afero.DirExists(fs, path)
 	if err != nil {
-		return fmt.Errorf("unable to stat given path %s: %w", path, err)
+		return xerror.Errorf("unable to stat given path %s: %w", path, err)
 	}
 
 	if !pathIsDir {
-		return fmt.Errorf("given path is not a directory: %s", path)
+		return xerror.Errorf("given path is not a directory: %s", path)
 	}
 
 	return nil

@@ -1,10 +1,9 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -34,7 +33,7 @@ func (u *User) ComparePassword(password string) error {
 func enc(p string) string {
 	h, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
-		log.Error(fmt.Errorf("unable to generate hash and salt from password: %w", err).Error()) //nolint
+		log.Error(xerror.Errorf("unable to generate hash and salt from password: %w", err).Error()) //nolint
 		return p
 	}
 
@@ -45,7 +44,7 @@ func cmp(h, p string) error {
 	hb, pb := []byte(h), []byte(p)
 	err := bcrypt.CompareHashAndPassword(hb, pb)
 	if err != nil {
-		return fmt.Errorf("password does not match hash: %w", err)
+		return xerror.Errorf("password does not match hash: %w", err)
 	}
 
 	return nil

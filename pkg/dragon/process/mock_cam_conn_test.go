@@ -1,10 +1,9 @@
 package process_test
 
 import (
-	"errors"
-
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/xerror"
 )
 
 type mockFrame struct {
@@ -93,7 +92,7 @@ func (m *mockCameraConn) Read() (frame video.Frame, err error) {
 	}
 
 	if m.frameReadIndex+1 >= len(m.framesToRead) {
-		return nil, errors.New("run out of frames to read")
+		return nil, xerror.New("run out of frames to read")
 	}
 	frame, err = &m.framesToRead[m.frameReadIndex], m.readErr
 	m.frameReadIndex++

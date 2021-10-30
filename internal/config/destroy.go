@@ -1,7 +1,7 @@
 package config
 
-import "errors"
+import "github.com/tauraamui/xerror"
 
 func destroy() error {
-	return errors.New("destroy config not implemented yet")
+	return xerror.New("destroy config not implemented yet")
 }

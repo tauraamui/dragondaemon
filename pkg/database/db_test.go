@@ -1,7 +1,6 @@
 package data_test
 
 import (
-	"errors"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -9,6 +8,7 @@ import (
 	"github.com/spf13/afero"
 	data "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
+	"github.com/tauraamui/xerror"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -51,7 +51,7 @@ type multipleAttemptPasswordPromptReader struct {
 
 func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, error) {
 	if t.attemptCount >= t.maxCalls {
-		return nil, errors.New("TESTING ERROR: multipleAttempts exceeds maximum call limit")
+		return nil, xerror.New("TESTING ERROR: multipleAttempts exceeds maximum call limit")
 	}
 	password := []byte(t.passwordsToAttempt[t.attemptCount])
 	t.attemptCount++
@@ -171,7 +171,7 @@ var _ = Describe("Data", func() {
 
 		It("Should return error from setup due to path resolution failure", func() {
 			resetUC = data.OverloadUC(func() (string, error) {
-				return "", errors.New("test cache dir error")
+				return "", xerror.New("test cache dir error")
 			})
 
 			err := data.Setup()
@@ -185,7 +185,7 @@ var _ = Describe("Data", func() {
 			Expect(err).To(BeNil())
 
 			resetUC = data.OverloadUC(func() (string, error) {
-				return "", errors.New("test cache dir error")
+				return "", xerror.New("test cache dir error")
 			})
 
 			err = data.Destroy()
@@ -199,7 +199,7 @@ var _ = Describe("Data", func() {
 			It("Should handle username prompt error gracefully and return wrapped error", func() {
 				resetPlainPromptReader := data.OverloadPlainPromptReader(
 					testPlainPromptReader{
-						testError: errors.New("testing read username error"),
+						testError: xerror.New("testing read username error"),
 					},
 				)
 				defer resetPlainPromptReader()

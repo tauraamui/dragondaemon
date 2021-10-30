@@ -1,13 +1,13 @@
 package video
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/xerror"
 )
 
 type Clip interface {
@@ -57,7 +57,7 @@ func (c *clip) AppendFrame(f Frame) {
 
 func (c *clip) FrameDimensions() (FrameDimension, error) {
 	if len(c.frames) == 0 {
-		return FrameDimension{}, errors.New("unable to resolve clip's footage dimensions")
+		return FrameDimension{}, xerror.New("unable to resolve clip's footage dimensions")
 	}
 	return c.frames[0].Dimensions(), nil
 }
