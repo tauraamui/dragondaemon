@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/matryer/is"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -22,6 +23,7 @@ type ServerProcessTestSuite struct {
 }
 
 func (suite *ServerProcessTestSuite) SetupTest() {
+	is := is.New(suite.T())
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	svr, err := dragon.NewServer(testConfigResolver{
 		resolveConfigs: func() configdef.Values {
@@ -32,8 +34,8 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 			}
 		},
 	}, video.MockBackend())
-	require.NotNil(suite.T(), svr)
-	require.NoError(suite.T(), err)
+	is.True(svr != nil)
+	is.NoErr(err)
 
 	suite.server = svr
 
@@ -57,6 +59,8 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	suite.server.RunProcesses()
 	time.Sleep(1 * time.Millisecond)
 	<-suite.server.Shutdown()
+	// TODO(tauraamui): replace with custom list/slice
+	// strings contains helper test function
 	assert.Subset(suite.T(), suite.infoLogs, []string{
 		"Connecting to camera: [TestConn@fake-conn-addr]...",
 		"Connected successfully to camera: [TestConn]",

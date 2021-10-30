@@ -2,11 +2,13 @@ package video
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/matryer/is"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,21 +55,23 @@ func overloadTimestampFunc(overload func() time.Time) func() {
 }
 
 func TestBackendConnect(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
 	require.NoError(t, err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	backend := openCVBackend{}
 	conn, err := backend.Connect(context.TODO(), mp4FilePath)
-	require.NoError(t, err)
-	require.NotNil(t, conn)
+	is.NoErr(err)
+	is.True(conn != nil)
 	err = conn.Close()
-	assert.Nil(t, err)
+	is.True(err == nil)
 }
 
 func TestBackendConnectWithImmediateCancelInvoke(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	backend := openCVBackend{}
@@ -81,12 +85,13 @@ func TestBackendConnectWithImmediateCancelInvoke(t *testing.T) {
 	cancel()
 
 	connErr := <-errChan
-	assert.EqualError(t, connErr, "connection cancelled")
+	is.Equal(connErr.Error(), "connection cancelled")
 }
 
 func TestConnectWithImmediateCancelInvoke(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	conn := openCVConnection{}
@@ -99,10 +104,11 @@ func TestConnectWithImmediateCancelInvoke(t *testing.T) {
 	cancel()
 
 	connErr := <-errChan
-	assert.EqualError(t, connErr, "connection cancelled")
+	is.Equal(connErr.Error(), "connection cancelled")
 }
 
 func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
+	is := is.New(t)
 	resetOpenVidCap := overloadOpenVidCap(
 		func(addr string) (*gocv.VideoCapture, error) {
 			return nil, xerror.New("test connect error")
@@ -111,61 +117,59 @@ func TestOpenVideoStreamInvokesOpenVideoCapture(t *testing.T) {
 	defer resetOpenVidCap()
 
 	conn := openCVConnection{}
-	err := conn.connect(context.TODO(), "TestAddr")
-	assert.EqualError(t, err, "test connect error")
+	is.Equal(conn.connect(context.TODO(), "TestAddr").Error(), "test connect error")
 }
 
 func TestOpenAndCloseVideoStream(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	conn := openCVConnection{}
-	err = conn.connect(context.TODO(), mp4FilePath)
-	require.NoError(t, err)
+	is.NoErr(conn.connect(context.TODO(), mp4FilePath))
+	is.NoErr(err)
 
 	err = conn.Close()
-	require.NoError(t, err)
+	is.NoErr(err)
 }
 
 func TestOpenAndReadFromVideoStream(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	conn := openCVConnection{}
-	err = conn.connect(context.TODO(), mp4FilePath)
-	require.NoError(t, err)
+	is.NoErr(conn.connect(context.TODO(), mp4FilePath))
 
 	frame := DefaultBackend().NewFrame()
-	err = conn.Read(frame)
-	require.NoError(t, err)
+	is.NoErr(conn.Read(frame))
 }
 
 func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	conn := openCVConnection{}
-	err = conn.connect(context.TODO(), mp4FilePath)
-	require.NoError(t, err)
+	is.NoErr(conn.connect(context.TODO(), mp4FilePath))
 
 	frame := &openCVFrame{
 		mat: gocv.NewMat(),
 	}
 	defer frame.Close()
 
-	assert.Zero(t, frame.mat.Total())
-	err = conn.Read(frame)
-	require.NoError(t, err)
-	assert.Greater(t, frame.mat.Total(), 0)
+	is.Equal(frame.mat.Total(), 0)
+	is.NoErr(conn.Read(frame))
+	is.True(frame.mat.Total() > 0)
 	dimensions := frame.Dimensions()
-	assert.Equal(t, dimensions.W, 560)
-	assert.Equal(t, dimensions.H, 320)
+	is.Equal(dimensions.W, 560)
+	is.Equal(dimensions.H, 320)
 	// make sure as much as possible that the impl
 	// isn't just writing random junk to the frame
-	assert.Equal(t, frame.mat.ToBytes()[:10], []byte{
+	is.Equal(frame.mat.ToBytes()[:10], []byte{
 		0xe, 0x27, 0x48, 0xe, 0x27, 0x48, 0xe, 0x27, 0x48, 0xe,
 	})
 }
@@ -229,20 +233,20 @@ func (frame invalidFrame) Dimensions() FrameDimension {
 func (frame invalidFrame) Close() {}
 
 func TestOpenAndReadWithIncorrectFrameDataReturnsError(t *testing.T) {
+	is := is.New(t)
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	conn := openCVConnection{}
-	err = conn.connect(context.TODO(), mp4FilePath)
-	require.NoError(t, err)
+	is.NoErr(conn.connect(context.TODO(), mp4FilePath))
 
 	frame := invalidFrame{}
-	err = conn.Read(frame)
-	assert.EqualError(t, err, "must pass OpenCV frame to OpenCV connection read")
+	is.Equal(conn.Read(frame).Error(), "must pass OpenCV frame to OpenCV connection read")
 }
 
 func TestOpenAndReadFailToReadFromConnectionReturnsError(t *testing.T) {
+	is := is.New(t)
 	resetReadFromVidCap := overloadReadFromVidCap(
 		func(*gocv.VideoCapture, *gocv.Mat) bool {
 			return false
@@ -251,34 +255,34 @@ func TestOpenAndReadFailToReadFromConnectionReturnsError(t *testing.T) {
 	defer resetReadFromVidCap()
 
 	mp4FilePath, err := videotest.RestoreMp4File()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() { os.Remove(mp4FilePath) }()
 
 	conn := openCVConnection{}
-	err = conn.connect(context.TODO(), mp4FilePath)
-	require.NoError(t, err)
+	is.NoErr(conn.connect(context.TODO(), mp4FilePath))
 
 	frame := &openCVFrame{
 		mat: gocv.NewMat(),
 	}
 	defer frame.Close()
 
-	err = conn.Read(frame)
-	assert.EqualError(t, err, "unable to read from video connection")
+	is.Equal(conn.Read(frame).Error(), "unable to read from video connection")
 }
 
 func TestNewWriterReturnsNonNilInstance(t *testing.T) {
+	is := is.New(t)
 	backend := openCVBackend{}
 	writer := backend.NewWriter()
-	assert.NotNil(t, writer)
+	is.True(writer != nil)
 }
 
 func TestClipWriterInit(t *testing.T) {
+	is := is.New(t)
 	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
 	defer resetTimestamp()
 
 	clip, err := makeClip("testroot", 3, 10)
-	require.NoError(t, err)
+	is.NoErr(err)
 
 	var passedFilename string
 	var passedCodec string
@@ -299,18 +303,18 @@ func TestClipWriterInit(t *testing.T) {
 	defer resetOpenVidWriter()
 
 	writer := openCVClipWriter{}
-	err = writer.init(clip)
-	assert.NoError(t, err)
+	is.NoErr(writer.init(clip))
 
-	assert.Equal(t, "/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4", passedFilename)
-	assert.Equal(t, codec, passedCodec)
-	assert.EqualValues(t, 10, passedFPS)
-	assert.Equal(t, 560, passedWidth)
-	assert.Equal(t, 320, passedHeight)
-	assert.True(t, passedIsColor)
+	is.Equal("/testroot/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4", passedFilename)
+	is.Equal(codec, passedCodec)
+	is.Equal(10, int(passedFPS))
+	is.Equal(560, passedWidth)
+	is.Equal(320, passedHeight)
+	is.True(passedIsColor)
 }
 
 func TestClipWriterWrite(t *testing.T) {
+	is := is.New(t)
 	resetTimestamp := overloadTimestamp(time.Unix(1630184250, 0).UTC())
 	defer resetTimestamp()
 
@@ -321,20 +325,21 @@ func TestClipWriterWrite(t *testing.T) {
 	}()
 
 	clip, err := makeClip(pathRoot, 3, 10)
-	require.NoError(t, err)
-	require.NotNil(t, clip)
+	is.NoErr(err)
+	is.True(clip != nil)
 
 	backend := openCVBackend{}
 	writer := backend.NewWriter()
-	require.NotNil(t, writer)
+	is.True(writer != nil)
 	err = writer.Write(clip)
-	assert.NoError(t, err)
+	is.NoErr(err)
 
 	_, err = fs.Stat(fmt.Sprintf("/%s/clips/TestCam/2021-08-28/2021-08-28 20.57.30.mp4", pathRoot))
-	assert.NoError(t, err)
+	is.NoErr(err)
 }
 
 func TestClipWriterWriteMultipleClips(t *testing.T) {
+	is := is.New(t)
 	const seconds = 2
 	const fps = 10
 	const clipCount = 8
@@ -348,20 +353,20 @@ func TestClipWriterWriteMultipleClips(t *testing.T) {
 
 	backend := openCVBackend{}
 	writer := backend.NewWriter()
-	require.NotNil(t, writer)
+	is.True(writer != nil)
 
 	pathRoot, err := setupOSFSForTesting()
-	require.NoError(t, err)
+	is.NoErr(err)
 	defer func() {
 		println("Removing all under [%s]", pathRoot)
 	}()
 
 	clips, err := makeClips(pathRoot, seconds, fps, clipCount)
-	require.NoError(t, err)
+	is.NoErr(err)
 
 	for _, clip := range clips {
 		err = writer.Write(clip)
-		require.NoError(t, err)
+		is.NoErr(err)
 		clip.Close()
 	}
 
@@ -383,10 +388,11 @@ func TestClipWriterWriteMultipleClips(t *testing.T) {
 	for i, path := range expectedClipFiles {
 		clip, err := fs.Stat(path)
 		if i > 0 && i < clipCount+1 {
-			assert.False(t, clip.IsDir())
-			assert.NoError(t, err)
+			is.True(clip.IsDir() == false)
+			is.NoErr(err)
 			continue
 		}
+		is.True(errors.Is(err, os.ErrNotExist))
 		assert.ErrorIs(t, err, os.ErrNotExist)
 	}
 }

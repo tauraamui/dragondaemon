@@ -6,8 +6,6 @@ import (
 
 	"github.com/matryer/is"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 )
@@ -37,11 +35,11 @@ func (suite *CreateConfigTestSuite) TearDownTest() {
 }
 
 func (suite *CreateConfigTestSuite) TestConfigCreate() {
-	require.NoError(suite.T(), suite.configCreateResolver.Create())
+	suite.is.NoErr(suite.configCreateResolver.Create())
 	loadedConfig, err := suite.configCreateResolver.Resolve()
 
-	assert.NoError(suite.T(), err)
-	assert.EqualValues(suite.T(), configdef.Values{
+	suite.is.NoErr(err)
+	suite.is.Equal(configdef.Values{
 		Cameras: []configdef.Camera{},
 	}, loadedConfig)
 }

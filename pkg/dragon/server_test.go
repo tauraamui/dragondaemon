@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/matryer/is"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
@@ -95,24 +95,27 @@ func (tvc testVideoConnection) Close() error {
 }
 
 func TestNewServer(t *testing.T) {
+	is := is.New(t)
 	s, err := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
-	require.NoError(t, err)
-	assert.NotNil(t, s, "new server's response cannot be nil pointer")
+	is.NoErr(err)
+	is.True(s != nil) // new server's response cannot be nil pointer
 }
 
 func TestServerLoadConfig(t *testing.T) {
+	is := is.New(t)
 	configResolved := false
 	cb := func() {
 		configResolved = true
 	}
 	s, err := dragon.NewServer(testConfigResolver{resolveCallback: cb}, testVideoBackend{})
 
-	require.NotNil(t, s)
-	require.NoError(t, err, "Resolve returned error when this should be impossible")
-	assert.True(t, configResolved)
+	is.True(s != nil)
+	is.NoErr(err) // resolve returned error when this should be impossible
+	is.True(configResolved)
 }
 
 func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
+	is := is.New(t)
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	var warnLogs []string
@@ -136,32 +139,34 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 		testVideoBackend{},
 	)
 
-	require.NotNil(t, s)
-	require.NoError(t, err)
-	require.Len(t, s.Connect(), 0)
+	is.True(s != nil)
+	is.NoErr(err)
+	is.Equal(len(s.Connect()), 0)
 
-	assert.Len(t, warnLogs, 1)
+	is.Equal(len(warnLogs), 1)
 	assert.Contains(t, warnLogs, "Camera [Disabled camera] is disabled... skipping...")
 }
 
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {
+	is := is.New(t)
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s, err := dragon.NewServer(testConfigResolver{
 		resolveError: xerror.New("test low level resolve error"),
 	}, testVideoBackend{})
-	assert.Nil(t, s)
-	assert.EqualError(t, err, "unable to resolve config: test low level resolve error")
+	is.True(s == nil)
+	is.Equal(err.Error(), "unable to resolve config: test low level resolve error")
 }
 
 func TestServerConnect(t *testing.T) {
+	is := is.New(t)
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s, err := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
-	require.NotNil(t, s)
-	require.NoError(t, err)
+	is.True(s != nil)
+	is.NoErr(err)
 	errs := s.Connect()
-	assert.Len(t, errs, 0)
+	is.Equal(len(errs), 0)
 }
 
 type testWaitsOnCancelVideoBackend struct {
@@ -182,11 +187,13 @@ func (b testWaitsOnCancelVideoBackend) NewWriter() video.ClipWriter {
 
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
+	is := is.New(t)
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s, err := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
-	require.NotNil(t, s)
-	require.NoError(t, err)
+
+	is.True(s != nil)
+	is.NoErr(err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan []error)
@@ -196,16 +203,17 @@ func TestServerConnectWithImmediateCancelInvoke(t *testing.T) {
 	cancel()
 
 	connErrs := <-errs
-	assert.Len(t, connErrs, 0)
+	is.Equal(len(connErrs), 0)
 }
 
 // TODO(tauraamui): these can potentially block the test run forever, add timeout
 func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
+	is := is.New(t)
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	s, err := dragon.NewServer(testConfigResolver{}, testWaitsOnCancelVideoBackend{})
-	require.NotNil(t, s)
-	require.NoError(t, err)
+	is.True(s != nil)
+	is.NoErr(err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan []error)
@@ -216,13 +224,12 @@ func TestServerConnectWithDelayedCancelInvoke(t *testing.T) {
 	cancel()
 
 	connErrs := <-errs
-	require.Len(t, connErrs, 1)
-	assert.EqualError(
-		t, connErrs[0], "Unable to connect to camera [Test camera]: test unable to connect, context cancelled",
-	)
+	is.Equal(len(connErrs), 1)
+	is.Equal(connErrs[0].Error(), "Unable to connect to camera [Test camera]: test unable to connect, context cancelled")
 }
 
 func TestServerShutdown(t *testing.T) {
+	is := is.New(t)
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 	var warnLogs []string
@@ -234,9 +241,9 @@ func TestServerShutdown(t *testing.T) {
 	defer resetLogWarn()
 
 	s, err := dragon.NewServer(testConfigResolver{}, testVideoBackend{})
-	require.NotNil(t, s)
-	require.NoError(t, err)
-	require.Len(t, s.Connect(), 0)
+	is.True(s != nil)
+	is.NoErr(err)
+	is.Equal(len(s.Connect()), 0)
 
 	timeout := time.After(3 * time.Second)
 	done := make(chan interface{})
@@ -251,6 +258,6 @@ func TestServerShutdown(t *testing.T) {
 	case <-done:
 	}
 
-	assert.Len(t, warnLogs, 1)
-	assert.Contains(t, warnLogs, "Closing camera connection: [Test camera]...")
+	is.Equal(len(warnLogs), 1)
+	is.Equal(warnLogs[0], "Closing camera connection: [Test camera]...")
 }

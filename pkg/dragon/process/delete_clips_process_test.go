@@ -9,8 +9,6 @@ import (
 
 	"github.com/matryer/is"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
@@ -53,15 +51,15 @@ func (suite *DeleteOldClipsTestSuite) TestDeleteOldClips() {
 	TimeNow = suite.timeNowQuery
 
 	err := suite.fs.MkdirAll("/testroot/clips/FakeCamera/2010-03-11", os.ModePerm|os.ModeDir)
-	require.NoError(suite.T(), err)
+	suite.is.NoErr(err)
 
 	conn, err := camera.ConnectWithCancel(context.TODO(), "FakeCamera", "fakeaddr", camera.Settings{
 		FPS:             22,
 		PersistLocation: "/testroot/clips",
 		SecondsPerClip:  3,
 	}, testVideoBackend{})
-	require.NoError(suite.T(), err)
-	require.NotNil(suite.T(), conn)
+	suite.is.NoErr(err)
+	suite.is.True(conn != nil)
 
 	deleteProcess := Settings{
 		WaitForShutdownMsg: fmt.Sprintf("Stopping test deleting old saved clips for [%s]", conn.Title()),
@@ -98,8 +96,8 @@ fileExistanceProcLoop:
 	deleteClips.Wait()
 
 	exists, err := afero.Exists(suite.fs, "/testroot/clips/FakeCamera/2010-03-11")
-	require.NoError(suite.T(), err)
-	assert.False(suite.T(), exists)
+	suite.is.NoErr(err)
+	suite.is.True(exists == false)
 }
 
 func (suite *DeleteOldClipsTestSuite) timeNowQuery() time.Time {

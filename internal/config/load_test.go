@@ -6,8 +6,6 @@ import (
 
 	"github.com/matryer/is"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/xerror"
@@ -15,6 +13,7 @@ import (
 
 type LoadConfigTestSuite struct {
 	suite.Suite
+	is             *is.I
 	configResolver configdef.Resolver
 	fs             afero.Fs
 	path           string
@@ -24,6 +23,7 @@ type LoadConfigTestSuite struct {
 func (suite *LoadConfigTestSuite) SetupSuite() {
 	suite.fs = afero.NewMemMapFs()
 	suite.configResolver = DefaultResolver()
+	suite.is = is.New(suite.T())
 
 	// use in memory FS in implementation for tests
 	fs = suite.fs
@@ -35,13 +35,13 @@ func (suite *LoadConfigTestSuite) TearDownSuite() {
 
 func (suite *LoadConfigTestSuite) SetupTest() {
 	path, err := resolveConfigPath()
-	require.NoError(suite.T(), err)
-	require.NoError(suite.T(), suite.fs.MkdirAll(path, os.ModeDir|os.ModePerm))
+	suite.is.NoErr(err)
+	suite.is.NoErr(suite.fs.MkdirAll(path, os.ModeDir|os.ModePerm))
 	suite.path = path
 
 	configFile, err := suite.fs.Create(path)
-	require.NoError(suite.T(), err)
-	require.NotNil(suite.T(), configFile)
+	suite.is.NoErr(err)
+	suite.is.True(configFile != nil)
 
 	suite.configFile = configFile
 
@@ -58,26 +58,25 @@ func (suite *LoadConfigTestSuite) SetupTest() {
 }
 
 func (suite *LoadConfigTestSuite) overwriteTestConfig(config string) {
-	require.NoError(suite.T(), suite.configFile.Truncate(0))
+	suite.is.NoErr(suite.configFile.Truncate(0))
 	_, err := suite.configFile.Seek(0, 0)
-	require.NoError(suite.T(), err)
+	suite.is.NoErr(err)
 	_, err = suite.configFile.WriteString(config)
-	assert.NoError(suite.T(), err)
+	suite.is.NoErr(err)
 }
 
 func (suite *LoadConfigTestSuite) TearDownTest() {
-	require.NoError(suite.T(), suite.configFile.Close())
-	require.NoError(suite.T(), suite.fs.Remove(suite.path))
+	suite.is.NoErr(suite.configFile.Close())
+	suite.is.NoErr(suite.fs.Remove(suite.path))
 }
 
 func (suite *LoadConfigTestSuite) TestLoadConfig() {
 	config, err := suite.configResolver.Resolve()
-	require.NoError(suite.T(), err)
-	require.NotNil(suite.T(), config)
+	suite.is.NoErr(err)
 
-	assert.Equal(suite.T(), true, config.Debug)
-	assert.Equal(suite.T(), "DJIF3fje943fi4jefgo0", config.Secret)
-	assert.ElementsMatch(suite.T(), config.Cameras, []configdef.Camera{})
+	suite.is.True(config.Debug)
+	suite.is.Equal(config.Secret, "DJIF3fje943fi4jefgo0")
+	suite.is.Equal(config.Cameras, []configdef.Camera{})
 }
 
 func (suite *LoadConfigTestSuite) TestLoadConfigErrorOnResolvingUserConfigDir() {
@@ -108,10 +107,9 @@ func (suite *LoadConfigTestSuite) TestConfigLoadFailsValidationOnDupCameraTitles
 	)
 
 	config, err := suite.configResolver.Resolve()
-	require.Error(suite.T(), err)
-	require.Empty(suite.T(), config)
-
-	assert.EqualError(suite.T(), err, "validation failed: camera titles must be unique")
+	suite.is.True(err != nil)
+	suite.is.Equal(config, configdef.Values{})
+	suite.is.Equal(err.Error(), "validation failed: camera titles must be unique")
 }
 
 func TestLoadConfigTestSuite(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/matryer/is"
-	"github.com/stretchr/testify/assert"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 )
 
@@ -136,7 +135,7 @@ func TestValidatePopulatedConfigFailsValiationForFPSMoreThan30(t *testing.T) {
 		}`
 	config := configdef.Values{}
 	is.NoErr(json.Unmarshal([]byte(body), &config))
-	assert.EqualError(t, config.RunValidate(), `Validation error in field "FPS" of type "int" using validator "lte=30"`)
+	is.Equal(config.RunValidate().Error(), `Validation error in field "FPS" of type "int" using validator "lte=30"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForSPCLessThan1(t *testing.T) {
@@ -155,7 +154,7 @@ func TestValidatePopulatedConfigFailsValiationForSPCLessThan1(t *testing.T) {
 		}`
 	config := configdef.Values{}
 	is.NoErr(json.Unmarshal([]byte(body), &config))
-	assert.EqualError(t, config.RunValidate(), `Validation error in field "SecondsPerClip" of type "int" using validator "gte=1"`)
+	is.Equal(config.RunValidate().Error(), `Validation error in field "SecondsPerClip" of type "int" using validator "gte=1"`)
 }
 
 func TestValidatePopulatedConfigFailsValiationForSPCMoreThan3(t *testing.T) {
@@ -180,7 +179,7 @@ func TestValidatePopulatedConfigFailsValiationForSPCMoreThan3(t *testing.T) {
 func TestHasDupCameraTitlesDoesNotFindDuplicates(t *testing.T) {
 	is := is.New(t)
 	cameras := []configdef.Camera{}
-	assert.False(t, configdef.HasDupCameraTitles(cameras))
+	is.True(configdef.HasDupCameraTitles(cameras) == false)
 
 	cameras = []configdef.Camera{
 		{Title: "TestCam1"},

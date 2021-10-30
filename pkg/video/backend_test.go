@@ -3,10 +3,11 @@ package video_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
 func TestVideoBackendDefaultBackend(t *testing.T) {
-	assert.NotNil(t, video.DefaultBackend())
+	is := is.New(t)
+	is.True(video.DefaultBackend() != nil)
 }

@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/video"
 	"github.com/tauraamui/xerror"
@@ -67,24 +66,27 @@ func (tvc testVideoConnection) Close() error {
 }
 
 func TestConnectReturnsConnectionAndNoError(t *testing.T) {
+	is := is.New(t)
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{
 		FPS:            22,
 		SecondsPerClip: 3,
 	}, testVideoBackend{})
-	require.NoError(t, err)
-	require.NotNil(t, conn)
 
-	assert.NotEmpty(t, conn.UUID())
-	assert.Equal(t, conn.Title(), "FakeCamera")
-	assert.Equal(t, conn.FPS(), 22)
-	assert.Equal(t, conn.SPC(), 3)
-	assert.True(t, conn.IsOpen())
-	assert.False(t, conn.IsClosing())
-	require.NoError(t, conn.Close())
-	assert.True(t, conn.IsClosing())
+	is.NoErr(err)
+	is.True(conn != nil)
+
+	is.True(len(conn.UUID()) > 0)
+	is.Equal(conn.Title(), "FakeCamera")
+	is.Equal(conn.FPS(), 22)
+	is.Equal(conn.SPC(), 3)
+	is.True(conn.IsOpen())
+	is.True(conn.IsClosing() == false)
+	is.NoErr(conn.Close())
+	is.True(conn.IsClosing())
 }
 
 func TestConnectWithCancelReturnsConnectionAndNoError(t *testing.T) {
+	is := is.New(t)
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
@@ -92,45 +94,51 @@ func TestConnectWithCancelReturnsConnectionAndNoError(t *testing.T) {
 		FPS:            22,
 		SecondsPerClip: 3,
 	}, testVideoBackend{})
-	require.NoError(t, err)
-	require.NotNil(t, conn)
 
-	assert.NotEmpty(t, conn.UUID())
-	assert.Equal(t, conn.Title(), "FakeCamera")
-	assert.Equal(t, conn.FPS(), 22)
-	assert.Equal(t, conn.SPC(), 3)
-	assert.True(t, conn.IsOpen())
-	assert.False(t, conn.IsClosing())
-	require.NoError(t, conn.Close())
-	assert.True(t, conn.IsClosing())
+	is.NoErr(err)
+	is.True(conn != nil)
+
+	is.True(len(conn.UUID()) > 0)
+	is.Equal(conn.Title(), "FakeCamera")
+	is.Equal(conn.FPS(), 22)
+	is.Equal(conn.SPC(), 3)
+	is.True(conn.IsOpen())
+	is.True(conn.IsClosing() == false)
+	is.NoErr(conn.Close())
+	is.True(conn.IsClosing())
 }
 
 func TestConnectReturnsNoConnectionAndError(t *testing.T) {
+	is := is.New(t)
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
 		onConnectError: xerror.New("test error"),
 	})
-	assert.EqualError(t, err, "Unable to connect to camera [FakeCamera]: test error")
-	assert.Nil(t, conn)
+	is.Equal(err.Error(), "Unable to connect to camera [FakeCamera]: test error")
+	is.True(conn == nil)
 }
 
 func TestConnectReadReturnsFrameAndNoError(t *testing.T) {
+	is := is.New(t)
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{})
-	require.NoError(t, err)
-	require.NotNil(t, conn)
+
+	is.NoErr(err)
+	is.True(conn != nil)
 
 	frame, err := conn.Read()
-	assert.NoError(t, err)
-	assert.NotNil(t, frame)
+	is.NoErr(err)
+	is.True(frame != nil)
 }
 
 func TestConnectReadReturnsNoFrameAndError(t *testing.T) {
+	is := is.New(t)
 	conn, err := camera.Connect("FakeCamera", "fakeaddr", camera.Settings{}, testVideoBackend{
 		onConnectionReadError: xerror.New("test error"),
 	})
-	require.NoError(t, err)
-	require.NotNil(t, conn)
+
+	is.NoErr(err)
+	is.True(conn != nil)
 
 	frame, err := conn.Read()
-	assert.EqualError(t, err, "unable to read frame from connection: test error")
-	assert.Nil(t, frame)
+	is.Equal(err.Error(), "unable to read frame from connection: test error")
+	is.True(frame == nil)
 }
