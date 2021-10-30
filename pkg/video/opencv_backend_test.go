@@ -10,7 +10,6 @@ import (
 
 	"github.com/matryer/is"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/internal/videotest"
 	"github.com/tauraamui/xerror"
@@ -393,6 +392,5 @@ func TestClipWriterWriteMultipleClips(t *testing.T) {
 			continue
 		}
 		is.True(errors.Is(err, os.ErrNotExist))
-		assert.ErrorIs(t, err, os.ErrNotExist)
 	}
 }

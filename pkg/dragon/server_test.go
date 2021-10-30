@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	"github.com/stretchr/testify/assert"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/xis"
 	"github.com/tauraamui/xerror"
 )
 
@@ -144,7 +144,7 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 	is.Equal(len(s.Connect()), 0)
 
 	is.Equal(len(warnLogs), 1)
-	assert.Contains(t, warnLogs, "Camera [Disabled camera] is disabled... skipping...")
+	is.True(xis.Contains(warnLogs, "Camera [Disabled camera] is disabled... skipping..."))
 }
 
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {

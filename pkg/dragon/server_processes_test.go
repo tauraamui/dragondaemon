@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/xis"
 )
 
 type ServerProcessTestSuite struct {
@@ -59,9 +59,7 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	suite.server.RunProcesses()
 	time.Sleep(1 * time.Millisecond)
 	<-suite.server.Shutdown()
-	// TODO(tauraamui): replace with custom list/slice
-	// strings contains helper test function
-	assert.Subset(suite.T(), suite.infoLogs, []string{
+	xis.Subset(suite.infoLogs, []string{
 		"Connecting to camera: [TestConn@fake-conn-addr]...",
 		"Connected successfully to camera: [TestConn]",
 		"Streaming video from camera [TestConn]",

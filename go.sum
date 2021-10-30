@@ -158,14 +158,6 @@ github.com/tacusci/logging/v2 v2.1.1 h1:aVgYcSASKwwyRh/s++yFydbn7h4Q90dxFDIklYco
 github.com/tacusci/logging/v2 v2.1.1/go.mod h1:Hin7AeOcbJM7H8Crv8OXCugJFFK5Lo3qlhS6qpwDC2o=
 github.com/takama/daemon v1.0.0 h1:XS3VLnFKmqw2Z7fQ/dHRarrVjdir9G3z7BEP8osjizQ=
 github.com/takama/daemon v1.0.0/go.mod h1:gKlhcjbqtBODg5v9H1nj5dU1a2j2GemtuWSNLD5rxOE=
-github.com/tauraamui/xerror v0.0.0-20211024231613-aa14a9ecaa6b h1:dWqg3M+fLtlLalTQqDV3LZozgmzqRzKBWbgNHW9b9hM=
-github.com/tauraamui/xerror v0.0.0-20211024231613-aa14a9ecaa6b/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
-github.com/tauraamui/xerror v0.0.0-20211025165852-9bf6e1c2b444 h1:lTOVGVayk8N4tRx50BDPxu42M9t38K6NqzXYNr9L524=
-github.com/tauraamui/xerror v0.0.0-20211025165852-9bf6e1c2b444/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
-github.com/tauraamui/xerror v0.0.0-20211027165938-a4bc3bc6552d h1:gHAgjSodUB49SyIm7YpjCmRQVgptth7FK0qPMPcsbpI=
-github.com/tauraamui/xerror v0.0.0-20211027165938-a4bc3bc6552d/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
-github.com/tauraamui/xerror v0.0.0-20211027200109-a054957e567c h1:rzW61JzSRxQuYS0fMpBpzoylKtrry4nhZsXEKVKiPeE=
-github.com/tauraamui/xerror v0.0.0-20211027200109-a054957e567c/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
 github.com/tauraamui/xerror v0.0.0-20211027201245-7be9e626485f h1:uMzLx++jqIVB5xASd5C0xJoLVcRP0uktZg8c4WUiKOM=
 github.com/tauraamui/xerror v0.0.0-20211027201245-7be9e626485f/go.mod h1:+CS36e35qeE+82P7DGhBib7EB1qorBMA+ewe+G8NxmU=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=

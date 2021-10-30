@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/matryer/is"
 	"github.com/stretchr/testify/require"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/dragondaemon/pkg/xis"
 )
 
 const testClipPath = "/testroot/clips/TestConn/2010-02-2/2010-02-02 19:45:00"
@@ -19,8 +20,9 @@ func overloadFatalLog(overload func(string, ...interface{})) func() {
 }
 
 func TestNewClip(t *testing.T) {
+	is := is.New(t)
 	clip := NewClip(testClipPath, 22)
-	assert.NotNil(t, clip)
+	is.True(clip != nil)
 }
 
 type testFrame struct {
@@ -42,6 +44,7 @@ func (frame *testFrame) Close() {
 }
 
 func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
+	is := is.New(t)
 	clip := NewClip(testClipPath, 22)
 	require.NotNil(t, clip)
 
@@ -49,11 +52,12 @@ func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 	frame := &testFrame{onClose: func() { frameCloseInvoked = true }}
 	clip.AppendFrame(frame)
 
-	assert.Contains(t, clip.GetFrames(), frame)
-	assert.False(t, frameCloseInvoked)
+	is.True(xis.Contains(clip.GetFrames(), frame))
+	is.True(frameCloseInvoked == false)
 }
 
 func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
+	is := is.New(t)
 	clip := NewClip(testClipPath, 22)
 	require.NotNil(t, clip)
 
@@ -61,13 +65,15 @@ func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
 	frame := &testFrame{onClose: func() { frameCloseInvoked = true }}
 	clip.AppendFrame(frame)
 
-	assert.Contains(t, clip.GetFrames(), frame)
+	is.True(xis.Contains(clip.GetFrames(), frame))
+	is.True(xis.Contains(clip.GetFrames(), frame))
 	clip.Close()
 
-	assert.True(t, frameCloseInvoked)
+	is.True(frameCloseInvoked)
 }
 
 func TestClipAppendFailsIfClipAlreadyClosed(t *testing.T) {
+	is := is.New(t)
 	var fatalLogs []string
 	resetLogFatal := overloadFatalLog(
 		func(format string, a ...interface{}) {
@@ -85,5 +91,5 @@ func TestClipAppendFailsIfClipAlreadyClosed(t *testing.T) {
 	clip.Close()
 	clip.AppendFrame(&testFrame{})
 
-	assert.Contains(t, fatalLogs, "cannot append frame to closed clip")
+	is.True(xis.Contains(fatalLogs, "cannot append frame to closed clip"))
 }

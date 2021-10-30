@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
@@ -15,6 +14,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/xis"
 	"github.com/tauraamui/xerror"
 )
 
@@ -165,7 +165,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	is.NoErr(err)
 
 	is.Equal(oc.v(), maxLoopCount)
-	is.Equal(rc.v(), maxLoopCount/2) // read frame count should be half of total loop count
+	is.True(rc.v() == maxLoopCount/2 || rc.v() == (maxLoopCount/2)+1) // read frame count should be half of total loop count
 
 	err = callW3sTimeout(func() { proc.Stop(); proc.Wait() })
 	is.NoErr(err)
@@ -272,6 +272,7 @@ checkFrameReadCountLoop:
 }
 
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
+	is := is.New(suite.T())
 	testConn := mockCameraConn{
 		isOpen:   true,
 		readErr:  xerror.New("testing unable to read from mock camera stream"),
@@ -288,9 +289,8 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	proc.Setup().Start()
 	proc.Wait()
 
-	assert.Contains(
-		suite.T(),
+	is.True(xis.Contains(
 		suite.errorLogs,
 		"Unable to retrieve frame: run out of frames to read. Auto re-connecting is not yet implemented",
-	)
+	))
 }
