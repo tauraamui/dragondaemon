@@ -3,13 +3,15 @@ package auth_test
 import (
 	"encoding/json"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/api/auth"
 )
+
+const testingSecret = "testsecret"
 
 type testCustomClaims struct {
 	UserUUID  string `json:"useruuid"`
@@ -17,73 +19,82 @@ type testCustomClaims struct {
 	ExpiresAt int    `json:"exp"`
 }
 
-var _ = Describe("Auth", func() {
+func TestGenTokenReturnsSignedJWTContainingPayload(t *testing.T) {
+	reset := overloadTimeNow()
+	defer reset()
 
-	const TESTING_SECRET = "testsecret"
+	is := is.New(t)
+	token, err := auth.GenToken(testingSecret, "testuser")
+	is.NoErr(err)
+	is.True(len(token) > 0)
 
-	Context("GenToken", func() {
-		It("Should return a JWT which contains payload data with given username and is signed correctly", func() {
-			auth.TimeNow = func() time.Time {
-				return time.Date(2001, 1, 1, 12, 0, 0, 0, time.UTC)
-			}
+	segs := strings.Split(token, ".")
+	is.Equal(len(segs), 3)
 
-			defer func() { auth.TimeNow = time.Now }()
+	claims, err := jwt.DecodeSegment(segs[1])
+	is.NoErr(err)
+	tc := testCustomClaims{}
+	is.NoErr(json.Unmarshal(claims, &tc))
 
-			token, err := auth.GenToken(TESTING_SECRET, "testuser")
-			Expect(err).To(BeNil())
-			Expect(token).ToNot(BeEmpty())
+	is.Equal(tc.UserUUID, "testuser")
+	is.Equal(tc.Audience, "dragondaemon")
+	is.True(tc.ExpiresAt != 0)
+	println(tc.ExpiresAt)
+	println(time.Unix(int64(tc.ExpiresAt), 0).String())
+	is.Equal(time.Unix(int64(tc.ExpiresAt), 0).Minute(), 15)
+}
 
-			tokenSegments := strings.Split(token, ".")
-			Expect(tokenSegments).To(HaveLen(3))
-			decodedClaims, err := jwt.DecodeSegment(tokenSegments[1])
-			Expect(err).To(BeNil())
+func TestValidateTokenReturnCurrentUserUUIDFromPayload(t *testing.T) {
+	is := is.New(t)
 
-			testCustomClaims := testCustomClaims{}
-			Expect(json.Unmarshal(decodedClaims, &testCustomClaims)).To(BeNil())
+	token, err := auth.GenToken(testingSecret, "testuser")
+	is.NoErr(err)
+	is.True(len(token) > 0)
 
-			Expect(testCustomClaims.UserUUID).To(Equal("testuser"))
-			Expect(testCustomClaims.Audience).To(Equal("dragondaemon"))
-			Expect(testCustomClaims.ExpiresAt).ToNot(BeZero())
-			Expect(time.Unix(int64(testCustomClaims.ExpiresAt), 0).Minute()).To(Equal(15))
-		})
+	uuid, err := auth.ValidateToken(testingSecret, token)
+	is.NoErr(err)
+	is.Equal(uuid, "testuser")
+}
 
-		It("Should validate token and return correct user UUID from payload segment", func() {
-			token, err := auth.GenToken(TESTING_SECRET, "testuser")
-			Expect(err).To(BeNil())
-			Expect(token).ToNot(BeEmpty())
+func TestHandleValidationErrorGracefullyAndReturnWrappedError(t *testing.T) {
+	is := is.New(t)
 
-			userUUID, err := auth.ValidateToken(TESTING_SECRET, token)
-			Expect(err).To(BeNil())
-			Expect(userUUID).To(Equal("testuser"))
-		})
+	token, err := auth.GenToken(testingSecret, "testuser")
+	is.NoErr(err)
+	is.True(len(token) > 0)
 
-		It("Should handle validation error gracefully and return wrapped error", func() {
-			token, err := auth.GenToken(TESTING_SECRET, "testuser")
-			Expect(err).To(BeNil())
-			Expect(token).ToNot(BeEmpty())
+	uuid, err := auth.ValidateToken("incorrect-secret", token)
+	is.True(err != nil)
+	is.Equal(err.Error(), "unable to validate token: signature is invalid")
+	is.True(len(uuid) == 0)
+}
 
-			userUUID, err := auth.ValidateToken("incorrect-secret", token)
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("unable to validate token: signature is invalid"))
-			Expect(userUUID).To(BeEmpty())
-		})
+func TestHandleUnableToParseClaimsErrorGracefullyAndReturnError(t *testing.T) {
+	is := is.New(t)
 
-		It("Should handle unable to parse claims gracefully and return error", func() {
-			userUUID, err := auth.CheckClaims(auth.NotPointerForCustomClaims)
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("unable to parse claims"))
-			Expect(userUUID).To(BeEmpty())
-		})
+	uuid, err := auth.CheckClaims(auth.NotPointerForCustomClaims)
+	is.True(err != nil)
+	is.Equal(err.Error(), "unable to parse claims")
+	is.True(len(uuid) == 0)
+}
 
-		It("Should handle token expired error gracefully and return error", func() {
-			auth.CustomClaims.StandardClaims = jwt.StandardClaims{
-				ExpiresAt: 1,
-			}
+func TestHandleTokenExpiredErrorGracefullyAndReturnError(t *testing.T) {
+	is := is.New(t)
 
-			userUUID, err := auth.CheckClaims(auth.CustomClaims)
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("auth token has expired"))
-			Expect(userUUID).To(BeEmpty())
-		})
-	})
-})
+	auth.CustomClaims.StandardClaims = jwt.StandardClaims{
+		ExpiresAt: 1,
+	}
+
+	uuid, err := auth.CheckClaims(auth.CustomClaims)
+	is.True(err != nil)
+	is.Equal(err.Error(), "auth token has expired")
+	is.True(len(uuid) == 0)
+}
+
+func overloadTimeNow() func() {
+	return auth.OverloadTimeNow(
+		func() time.Time {
+			return time.Date(2001, 1, 1, 12, 0, 0, 0, time.UTC)
+		},
+	)
+}

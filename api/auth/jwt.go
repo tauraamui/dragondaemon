@@ -12,16 +12,17 @@ type customClaims struct {
 	jwt.StandardClaims
 }
 
-var TimeNow = func() time.Time {
+var timeNow = func() time.Time {
 	return time.Now()
 }
 
 func GenToken(secret, username string) (string, error) {
+	expiresAt := timeNow().UTC().Add(time.Minute * 15).Unix()
 	claims := customClaims{
 		UserUUID: username,
 		StandardClaims: jwt.StandardClaims{
 			Audience:  "dragondaemon",
-			ExpiresAt: TimeNow().UTC().Add(time.Minute * 15).Unix(),
+			ExpiresAt: expiresAt,
 		},
 	}
 
@@ -30,6 +31,7 @@ func GenToken(secret, username string) (string, error) {
 }
 
 func ValidateToken(secret, tokenString string) (string, error) {
+	jwt.TimeFunc = timeNow
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&customClaims{},
@@ -51,7 +53,7 @@ func checkClaims(claims jwt.Claims) (string, error) {
 		return "", xerror.New("unable to parse claims")
 	}
 
-	if cc.ExpiresAt < TimeNow().UTC().Unix() {
+	if cc.ExpiresAt < timeNow().UTC().Unix() {
 		return "", xerror.New("auth token has expired")
 	}
 
