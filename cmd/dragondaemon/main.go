@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -11,10 +12,12 @@ import (
 
 	"github.com/tacusci/logging/v2"
 	"github.com/takama/daemon"
-	"github.com/tauraamui/dragondaemon/api"
 	"github.com/tauraamui/dragondaemon/pkg/config"
+	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	db "github.com/tauraamui/dragondaemon/pkg/database"
-	"github.com/tauraamui/dragondaemon/pkg/media"
+	"github.com/tauraamui/dragondaemon/pkg/dragon"
+	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/dragondaemon/pkg/video"
 )
 
 const (
@@ -28,14 +31,14 @@ type Service struct {
 
 // Setup will setup local DB and ask for root admin credentials
 func (service *Service) Setup() (string, error) {
-	logging.Info("Setting up dragondaemon service...") //nolint
+	log.Info("Setting up dragondaemon service...")
 
-	err := config.Setup()
+	err := config.DefaultCreator().Create()
 	if err != nil {
-		if !errors.Is(err, config.ErrConfigAlreadyExists) {
+		if !errors.Is(err, configdef.ErrConfigAlreadyExists) {
 			return "", err
 		}
-		logging.Error(err.Error()) //nolint
+		log.Error(err.Error())
 	}
 
 	err = db.Setup()
@@ -43,17 +46,17 @@ func (service *Service) Setup() (string, error) {
 		if !errors.Is(err, db.ErrDBAlreadyExists) {
 			return "", err
 		}
-		logging.Error(err.Error()) //nolint
+		log.Error(err.Error())
 	}
 
 	return "Setup successful...", nil
 }
 
 func (service *Service) RemoveSetup() (string, error) {
-	logging.Info("Removing setup for dragondaemon service...") //nolint
+	log.Info("Removing setup for dragondaemon service...")
 	err := db.Destroy()
 	if err != nil {
-		logging.Error("unable to delete database file: %s", err.Error()) //nolint
+		log.Error("unable to delete database file: %s", err.Error())
 	}
 
 	return "Removing setup successful...", nil
@@ -87,104 +90,42 @@ func (service *Service) Manage() (string, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	logging.Info("Starting dragon daemon...") //nolint
+	log.Info("Starting dragon daemon...")
 
-	mediaServer := media.NewServer(debugMode)
-
-	cfg := config.New()
-	logging.Info("Loading configuration") //nolint
-	err := cfg.Load()
+	server, err := dragon.NewServer(config.DefaultResolver(), video.ResolveBackend(os.Getenv("DRAGON_VIDEO_BACKEND")))
 	if err != nil {
-		logging.Fatal("Error loading configuration: %v", err) //nolint
-	}
-	logging.Info("Loaded configuration") //nolint
-
-	for _, c := range cfg.Cameras {
-		if c.Disabled {
-			logging.Warn("Connection %s is disabled, skipping...", c.Title) //nolint
-			continue
-		}
-
-		settings := media.ConnectonSettings{
-			PersistLocation: c.PersistLoc,
-			MockWriter:      c.MockWriter,
-			MockCapturer:    c.MockCapturer,
-			FPS:             c.FPS,
-			SecondsPerClip:  c.SecondsPerClip,
-			DateTimeLabel:   c.DateTimeLabel,
-			DateTimeFormat:  c.DateTimeFormat,
-			Schedule:        c.Schedule,
-			Reolink:         c.ReolinkAdvanced,
-		}
-
-		if err := settings.Validate(); err != nil {
-			logging.Fatal(fmt.Errorf("settings validation failed: %w", err).Error())
-		}
-
-		mediaServer.Connect(
-			c.Title,
-			c.Address,
-			settings,
-		)
+		log.Fatal(err.Error())
 	}
 
-	rpcListenPort := os.Getenv("DRAGON_RPC_PORT")
-	if len(rpcListenPort) == 0 || !strings.Contains(rpcListenPort, ":") {
-		rpcListenPort = ":3121"
-	}
+	ctx, cancelStartup := context.WithCancel(context.Background())
+	go startupServer(ctx, server)
 
-	logging.Info("Running API server on port %s...", rpcListenPort) //nolint
-	mediaServerAPI, err := api.New(
-		interrupt,
-		mediaServer,
-		api.Options{
-			RPCListenPort: rpcListenPort,
-			SigningSecret: cfg.Secret,
-		},
-	)
-	if err != nil {
-		logging.Error("unable to start API server: %v", err) //nolint
-	} else {
-		err := api.StartRPC(mediaServerAPI)
-		if err != nil {
-			logging.Error("Unable to start API RPC server: %v...", err) //nolint
-		}
-	}
-
-	logging.Info("Running media server...") //nolint
-	mediaServer.Run(media.Options{
-		MaxClipAgeInDays: cfg.MaxClipAgeInDays,
-	})
-
-	// wait for application terminate signal from OS
 	killSignal := <-interrupt
 	fmt.Print("\r")
-	logging.Error("Received signal: %s", killSignal) //nolint
+	log.Error("Received signal: %s", killSignal)
 
-	logging.Info("Shutting down API server...") //nolint
-	err = api.ShutdownRPC(mediaServerAPI)
-	if err != nil {
-		logging.Error("Unable to shutdown API server: %v...", err) //nolint
-	}
-
-	// trigger server shutdown and wait
-	logging.Info("Shutting down media server...") //nolint
-	<-mediaServer.Shutdown()
-
-	logging.Info("Closing camera connections...") //nolint
-	err = mediaServer.Close()
-	if err != nil {
-		logging.Error(fmt.Sprintf("Safe shutdown unsuccessful: %v", err)) //nolint
-		os.Exit(1)
-	}
+	cancelStartup()
+	log.Info("Shutting down server...")
+	<-server.Shutdown()
 
 	return "Shutdown successful... BYE! 👋", nil
 }
 
-var debugMode bool
+func startupServer(ctx context.Context, server *dragon.Server) {
+	connectToCameras(ctx, server)
+	server.SetupProcesses()
+	server.RunProcesses()
+}
+
+func connectToCameras(ctx context.Context, server *dragon.Server) {
+	errs := server.ConnectWithCancel(ctx)
+	for _, err := range errs {
+		log.Error(err.Error())
+	}
+}
 
 func init() {
-	logging.CallbackLabelLevel = 4
+	logging.CallbackLabelLevel = 5
 	logging.ColorLogLevelLabelOnly = true
 	loggingLevel := os.Getenv("DRAGON_LOGGING_LEVEL")
 
@@ -194,11 +135,10 @@ func init() {
 	case "warn":
 		logging.CurrentLoggingLevel = logging.WarnLevel
 	case "debug":
-		debugMode = true
 		logging.CurrentLoggingLevel = logging.DebugLevel
 		logging.CallbackLabel = true
 	default:
-		logging.CurrentLoggingLevel = logging.InfoLevel
+		logging.CurrentLoggingLevel = logging.WarnLevel
 	}
 }
 
