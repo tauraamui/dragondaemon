@@ -136,6 +136,12 @@ func TestUserRepo(t *testing.T) {
 			findWith: "non-existent-uuid",
 			error:    errors.New("user of uuid non-existent-uuid not found"),
 		},
+		{
+			title:    "find user by name returns error",
+			findFunc: "BYNAME",
+			findWith: "non-existent-name",
+			error:    errors.New("user of name non-existent-name not found"),
+		},
 	}
 
 	for _, tt := range tests {
