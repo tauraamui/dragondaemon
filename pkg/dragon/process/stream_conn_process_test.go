@@ -272,7 +272,6 @@ checkFrameReadCountLoop:
 }
 
 func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError() {
-	is := is.New(suite.T())
 	testConn := mockCameraConn{
 		isOpen:   true,
 		readErr:  xerror.New("testing unable to read from mock camera stream"),
@@ -289,8 +288,9 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	proc.Setup().Start()
 	proc.Wait()
 
-	is.True(xis.Contains(
+	xis := xis.New(is.New(suite.T()))
+	xis.Contains(
 		suite.errorLogs,
 		"Unable to retrieve frame: run out of frames to read. Auto re-connecting is not yet implemented",
-	))
+	)
 }

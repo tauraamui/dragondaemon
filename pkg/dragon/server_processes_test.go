@@ -59,6 +59,7 @@ func (suite *ServerProcessTestSuite) TestRunProcesses() {
 	suite.server.RunProcesses()
 	time.Sleep(1 * time.Millisecond)
 	<-suite.server.Shutdown()
+	xis := xis.New(is.New(suite.T()))
 	xis.Subset(suite.infoLogs, []string{
 		"Connecting to camera: [TestConn@fake-conn-addr]...",
 		"Connected successfully to camera: [TestConn]",

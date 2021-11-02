@@ -144,7 +144,8 @@ func TestServerLoadConfigWithDisabledsLogs(t *testing.T) {
 	is.Equal(len(s.Connect()), 0)
 
 	is.Equal(len(warnLogs), 1)
-	is.True(xis.Contains(warnLogs, "Camera [Disabled camera] is disabled... skipping..."))
+	xis := xis.New(is)
+	xis.Contains(warnLogs, "Camera [Disabled camera] is disabled... skipping...")
 }
 
 func TestServerLoadConfigGivesErrorOnResolveError(t *testing.T) {

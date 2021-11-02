@@ -4,48 +4,72 @@ import (
 	"bytes"
 	"reflect"
 	"strings"
+
+	"github.com/matryer/is"
 )
 
-func Contains(s, contains interface{}) bool {
-	ok, found := includeElement(s, contains)
-	return ok && found
+type I interface {
+	Contains(interface{}, interface{})
+	Subset(interface{}, interface{})
 }
 
-func Subset(list, subset interface{}) (ok bool) {
+type x struct {
+	is *is.I
+}
+
+func New(i *is.I) I {
+	return &x{is: i}
+}
+
+func (i *x) Contains(s, contains interface{}) {
+	i.is.Helper()
+	ok, found := includeElement(s, contains)
+	i.is.True(ok && found)
+}
+
+func (i *x) Subset(list, subset interface{}) {
+	eval := true
+
+	defer func() {
+		i.is.True(eval)
+	}()
+
 	if subset == nil {
-		return true // we consider nil to be equal to the nil set
+		eval = true // we consider nil to be equal to the nil set
+		return
 	}
 
 	subsetValue := reflect.ValueOf(subset)
-	defer func() {
-		if e := recover(); e != nil {
-			ok = false
-		}
-	}()
+	if e := recover(); e != nil {
+		eval = false
+		return
+	}
 
 	listKind := reflect.TypeOf(list).Kind()
 	subsetKind := reflect.TypeOf(subset).Kind()
 
 	if listKind != reflect.Array && listKind != reflect.Slice {
-		return false
+		eval = false
+		return
 	}
 
 	if subsetKind != reflect.Array && subsetKind != reflect.Slice {
-		return false
+		eval = false
+		return
 	}
 
 	for i := 0; i < subsetValue.Len(); i++ {
 		element := subsetValue.Index(i).Interface()
 		ok, found := includeElement(list, element)
 		if !ok {
-			return false
+			eval = false
+			return
 		}
 		if !found {
-			return false
+			eval = false
+			return
 		}
 	}
-
-	return true
 }
 
 func includeElement(list interface{}, element interface{}) (ok, found bool) {

@@ -52,21 +52,23 @@ func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 	frame := &testFrame{onClose: func() { frameCloseInvoked = true }}
 	clip.AppendFrame(frame)
 
-	is.True(xis.Contains(clip.GetFrames(), frame))
+	xis := xis.New(is)
+	xis.Contains(clip.GetFrames(), frame)
 	is.True(frameCloseInvoked == false)
 }
 
 func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
 	is := is.New(t)
 	clip := NewClip(testClipPath, 22)
-	require.NotNil(t, clip)
+	is.True(clip != nil)
 
 	frameCloseInvoked := false
 	frame := &testFrame{onClose: func() { frameCloseInvoked = true }}
 	clip.AppendFrame(frame)
 
-	is.True(xis.Contains(clip.GetFrames(), frame))
-	is.True(xis.Contains(clip.GetFrames(), frame))
+	xis := xis.New(is)
+	xis.Contains(clip.GetFrames(), frame)
+	xis.Contains(clip.GetFrames(), frame)
 	clip.Close()
 
 	is.True(frameCloseInvoked)
@@ -86,10 +88,11 @@ func TestClipAppendFailsIfClipAlreadyClosed(t *testing.T) {
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 
 	clip := NewClip(testClipPath, 22)
-	require.NotNil(t, clip)
+	is.True(clip != nil)
 
 	clip.Close()
 	clip.AppendFrame(&testFrame{})
 
-	is.True(xis.Contains(fatalLogs, "cannot append frame to closed clip"))
+	xis := xis.New(is)
+	xis.Contains(fatalLogs, "cannot append frame to closed clip")
 }
