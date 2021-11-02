@@ -37,7 +37,9 @@ func (w *mockGormWrapper) Error() error {
 }
 
 func (w *mockGormWrapper) Create(value interface{}) repos.GormWrapper {
-	w.created = append(w.created, value)
+	if w.error == nil {
+		w.created = append(w.created, value)
+	}
 	return w
 }
 
@@ -83,7 +85,35 @@ func replace(i, v interface{}) error {
 	return nil
 }
 
-type userRepoTest struct {
+func TestUserRepoCreateNoErr(t *testing.T) {
+	is := is.New(t)
+	xis := xis.New(is)
+
+	gorm := mockGormWrapper{}
+	repo := repos.UserRepository{DB: &gorm}
+
+	user := models.User{
+		Name: "new user",
+	}
+	is.NoErr(repo.Create(&user))
+	xis.Contains(gorm.created, &user)
+}
+
+func TestUserRepoCreateWithErr(t *testing.T) {
+	is := is.New(t)
+
+	err := errors.New("unable to create data")
+	gorm := mockGormWrapper{error: err}
+	repo := repos.UserRepository{DB: &gorm}
+
+	user := models.User{
+		Name: "new user",
+	}
+	is.Equal(repo.Create(&user).Error(), err.Error())
+	is.Equal(len(gorm.created), 0)
+}
+
+type userRepoFindByTest struct {
 	title              string
 	skip               bool
 	existingUser       models.User
@@ -97,13 +127,13 @@ type userRepoTest struct {
 	expectedFirstConds []interface{}
 }
 
-func TestUserRepo(t *testing.T) {
+func TestUserRepoFindBy(t *testing.T) {
 	existingUser := models.User{
 		UUID: "existing-test-user",
 		Name: "existing-test-user-name",
 	}
 
-	tests := []userRepoTest{
+	tests := []userRepoFindByTest{
 		{
 			title: "find user by uuid",
 			existingUser: models.User{
