@@ -42,13 +42,11 @@ func (w *mockGormWrapper) Create(value interface{}) repos.GormWrapper {
 }
 
 func (w *mockGormWrapper) Where(query interface{}, args ...interface{}) repos.GormWrapper {
-	if w.chain == nil {
-		w.chain = &queryChain{
-			where: whereQuery{
-				query: query,
-				args:  args,
-			},
-		}
+	w.chain = &queryChain{
+		where: whereQuery{
+			query: query,
+			args:  args,
+		},
 	}
 	return w
 }
@@ -83,31 +81,19 @@ func replace(i, v interface{}) error {
 	return nil
 }
 
-func TestUserRepoFindUserByUUID(t *testing.T) {
-	is := is.New(t)
-	xis := xis.New(is)
-
-	existingUser := models.User{
-		UUID: "existing-test-user",
-		Name: "existing-test-user-name",
-	}
-
-	gorm := mockGormWrapper{result: existingUser}
-	repo := repos.UserRepository{DB: &gorm}
-
-	u, err := repo.FindByUUID("existing-test-user")
-	is.NoErr(err)
-	is.Equal(u.Name, "existing-test-user-name")
-
-	is.Equal(gorm.chain.where.query, "uuid = ?")
-	xis.Contains(gorm.chain.where.args, "existing-test-user")
-	is.Equal(len(gorm.chain.where.first.conds), 0)
+type userRepoTest struct {
+	title              string
+	skip               bool
+	findFunc           func(string) (models.User, error)
+	findWith           string
+	expectedResultUUID string
+	expectedResultName string
+	expectedWhereQuery string
+	expectedWhereArgs  string
+	expectedFirstConds []interface{}
 }
 
-func TestUserRepoFindUserByName(t *testing.T) {
-	is := is.New(t)
-	xis := xis.New(is)
-
+func TestUserRepo(t *testing.T) {
 	existingUser := models.User{
 		UUID: "existing-test-user",
 		Name: "existing-test-user-name",
@@ -116,11 +102,42 @@ func TestUserRepoFindUserByName(t *testing.T) {
 	gorm := mockGormWrapper{result: existingUser}
 	repo := repos.UserRepository{DB: &gorm}
 
-	u, err := repo.FindByName("existing-test-user-name")
-	is.NoErr(err)
-	is.Equal(u.UUID, "existing-test-user")
+	tests := []userRepoTest{
+		{
+			findFunc:           repo.FindByUUID,
+			findWith:           "existing-test-user",
+			expectedResultUUID: "existing-test-user",
+			expectedResultName: "existing-test-user-name",
+			expectedWhereQuery: "uuid = ?",
+			expectedWhereArgs:  "existing-test-user",
+		},
+		{
+			findFunc:           repo.FindByName,
+			findWith:           "existing-test-user-name",
+			expectedResultUUID: "existing-test-user",
+			expectedResultName: "existing-test-user-name",
+			expectedWhereQuery: "name = ?",
+			expectedWhereArgs:  "existing-test-user-name",
+		},
+	}
 
-	is.Equal(gorm.chain.where.query, "name = ?")
-	xis.Contains(gorm.chain.where.args, "existing-test-user-name")
-	is.Equal(len(gorm.chain.where.first.conds), 0)
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			if tt.skip {
+				t.Skip()
+			}
+
+			is := is.New(t)
+			xis := xis.New(is)
+
+			u, err := tt.findFunc(tt.findWith)
+			is.NoErr(err)
+			is.Equal(u.UUID, tt.expectedResultUUID)
+			is.Equal(u.Name, tt.expectedResultName)
+
+			is.Equal(gorm.chain.where.query, tt.expectedWhereQuery)
+			xis.Contains(gorm.chain.where.args, tt.expectedWhereArgs)
+			is.Equal(gorm.chain.where.first.conds, tt.expectedFirstConds)
+		})
+	}
 }
