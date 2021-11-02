@@ -51,17 +51,19 @@ func (w *mockGormWrapper) Where(query interface{}, args ...interface{}) repos.Go
 	return w
 }
 
-func (w *mockGormWrapper) First(dest interface{}, conds ...interface{}) (ref repos.GormWrapper) {
-	ref = w
+func (w *mockGormWrapper) First(dest interface{}, conds ...interface{}) repos.GormWrapper {
 	if w.chain == nil {
 		w.error = errors.New("need to call query first")
-		return
+		return w
 	}
 
 	w.chain.where.first = firstSelect{conds}
-	w.error = replace(dest, w.result)
+	err := replace(dest, w.result)
+	if w.error == nil {
+		w.error = err
+	}
 
-	return
+	return w
 }
 func replace(i, v interface{}) error {
 	val := reflect.ValueOf(i)
@@ -84,7 +86,9 @@ func replace(i, v interface{}) error {
 type userRepoTest struct {
 	title              string
 	skip               bool
-	findFunc           func(string) (models.User, error)
+	existingUser       models.User
+	error              error
+	findFunc           string
 	findWith           string
 	expectedResultUUID string
 	expectedResultName string
@@ -99,12 +103,14 @@ func TestUserRepo(t *testing.T) {
 		Name: "existing-test-user-name",
 	}
 
-	gorm := mockGormWrapper{result: existingUser}
-	repo := repos.UserRepository{DB: &gorm}
-
 	tests := []userRepoTest{
 		{
-			findFunc:           repo.FindByUUID,
+			title: "find user by uuid",
+			existingUser: models.User{
+				UUID: "existing-test-user",
+				Name: "existing-test-user-name",
+			},
+			findFunc:           "BYUUID",
 			findWith:           "existing-test-user",
 			expectedResultUUID: "existing-test-user",
 			expectedResultName: "existing-test-user-name",
@@ -112,12 +118,23 @@ func TestUserRepo(t *testing.T) {
 			expectedWhereArgs:  "existing-test-user",
 		},
 		{
-			findFunc:           repo.FindByName,
+			title: "find user by name",
+			existingUser: models.User{
+				UUID: "existing-test-user",
+				Name: "existing-test-user-name",
+			},
+			findFunc:           "BYNAME",
 			findWith:           "existing-test-user-name",
 			expectedResultUUID: "existing-test-user",
 			expectedResultName: "existing-test-user-name",
 			expectedWhereQuery: "name = ?",
 			expectedWhereArgs:  "existing-test-user-name",
+		},
+		{
+			title:    "find user by uuid returns error",
+			findFunc: "BYUUID",
+			findWith: "non-existent-uuid",
+			error:    errors.New("user of uuid non-existent-uuid not found"),
 		},
 	}
 
@@ -130,8 +147,22 @@ func TestUserRepo(t *testing.T) {
 			is := is.New(t)
 			xis := xis.New(is)
 
-			u, err := tt.findFunc(tt.findWith)
-			is.NoErr(err)
+			gorm := mockGormWrapper{result: existingUser, error: tt.error}
+			repo := repos.UserRepository{DB: &gorm}
+			var findFunc func(string) (models.User, error)
+			switch tt.findFunc {
+			case "BYUUID":
+				findFunc = repo.FindByUUID
+			case "BYNAME":
+				findFunc = repo.FindByName
+			}
+
+			u, err := findFunc(tt.findWith)
+			if err != nil {
+				is.Equal(err.Error(), tt.error.Error())
+				return
+			}
+
 			is.Equal(u.UUID, tt.expectedResultUUID)
 			is.Equal(u.Name, tt.expectedResultName)
 
