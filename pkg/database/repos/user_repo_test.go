@@ -20,12 +20,12 @@ type mockGormWrapper struct {
 
 type queryChain struct {
 	where whereQuery
-	first firstSelect
 }
 
 type whereQuery struct {
 	query interface{}
 	args  []interface{}
+	first firstSelect
 }
 
 type firstSelect struct {
@@ -60,7 +60,7 @@ func (w *mockGormWrapper) First(dest interface{}, conds ...interface{}) (ref rep
 		return
 	}
 
-	w.chain.first = firstSelect{conds}
+	w.chain.where.first = firstSelect{conds}
 	w.error = replace(dest, w.result)
 
 	return
@@ -83,8 +83,10 @@ func replace(i, v interface{}) error {
 	return nil
 }
 
-func TestUserRepoWithExistingUser(t *testing.T) {
+func TestUserRepoFindUserByUUID(t *testing.T) {
 	is := is.New(t)
+	xis := xis.New(is)
+
 	existingUser := models.User{
 		UUID: "existing-test-user",
 		Name: "existing-test-user-name",
@@ -98,6 +100,27 @@ func TestUserRepoWithExistingUser(t *testing.T) {
 	is.Equal(u.Name, "existing-test-user-name")
 
 	is.Equal(gorm.chain.where.query, "uuid = ?")
-	xis := xis.New(is)
 	xis.Contains(gorm.chain.where.args, "existing-test-user")
+	is.Equal(len(gorm.chain.where.first.conds), 0)
+}
+
+func TestUserRepoFindUserByName(t *testing.T) {
+	is := is.New(t)
+	xis := xis.New(is)
+
+	existingUser := models.User{
+		UUID: "existing-test-user",
+		Name: "existing-test-user-name",
+	}
+
+	gorm := mockGormWrapper{result: existingUser}
+	repo := repos.UserRepository{DB: &gorm}
+
+	u, err := repo.FindByName("existing-test-user-name")
+	is.NoErr(err)
+	is.Equal(u.UUID, "existing-test-user")
+
+	is.Equal(gorm.chain.where.query, "name = ?")
+	xis.Contains(gorm.chain.where.args, "existing-test-user-name")
+	is.Equal(len(gorm.chain.where.first.conds), 0)
 }

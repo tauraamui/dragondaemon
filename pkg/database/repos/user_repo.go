@@ -10,7 +10,6 @@ type UserRepository struct {
 }
 
 func (r *UserRepository) Create(user *models.User) error {
-	// return r.DB.Create(user).Error
 	return r.DB.Create(user).Error()
 }
 
