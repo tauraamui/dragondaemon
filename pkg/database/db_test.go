@@ -127,7 +127,7 @@ var _ = Describe("Data", func() {
 
 			conn, err := data.Connect()
 			Expect(err).To(BeNil())
-			userRepo := repos.UserRepository{DB: conn}
+			userRepo := repos.UserRepository{DB: repos.Wrap(conn)}
 
 			user, err := userRepo.FindByName("testadmin")
 			Expect(err).To(BeNil())

@@ -136,7 +136,7 @@ var openDBConnection = func(path string) (*gorm.DB, error) {
 }
 
 func createRootUser(db *gorm.DB, username, password string) error {
-	userRepo := repos.UserRepository{DB: db}
+	userRepo := repos.UserRepository{DB: repos.Wrap(db)}
 	return userRepo.Create(&models.User{
 		Name:     username,
 		AuthHash: password,
