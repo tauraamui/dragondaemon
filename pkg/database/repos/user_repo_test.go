@@ -128,11 +128,6 @@ type userRepoFindByTest struct {
 }
 
 func TestUserRepoFindBy(t *testing.T) {
-	existingUser := models.User{
-		UUID: "existing-test-user",
-		Name: "existing-test-user-name",
-	}
-
 	tests := []userRepoFindByTest{
 		{
 			title: "find user by uuid",
@@ -183,7 +178,7 @@ func TestUserRepoFindBy(t *testing.T) {
 			is := is.New(t)
 			xis := xis.New(is)
 
-			gorm := mockGormWrapper{result: existingUser, error: tt.error}
+			gorm := mockGormWrapper{result: tt.existingUser, error: tt.error}
 			repo := repos.UserRepository{DB: &gorm}
 			var findFunc func(string) (models.User, error)
 			switch tt.findFunc {
