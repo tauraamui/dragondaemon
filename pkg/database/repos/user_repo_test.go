@@ -145,15 +145,15 @@ func TestUserRepoFindBy(t *testing.T) {
 		{
 			title: "find user by name",
 			existingUser: models.User{
-				UUID: "existing-test-user",
-				Name: "existing-test-user-name",
+				UUID: "existing-test-user-by-name",
+				Name: "existing-test-user-slim-jim",
 			},
 			findFunc:           "BYNAME",
-			findWith:           "existing-test-user-name",
-			expectedResultUUID: "existing-test-user",
-			expectedResultName: "existing-test-user-name",
+			findWith:           "existing-test-user-slim-jim",
+			expectedResultUUID: "existing-test-user-by-name",
+			expectedResultName: "existing-test-user-slim-jim",
 			expectedWhereQuery: "name = ?",
-			expectedWhereArgs:  "existing-test-user-name",
+			expectedWhereArgs:  "existing-test-user-slim-jim",
 		},
 		{
 			title:    "find user by uuid returns error",
