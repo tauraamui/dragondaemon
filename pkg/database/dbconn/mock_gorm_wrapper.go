@@ -88,14 +88,14 @@ func (w *mockGormWrapper) First(dest interface{}, conds ...interface{}) GormWrap
 	}
 
 	w.chain.Where.First = firstSelect{conds}
-	err := replace(dest, w.result)
+	err := Replace(dest, w.result)
 	if w.error == nil {
 		w.error = err
 	}
 
 	return w
 }
-func replace(i, v interface{}) error {
+func Replace(i, v interface{}) error {
 	val := reflect.ValueOf(i)
 	if val.Kind() != reflect.Ptr {
 		return errors.New("not a pointer")
