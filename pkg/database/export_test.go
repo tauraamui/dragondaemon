@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/spf13/afero"
-	"gorm.io/gorm"
+	"github.com/tauraamui/dragondaemon/pkg/database/dbconn"
 )
 
 func NewStdinPlainReader(readFrom io.Reader) stdinPlainReader {
@@ -25,7 +25,7 @@ func OverloadFS(overload afero.Fs) func() {
 	return func() { fs = fsRef }
 }
 
-func OverloadOpenDBConnection(overload func(string) (*gorm.DB, error)) func() {
+func OverloadOpenDBConnection(overload func(string) (dbconn.GormWrapper, error)) func() {
 	openDBConnectionRef := openDBConnection
 	openDBConnection = overload
 	return func() { openDBConnection = openDBConnectionRef }
