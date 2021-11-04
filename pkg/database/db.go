@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/tacusci/logging/v2"
+	"github.com/tauraamui/dragondaemon/pkg/database/dbconn"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/dragondaemon/pkg/database/repos"
 	"github.com/tauraamui/dragondaemon/pkg/log"
@@ -110,7 +111,7 @@ func Destroy() error {
 	return fs.Remove(dbFilePath)
 }
 
-func Connect() (*gorm.DB, error) {
+func Connect() (dbconn.GormWrapper, error) {
 	dbPath, err := resolveDBPath(uc)
 	if err != nil {
 		return nil, err
@@ -130,13 +131,17 @@ func Connect() (*gorm.DB, error) {
 	return db, nil
 }
 
-var openDBConnection = func(path string) (*gorm.DB, error) {
+var openDBConnection = func(path string) (dbconn.GormWrapper, error) {
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
-	return gorm.Open(sqlite.Open(path), &gorm.Config{Logger: logger})
+	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: logger})
+	if err != nil {
+		return nil, err
+	}
+	return dbconn.Wrap(db), nil
 }
 
-func createRootUser(db *gorm.DB, username, password string) error {
-	userRepo := repos.UserRepository{DB: repos.Wrap(db)}
+func createRootUser(db dbconn.GormWrapper, username, password string) error {
+	userRepo := repos.UserRepository{DB: db}
 	return userRepo.Create(&models.User{
 		Name:     username,
 		AuthHash: password,

@@ -1,9 +1,12 @@
-package repos
+package dbconn
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type GormWrapper interface {
 	Error() error
+	AutoMigrate(...interface{}) error
 	Create(interface{}) GormWrapper
 	Where(interface{}, ...interface{}) GormWrapper
 	First(interface{}, ...interface{}) GormWrapper
@@ -21,6 +24,10 @@ func Wrap(db *gorm.DB) GormWrapper {
 
 func (w *wrapper) Error() error {
 	return w.db.Error
+}
+
+func (w *wrapper) AutoMigrate(m ...interface{}) error {
+	return w.db.AutoMigrate(m)
 }
 
 func (w *wrapper) Create(value interface{}) GormWrapper {

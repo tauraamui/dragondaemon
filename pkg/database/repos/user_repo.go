@@ -1,12 +1,13 @@
 package repos
 
 import (
+	"github.com/tauraamui/dragondaemon/pkg/database/dbconn"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 	"github.com/tauraamui/xerror"
 )
 
 type UserRepository struct {
-	DB GormWrapper
+	DB dbconn.GormWrapper
 }
 
 func (r *UserRepository) Create(user *models.User) error {

@@ -1,12 +1,12 @@
 package models
 
-import "gorm.io/gorm"
+import "github.com/tauraamui/dragondaemon/pkg/database/dbconn"
 
 type Model interface{}
 
 var models = []Model{}
 
-func AutoMigrate(db *gorm.DB) error {
+func AutoMigrate(db dbconn.GormWrapper) error {
 	for _, m := range models {
 		if err := db.AutoMigrate(m); err != nil {
 			return err
