@@ -156,6 +156,30 @@ func (suite *DBSetupTestSuite) TestReturnErrorFromSetupDueToPathResolutionFailur
 	is.Equal(data.Setup().Error(), "unable to resolve dd.db database file location: test cache dir error")
 }
 
+func (suite *DBSetupTestSuite) TestSetupUnableToConnectDueToUCError() {
+	is := is.New(suite.T())
+	suite.resetUC = data.OverloadUC(func() (string, error) {
+		return "", xerror.New("test cache dir error")
+	})
+	conn, err := data.Connect()
+	is.True(err != nil && conn == nil)
+	is.Equal(err.Error(), "unable to resolve dd.db database file location: test cache dir error")
+}
+
+func (suite *DBSetupTestSuite) TestSetupUnableToConnectAfterFileCreate() {
+	is := is.New(suite.T())
+	callCount := 0
+	suite.resetOpenDBConn = data.OverloadOpenDBConnection(func(s string) (dbconn.GormWrapper, error) {
+		callCount++
+		if callCount >= 1 {
+			return nil, errors.New("test open db conn error")
+		}
+		return dbconn.Mock(), nil
+	})
+	defer suite.resetOpenDBConn()
+	is.Equal(data.Setup().Error(), "unable to open db connection: test open db conn error")
+}
+
 func (suite *DBSetupTestSuite) TestUnableToResolveDBPathHandlesAndReturnsWrappedError() {
 	is := is.New(suite.T())
 	is.NoErr(data.Setup())
@@ -227,6 +251,13 @@ func (suite *DBSetupTestSuite) TestSetupReturnsErrorFromTooManyPasswordAttempts(
 
 func TestDBSetupTestSuite(t *testing.T) {
 	suite.Run(t, &DBSetupTestSuite{})
+}
+
+func TestOpenDBConnection(t *testing.T) {
+	is := is.New(t)
+	conn, err := data.OpenDBConnection("file::memory:?cache=shared")
+	is.NoErr(err)
+	is.True(conn != nil)
 }
 
 func TestPlainPromptReaderShouldReadFromReadableAndReturnValue(t *testing.T) {

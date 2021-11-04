@@ -13,6 +13,10 @@ func NewStdinPlainReader(readFrom io.Reader) stdinPlainReader {
 	}
 }
 
+func OpenDBConnection(path string) (dbconn.GormWrapper, error) {
+	return constOpenDBConnection(path)
+}
+
 func OverloadUC(overload func() (string, error)) func() {
 	ucRef := uc
 	uc = overload
