@@ -12,6 +12,51 @@ import (
 	"github.com/tauraamui/xerror"
 )
 
+type testReader struct {
+	onReadCallback func()
+	readData       []byte
+	readError      error
+}
+
+func (t testReader) Read(b []byte) (int, error) {
+	t.onReadCallback()
+	n := copy(b, t.readData)
+	return n, t.readError
+}
+
+type testPlainPromptReader struct {
+	testUsername string
+	testError    error
+}
+
+func (t testPlainPromptReader) ReadPlain(string) (string, error) {
+	return t.testUsername, t.testError
+}
+
+type testPasswordPromptReader struct {
+	testPassword string
+	testError    error
+}
+
+func (t testPasswordPromptReader) ReadPassword(string) ([]byte, error) {
+	return []byte(t.testPassword), t.testError
+}
+
+type multipleAttemptPasswordPromptReader struct {
+	attemptCount, maxCalls int
+	passwordsToAttempt     []string
+	testError              error
+}
+
+func (t *multipleAttemptPasswordPromptReader) ReadPassword(string) ([]byte, error) {
+	if t.attemptCount >= t.maxCalls {
+		return nil, xerror.New("TESTING ERROR: multipleAttempts exceeds maximum call limit")
+	}
+	password := []byte(t.passwordsToAttempt[t.attemptCount])
+	t.attemptCount++
+	return password, t.testError
+}
+
 type DBSetupTestSuite struct {
 	suite.Suite
 	dbMock                    dbconn.MockGormWrapper
@@ -123,6 +168,68 @@ func (suite *DBSetupTestSuite) TestUnableToResolveDBPathHandlesAndReturnsWrapped
 	)
 }
 
+func (suite *DBSetupTestSuite) TestUsernamePromptErrorHandlesAndReturnWrappedError() {
+	is := is.New(suite.T())
+	resetPlainPromptReader := data.OverloadPlainPromptReader(
+		testPlainPromptReader{
+			testError: xerror.New("testing read username error"),
+		},
+	)
+	defer resetPlainPromptReader()
+
+	resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+		testPasswordPromptReader{
+			testPassword: "testpassword",
+		},
+	)
+	defer resetPasswordPromptReader()
+
+	is.Equal(data.Setup().Error(), "failed to prompt for root username: testing read username error")
+}
+
+func (suite *DBSetupTestSuite) TestSetupReturnsErrorFromTooManyPasswordAttempts() {
+	is := is.New(suite.T())
+	resetPlainPromptReader := data.OverloadPlainPromptReader(
+		testPlainPromptReader{
+			testUsername: "testadmin",
+		},
+	)
+	defer resetPlainPromptReader()
+
+	resetPasswordPromptReader := data.OverloadPasswordPromptReader(
+		&multipleAttemptPasswordPromptReader{
+			maxCalls: 6,
+			passwordsToAttempt: []string{
+				"1stpair", "1stpairnomatch", "2ndpair", "2ndpairnomatch", "3rdpair", "3rdpairnomatch",
+			},
+		},
+	)
+	defer resetPasswordPromptReader()
+
+	is.Equal(
+		data.Setup().Error(),
+		"failed to prompt for root password: tried entering new password at least 3 times",
+	)
+}
+
 func TestDBSetupTestSuite(t *testing.T) {
 	suite.Run(t, &DBSetupTestSuite{})
+}
+
+func TestPlainPromptReaderShouldReadFromReadableAndReturnValue(t *testing.T) {
+	is := is.New(t)
+	calledCount := 0
+	plainReader := data.NewStdinPlainReader(
+		testReader{
+			readData: []byte("testuser\n"),
+			onReadCallback: func() {
+				calledCount++
+			},
+		},
+	)
+
+	value, err := plainReader.ReadPlain("")
+	is.NoErr(err)
+	is.Equal(value, "testuser")
+	is.Equal(calledCount, 1)
 }
