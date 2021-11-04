@@ -1,6 +1,7 @@
 package data_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/matryer/is"
@@ -168,6 +169,18 @@ func (suite *DBSetupTestSuite) TestUnableToResolveDBPathHandlesAndReturnsWrapped
 	)
 }
 
+func (suite *DBSetupTestSuite) TestSetupHandlesCreateRootUserErrorAndReturnsWrappedError() {
+	suite.resetOpenDBConn = data.OverloadOpenDBConnection(
+		func(string) (dbconn.GormWrapper, error) {
+			return dbconn.Mock().SetError(errors.New("test create failed")), nil
+		},
+	)
+	defer suite.resetOpenDBConn()
+
+	is := is.New(suite.T())
+	is.Equal(data.Setup().Error(), "unable to create root user entry: test create failed")
+}
+
 func (suite *DBSetupTestSuite) TestUsernamePromptErrorHandlesAndReturnWrappedError() {
 	is := is.New(suite.T())
 	resetPlainPromptReader := data.OverloadPlainPromptReader(
@@ -232,4 +245,18 @@ func TestPlainPromptReaderShouldReadFromReadableAndReturnValue(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(value, "testuser")
 	is.Equal(calledCount, 1)
+}
+
+func TestConnectHandlesAutoMigrateErrorAndReturnsWrappedError(t *testing.T) {
+	resetOpenDBConn := data.OverloadOpenDBConnection(
+		func(string) (dbconn.GormWrapper, error) {
+			return dbconn.Mock().SetAutoMigrateError(errors.New("test automigrate failed")), nil
+		},
+	)
+	defer resetOpenDBConn()
+
+	is := is.New(t)
+	conn, err := data.Connect()
+	is.True(err != nil && conn == nil)
+	is.Equal(err.Error(), "unable to run automigrations: test automigrate failed")
 }
