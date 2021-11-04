@@ -132,6 +132,10 @@ func Connect() (dbconn.GormWrapper, error) {
 }
 
 var openDBConnection = func(path string) (dbconn.GormWrapper, error) {
+	return constOpenDBConnection(path)
+}
+
+func constOpenDBConnection(path string) (dbconn.GormWrapper, error) {
 	logger := logger.New(nil, logger.Config{LogLevel: logger.Silent})
 	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: logger})
 	if err != nil {

@@ -1,6 +1,7 @@
 package data_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/matryer/is"
@@ -155,6 +156,30 @@ func (suite *DBSetupTestSuite) TestReturnErrorFromSetupDueToPathResolutionFailur
 	is.Equal(data.Setup().Error(), "unable to resolve dd.db database file location: test cache dir error")
 }
 
+func (suite *DBSetupTestSuite) TestSetupUnableToConnectDueToUCError() {
+	is := is.New(suite.T())
+	suite.resetUC = data.OverloadUC(func() (string, error) {
+		return "", xerror.New("test cache dir error")
+	})
+	conn, err := data.Connect()
+	is.True(err != nil && conn == nil)
+	is.Equal(err.Error(), "unable to resolve dd.db database file location: test cache dir error")
+}
+
+func (suite *DBSetupTestSuite) TestSetupUnableToConnectAfterFileCreate() {
+	is := is.New(suite.T())
+	callCount := 0
+	suite.resetOpenDBConn = data.OverloadOpenDBConnection(func(s string) (dbconn.GormWrapper, error) {
+		callCount++
+		if callCount >= 1 {
+			return nil, errors.New("test open db conn error")
+		}
+		return dbconn.Mock(), nil
+	})
+	defer suite.resetOpenDBConn()
+	is.Equal(data.Setup().Error(), "unable to open db connection: test open db conn error")
+}
+
 func (suite *DBSetupTestSuite) TestUnableToResolveDBPathHandlesAndReturnsWrappedError() {
 	is := is.New(suite.T())
 	is.NoErr(data.Setup())
@@ -166,6 +191,18 @@ func (suite *DBSetupTestSuite) TestUnableToResolveDBPathHandlesAndReturnsWrapped
 	is.Equal(
 		data.Destroy().Error(), "unable to delete database file: unable to resolve dd.db database file location: test cache dir error",
 	)
+}
+
+func (suite *DBSetupTestSuite) TestSetupHandlesCreateRootUserErrorAndReturnsWrappedError() {
+	suite.resetOpenDBConn = data.OverloadOpenDBConnection(
+		func(string) (dbconn.GormWrapper, error) {
+			return dbconn.Mock().SetError(errors.New("test create failed")), nil
+		},
+	)
+	defer suite.resetOpenDBConn()
+
+	is := is.New(suite.T())
+	is.Equal(data.Setup().Error(), "unable to create root user entry: test create failed")
 }
 
 func (suite *DBSetupTestSuite) TestUsernamePromptErrorHandlesAndReturnWrappedError() {
@@ -216,6 +253,13 @@ func TestDBSetupTestSuite(t *testing.T) {
 	suite.Run(t, &DBSetupTestSuite{})
 }
 
+func TestOpenDBConnection(t *testing.T) {
+	is := is.New(t)
+	conn, err := data.OpenDBConnection("file::memory:?cache=shared")
+	is.NoErr(err)
+	is.True(conn != nil)
+}
+
 func TestPlainPromptReaderShouldReadFromReadableAndReturnValue(t *testing.T) {
 	is := is.New(t)
 	calledCount := 0
@@ -232,4 +276,18 @@ func TestPlainPromptReaderShouldReadFromReadableAndReturnValue(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(value, "testuser")
 	is.Equal(calledCount, 1)
+}
+
+func TestConnectHandlesAutoMigrateErrorAndReturnsWrappedError(t *testing.T) {
+	resetOpenDBConn := data.OverloadOpenDBConnection(
+		func(string) (dbconn.GormWrapper, error) {
+			return dbconn.Mock().SetAutoMigrateError(errors.New("test automigrate failed")), nil
+		},
+	)
+	defer resetOpenDBConn()
+
+	is := is.New(t)
+	conn, err := data.Connect()
+	is.True(err != nil && conn == nil)
+	is.Equal(err.Error(), "unable to run automigrations: test automigrate failed")
 }

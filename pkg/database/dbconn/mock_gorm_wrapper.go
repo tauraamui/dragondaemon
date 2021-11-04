@@ -9,15 +9,17 @@ type MockGormWrapper interface {
 	GormWrapper
 	Created() []interface{}
 	Chain() *queryChain
+	SetAutoMigrateError(error) MockGormWrapper
 	SetError(error) MockGormWrapper
 	SetResult(interface{}) MockGormWrapper
 }
 
 type mockGormWrapper struct {
-	error   error
-	created []interface{}
-	chain   *queryChain
-	result  interface{}
+	automigrateError error
+	error            error
+	created          []interface{}
+	chain            *queryChain
+	result           interface{}
 }
 
 type queryChain struct {
@@ -46,6 +48,11 @@ func (w *mockGormWrapper) Chain() *queryChain {
 	return w.chain
 }
 
+func (w *mockGormWrapper) SetAutoMigrateError(e error) MockGormWrapper {
+	w.automigrateError = e
+	return w
+}
+
 func (w *mockGormWrapper) SetError(e error) MockGormWrapper {
 	w.error = e
 	return w
@@ -61,7 +68,7 @@ func (w *mockGormWrapper) Error() error {
 }
 
 func (w *mockGormWrapper) AutoMigrate(...interface{}) error {
-	return nil
+	return w.automigrateError
 }
 
 func (w *mockGormWrapper) Create(value interface{}) GormWrapper {
