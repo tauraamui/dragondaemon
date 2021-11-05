@@ -1,48 +1,31 @@
 package models_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"strings"
+	"testing"
+
+	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/database/models"
 )
 
-var _ = Describe("User", func() {
-	Context("With new empty instance", func() {
-		var user models.User
+func TestEmptyUserBeforeCreateShouldGenerateUUIDAndEncryptAuthHash(t *testing.T) {
+	is := is.New(t)
+	user := models.User{}
 
-		BeforeEach(func() {
-			user = models.User{}
-		})
+	is.NoErr(user.BeforeCreate(nil))
+	is.True(len(user.UUID) > 0)
+}
 
-		It("Should generate new UUID and encrypt authhash plain", func() {
-			err := user.BeforeCreate(nil)
+func TestPopulatedUserBeforeCreateShouldGenerateUUIDAndEncryptAuthHash(t *testing.T) {
+	is := is.New(t)
+	user := models.User{
+		Name:     "test-user-account",
+		AuthHash: "test-user-password",
+	}
 
-			Expect(err).To(BeNil())
-			Expect(user.UUID).ToNot(BeEmpty())
-		})
-	})
-
-	Context("With new user of given name with plain password", func() {
-		var user models.User
-
-		BeforeEach(func() {
-			user = models.User{
-				Name:     "test-user-account",
-				AuthHash: "test-user-password",
-			}
-			err := user.BeforeCreate(nil)
-			Expect(err).To(BeNil())
-		})
-
-		It("Should generate new UUID and encrypt plain password", func() {
-			Expect(user.UUID).ToNot(BeEmpty())
-			Expect(user.Name).To(Equal("test-user-account"))
-			Expect(user.AuthHash).To(ContainSubstring("$2a$10$"))
-		})
-
-		It("Should be able to match plain version to encrypted version of password", func() {
-			err := user.ComparePassword("test-user-password")
-			Expect(err).To(BeNil())
-		})
-	})
-})
+	is.NoErr(user.BeforeCreate(nil))
+	is.True(len(user.UUID) > 0)
+	is.Equal(user.Name, "test-user-account")
+	is.True(strings.Contains(user.AuthHash, "$2a$10$"))
+	is.NoErr(user.ComparePassword("test-user-password")) // match enc auth hash to plaintxt password
+}
