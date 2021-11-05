@@ -33,6 +33,7 @@ func (u *User) ComparePassword(password string) error {
 func enc(p string) string {
 	h, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
+		// TODO(tauraamui): change to return error instead
 		log.Error(xerror.Errorf("unable to generate hash and salt from password: %w", err).Error()) //nolint
 		return p
 	}
@@ -44,7 +45,7 @@ func cmp(h, p string) error {
 	hb, pb := []byte(h), []byte(p)
 	err := bcrypt.CompareHashAndPassword(hb, pb)
 	if err != nil {
-		return xerror.Errorf("password does not match hash: %w", err)
+		return xerror.Errorf("incorrect password: %w", err)
 	}
 
 	return nil
