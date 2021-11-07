@@ -1,4 +1,4 @@
-package video
+package videobackend
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 	"github.com/tauraamui/dragondaemon/internal/videotest"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 	"gocv.io/x/gocv"
 )
@@ -48,9 +50,9 @@ func overloadTimestamp(fixed time.Time) func() {
 }
 
 func overloadTimestampFunc(overload func() time.Time) func() {
-	TimestampRef := Timestamp
-	Timestamp = overload
-	return func() { Timestamp = TimestampRef }
+	TimestampRef := videoclip.Timestamp
+	videoclip.Timestamp = overload
+	return func() { videoclip.Timestamp = TimestampRef }
 }
 
 func TestBackendConnect(t *testing.T) {
@@ -142,7 +144,7 @@ func TestOpenAndReadFromVideoStream(t *testing.T) {
 	conn := openCVConnection{}
 	is.NoErr(conn.connect(context.TODO(), mp4FilePath))
 
-	frame := DefaultBackend().NewFrame()
+	frame := Default().NewFrame()
 	is.NoErr(conn.Read(frame))
 }
 
@@ -173,8 +175,8 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	})
 }
 
-func makeClips(rootPath string, seconds, fps, count int) ([]Clip, error) {
-	clips := []Clip{}
+func makeClips(rootPath string, seconds, fps, count int) ([]videoclip.Clip, error) {
+	clips := []videoclip.Clip{}
 	for i := 0; i < count; i++ {
 		clip, err := makeClip(rootPath, 3, 10)
 		if err != nil {
@@ -186,7 +188,7 @@ func makeClips(rootPath string, seconds, fps, count int) ([]Clip, error) {
 	return clips, nil
 }
 
-func makeClip(rootPath string, seconds, fps int) (Clip, error) {
+func makeClip(rootPath string, seconds, fps int) (videoclip.Clip, error) {
 	mp4FilePath, err := videotest.RestoreMp4File()
 	if err != nil {
 		return nil, err
@@ -199,7 +201,7 @@ func makeClip(rootPath string, seconds, fps int) (Clip, error) {
 		return nil, err
 	}
 
-	clip := NewClip(fmt.Sprintf("/%s/clips/TestCam", rootPath), fps)
+	clip := videoclip.New(fmt.Sprintf("/%s/clips/TestCam", rootPath), fps)
 	for i := 0; i < fps*seconds; i++ {
 		f := &openCVFrame{
 			mat: gocv.NewMat(),
@@ -225,8 +227,8 @@ func (frame invalidFrame) DataRef() interface{} {
 	return nil
 }
 
-func (frame invalidFrame) Dimensions() FrameDimension {
-	return FrameDimension{W: 100, H: 50}
+func (frame invalidFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{W: 100, H: 50}
 }
 
 func (frame invalidFrame) Close() {}

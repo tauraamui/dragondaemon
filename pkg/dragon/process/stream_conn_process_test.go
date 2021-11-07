@@ -13,7 +13,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/dragondaemon/pkg/xis"
 	"github.com/tauraamui/xerror"
 )
@@ -67,7 +67,7 @@ func (suite *StreamConnProcessTestSuite) TestNewStreamConnProcess() {
 	is := is.New(suite.T())
 
 	testConn := mockCameraConn{schedule: schedule.NewSchedule(schedule.Week{})}
-	readFrames := make(chan video.Frame)
+	readFrames := make(chan videoframe.Frame)
 	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 	is.True(proc != nil)
 }
@@ -89,7 +89,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 	// routine to optionally send, and our test reciever
 	// to optionally recieve without blocking so the loop
 	// proceeds and the timeout is checked
-	readFrames := make(chan video.Frame, 3)
+	readFrames := make(chan videoframe.Frame, 3)
 	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 
 	proc.Setup().Start()
@@ -138,12 +138,12 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	}
 
 	rc := mutexCounter{}
-	connRead := func() (video.Frame, error) {
+	connRead := func() (videoframe.Frame, error) {
 		rc.incr()
 		return &mockFrame{}, nil
 	}
 	testConn := mockCameraConn{readFunc: connRead, isOpenFunc: isOpen}
-	fc := make(chan video.Frame)
+	fc := make(chan videoframe.Frame)
 
 	b := broadcast.New(0)
 	proc := process.NewStreamConnProcess(b.Listen(), &testConn, fc)
@@ -248,7 +248,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFram
 		schedule: schedule.NewSchedule(schedule.Week{}),
 	}
 
-	readFrames := make(chan video.Frame, 2)
+	readFrames := make(chan videoframe.Frame, 2)
 	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 
 	proc.Setup().Start()
@@ -278,7 +278,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 		schedule: schedule.NewSchedule(schedule.Week{}),
 	}
 
-	readFrames := make(chan video.Frame)
+	readFrames := make(chan videoframe.Frame)
 	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
 
 	suite.onPostErrorLog = func() {

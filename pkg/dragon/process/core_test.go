@@ -8,7 +8,8 @@ import (
 	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 )
 
@@ -24,8 +25,8 @@ func (m *mockFrame) DataRef() interface{} {
 	return m.data
 }
 
-func (m *mockFrame) Dimensions() video.FrameDimension {
-	return video.FrameDimension{W: m.width, H: m.height}
+func (m *mockFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{W: m.width, H: m.height}
 }
 
 func (m *mockFrame) Close() {
@@ -89,7 +90,7 @@ func (m *mockCameraConn) SPC() int {
 	return m.spc
 }
 
-func (m *mockCameraConn) Read() (frame video.Frame, err error) {
+func (m *mockCameraConn) Read() (frame videoframe.Frame, err error) {
 	if m.onPostRead != nil {
 		defer m.onPostRead()
 	}
@@ -114,11 +115,11 @@ func (m *mockCameraConn) Close() error {
 }
 
 type mockClipWriter struct {
-	writtenClips []video.ClipNoCloser
+	writtenClips []videoclip.NoCloser
 	writeErr     error
 }
 
-func (m *mockClipWriter) Write(clip video.ClipNoCloser) error {
+func (m *mockClipWriter) Write(clip videoclip.NoCloser) error {
 	m.writtenClips = append(m.writtenClips, clip)
 	return m.writeErr
 }

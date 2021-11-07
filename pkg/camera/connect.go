@@ -8,6 +8,8 @@ import (
 
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videobackend"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 )
 
@@ -20,7 +22,7 @@ type Connection interface {
 	FPS() int
 	Schedule() schedule.Schedule
 	SPC() int
-	Read() (video.Frame, error)
+	Read() (videoframe.Frame, error)
 	IsOpen() bool
 	IsClosing() bool
 	Close() error
@@ -30,10 +32,10 @@ type connection struct {
 	uuid      string
 	title     string
 	sett      Settings
-	backend   video.Backend
+	backend   videobackend.Backend
 	mu        sync.Mutex
 	isClosing bool
-	vc        video.Connection
+	vc        videobackend.Connection
 }
 
 func (c *connection) UUID() string {
@@ -41,7 +43,7 @@ func (c *connection) UUID() string {
 }
 
 // TODO(tauraamui): make return typed error and frame
-func (c *connection) Read() (video.Frame, error) {
+func (c *connection) Read() (videoframe.Frame, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	frame := c.backend.NewFrame()
@@ -101,7 +103,7 @@ func (c *connection) Close() error {
 	return c.vc.Close()
 }
 
-func connect(ctx context.Context, title, addr string, settings Settings, backend video.Backend) (Connection, error) {
+func connect(ctx context.Context, title, addr string, settings Settings, backend videobackend.Backend) (Connection, error) {
 	vc, err := video.ConnectWithCancel(ctx, addr, backend)
 	if err != nil {
 		return nil, xerror.Errorf("Unable to connect to camera [%s]: %w", title, err)
@@ -115,10 +117,10 @@ func connect(ctx context.Context, title, addr string, settings Settings, backend
 	}, nil
 }
 
-func Connect(title, addr string, settings Settings, backend video.Backend) (Connection, error) {
+func Connect(title, addr string, settings Settings, backend videobackend.Backend) (Connection, error) {
 	return connect(context.Background(), title, addr, settings, backend)
 }
 
-func ConnectWithCancel(cancel context.Context, title, addr string, settings Settings, backend video.Backend) (Connection, error) {
+func ConnectWithCancel(cancel context.Context, title, addr string, settings Settings, backend videobackend.Backend) (Connection, error) {
 	return connect(cancel, title, addr, settings, backend)
 }

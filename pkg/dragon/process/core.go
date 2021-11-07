@@ -9,27 +9,28 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
 	"github.com/tauraamui/dragondaemon/pkg/log"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 )
 
 var fs afero.Fs = afero.NewOsFs()
 
-func NewCoreProcess(cam camera.Connection, writer video.ClipWriter) Process {
+func NewCoreProcess(cam camera.Connection, writer videoclip.Writer) Process {
 	return &persistCameraToDisk{
 		broadcaster: broadcast.New(0),
 		cam:         cam,
 		writer:      writer,
-		frames:      make(chan video.Frame, 3),
-		clips:       make(chan video.Clip, 3),
+		frames:      make(chan videoframe.Frame, 3),
+		clips:       make(chan videoclip.NoCloser, 3),
 	}
 }
 
 type persistCameraToDisk struct {
 	broadcaster          *broadcast.Broadcaster
 	cam                  camera.Connection
-	writer               video.ClipWriter
-	frames               chan video.Frame
-	clips                chan video.Clip
+	writer               videoclip.Writer
+	frames               chan videoframe.Frame
+	clips                chan videoclip.NoCloser
 	monitorCameraOnState Process
 	streamProcess        Process
 	generateClips        Process

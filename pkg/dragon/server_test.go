@@ -10,7 +10,9 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videobackend"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/dragondaemon/pkg/xis"
 	"github.com/tauraamui/xerror"
 )
@@ -50,15 +52,15 @@ func (tcc testConfigResolver) Destroy() error {
 type testVideoBackend struct {
 }
 
-func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
+func (tvb testVideoBackend) Connect(context context.Context, address string) (videobackend.Connection, error) {
 	return testVideoConnection{}, nil
 }
 
-func (tvb testVideoBackend) NewFrame() video.Frame {
+func (tvb testVideoBackend) NewFrame() videoframe.Frame {
 	return testVideoFrame{}
 }
 
-func (tvb testVideoBackend) NewWriter() video.ClipWriter {
+func (tvb testVideoBackend) NewWriter() videoclip.Writer {
 	return nil
 }
 
@@ -69,8 +71,8 @@ func (tvf testVideoFrame) DataRef() interface{} {
 	return nil
 }
 
-func (tvf testVideoFrame) Dimensions() video.FrameDimension {
-	return video.FrameDimension{W: 100, H: 50}
+func (tvf testVideoFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{W: 100, H: 50}
 }
 
 func (tvf testVideoFrame) Close() {}
@@ -82,7 +84,7 @@ func (tvc testVideoConnection) UUID() string {
 	return "test-conn-uuid"
 }
 
-func (tvc testVideoConnection) Read(frame video.Frame) error {
+func (tvc testVideoConnection) Read(frame videoframe.Frame) error {
 	return nil
 }
 
@@ -96,7 +98,7 @@ func (tvc testVideoConnection) Close() error {
 
 func TestNewServer(t *testing.T) {
 	is := is.New(t)
-	s, err := dragon.NewServer(testConfigResolver{}, video.DefaultBackend())
+	s, err := dragon.NewServer(testConfigResolver{}, videobackend.Default())
 	is.NoErr(err)
 	is.True(s != nil) // new server's response cannot be nil pointer
 }
@@ -173,16 +175,16 @@ func TestServerConnect(t *testing.T) {
 type testWaitsOnCancelVideoBackend struct {
 }
 
-func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string) (video.Connection, error) {
+func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string) (videobackend.Connection, error) {
 	<-ctx.Done()
 	return testVideoConnection{}, xerror.New("test unable to connect, context cancelled")
 }
 
-func (b testWaitsOnCancelVideoBackend) NewFrame() video.Frame {
+func (b testWaitsOnCancelVideoBackend) NewFrame() videoframe.Frame {
 	return testVideoFrame{}
 }
 
-func (b testWaitsOnCancelVideoBackend) NewWriter() video.ClipWriter {
+func (b testWaitsOnCancelVideoBackend) NewWriter() videoclip.Writer {
 	return nil
 }
 

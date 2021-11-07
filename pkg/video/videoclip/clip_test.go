@@ -1,4 +1,4 @@
-package video
+package videoclip_test
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/dragondaemon/pkg/xis"
 )
 
@@ -21,7 +23,7 @@ func overloadFatalLog(overload func(string, ...interface{})) func() {
 
 func TestNewClip(t *testing.T) {
 	is := is.New(t)
-	clip := NewClip(testClipPath, 22)
+	clip := videoclip.New(testClipPath, 22)
 	is.True(clip != nil)
 }
 
@@ -33,8 +35,8 @@ func (frame *testFrame) DataRef() interface{} {
 	return nil
 }
 
-func (frame *testFrame) Dimensions() FrameDimension {
-	return FrameDimension{W: 100, H: 50}
+func (frame *testFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{W: 100, H: 50}
 }
 
 func (frame *testFrame) Close() {
@@ -45,7 +47,7 @@ func (frame *testFrame) Close() {
 
 func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 	is := is.New(t)
-	clip := NewClip(testClipPath, 22)
+	clip := videoclip.New(testClipPath, 22)
 	require.NotNil(t, clip)
 
 	frameCloseInvoked := false
@@ -59,7 +61,7 @@ func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 
 func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
 	is := is.New(t)
-	clip := NewClip(testClipPath, 22)
+	clip := videoclip.New(testClipPath, 22)
 	is.True(clip != nil)
 
 	frameCloseInvoked := false
@@ -87,7 +89,7 @@ func TestClipAppendFailsIfClipAlreadyClosed(t *testing.T) {
 	logging.CurrentLoggingLevel = logging.SilentLevel
 	defer func() { logging.CurrentLoggingLevel = logging.WarnLevel }()
 
-	clip := NewClip(testClipPath, 22)
+	clip := videoclip.New(testClipPath, 22)
 	is.True(clip != nil)
 
 	clip.Close()

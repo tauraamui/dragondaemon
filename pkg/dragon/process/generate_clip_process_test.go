@@ -8,7 +8,8 @@ import (
 	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 )
 
@@ -18,8 +19,8 @@ const persistLoc = "/testroot/clips"
 
 func TestNewGenerateClipProcess(t *testing.T) {
 	b := broadcast.New(0)
-	frames := make(chan video.Frame)
-	generatedClips := make(chan video.Clip)
+	frames := make(chan videoframe.Frame)
+	generatedClips := make(chan videoclip.NoCloser)
 
 	is := is.New(t)
 	proc := process.NewGenerateClipProcess(b.Listen(), frames, generatedClips, framesPerClip, persistLoc)
@@ -28,8 +29,8 @@ func TestNewGenerateClipProcess(t *testing.T) {
 
 func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testing.T) {
 	b := broadcast.New(0)
-	framesChan := make(chan video.Frame)
-	generatedClipsChan := make(chan video.Clip)
+	framesChan := make(chan videoframe.Frame)
+	generatedClipsChan := make(chan videoclip.NoCloser)
 
 	is := is.New(t)
 	proc := process.NewGenerateClipProcess(b.Listen(), framesChan, generatedClipsChan, framesPerClip, persistLoc)
@@ -39,7 +40,7 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 	done := make(chan error)
 	onLastClip := make(chan bool)
 	clipsToGenerate := 30
-	go func(ctx context.Context, timeout <-chan time.Time, onLastClip chan bool, done chan error, frames chan video.Frame) {
+	go func(ctx context.Context, timeout <-chan time.Time, onLastClip chan bool, done chan error, frames chan videoframe.Frame) {
 		defer close(done)
 		for {
 			time.Sleep(1 * time.Microsecond)
@@ -85,8 +86,8 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 
 func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
 	b := broadcast.New(0)
-	framesChan := make(chan video.Frame)
-	generatedClipsChan := make(chan video.Clip)
+	framesChan := make(chan videoframe.Frame)
+	generatedClipsChan := make(chan videoclip.NoCloser)
 	numClipsToGen := 3
 
 	is := is.New(t)
@@ -115,7 +116,7 @@ func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
 		}
 	}(ctx, time.After(3*time.Second), errChan, &sentFramesCount)
 
-	generatedClips := []video.Clip{}
+	generatedClips := []videoclip.NoCloser{}
 	timeout := time.After(3 * time.Second)
 receiveClipsProcLoop:
 	for {

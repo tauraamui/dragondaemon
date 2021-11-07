@@ -10,7 +10,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
 	"github.com/tauraamui/dragondaemon/pkg/log"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videobackend"
 	"github.com/tauraamui/xerror"
 )
 
@@ -22,7 +22,7 @@ import (
 // 	Shutdown() <-chan interface{}
 // }
 
-func NewServer(cr config.Resolver, vb video.Backend) (*Server, error) {
+func NewServer(cr config.Resolver, vb videobackend.Backend) (*Server, error) {
 	c, err := cr.Resolve()
 	if err != nil {
 		return nil, xerror.Errorf("unable to resolve config: %w", err)
@@ -39,7 +39,7 @@ func NewServer(cr config.Resolver, vb video.Backend) (*Server, error) {
 type Server struct {
 	runtimeStatsEnabled    bool
 	renderRuntimeStatsProc process.Process
-	videoBackend           video.Backend
+	videoBackend           videobackend.Backend
 	shutdownDone           chan interface{}
 	config                 configdef.Values
 	mu                     sync.Mutex
@@ -105,7 +105,7 @@ func (s *Server) recieveConnsToTrack(connAndError chan connectResult) []error {
 	return errs
 }
 
-func connect(cancel context.Context, cam configdef.Camera, backend video.Backend) *connectResult {
+func connect(cancel context.Context, cam configdef.Camera, backend videobackend.Backend) *connectResult {
 	if cam.Disabled {
 		log.Warn("Camera [%s] is disabled... skipping...", cam.Title)
 		return nil
@@ -128,7 +128,7 @@ func connect(cancel context.Context, cam configdef.Camera, backend video.Backend
 	}
 }
 
-func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings, backend video.Backend) (camera.Connection, error) {
+func connectToCamera(ctx context.Context, title, addr string, sett camera.Settings, backend videobackend.Backend) (camera.Connection, error) {
 	log.Info("Connecting to camera: [%s@%s]...", title, addr)
 	return camera.ConnectWithCancel(ctx, title, addr, sett, backend)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/tacusci/logging/v2"
 	"github.com/tauraamui/dragondaemon/pkg/configdef"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videobackend"
 	"github.com/tauraamui/dragondaemon/pkg/xis"
 )
 
@@ -33,7 +33,7 @@ func (suite *ServerProcessTestSuite) SetupTest() {
 				},
 			}
 		},
-	}, video.MockBackend())
+	}, videobackend.Mock())
 	is.True(svr != nil)
 	is.NoErr(err)
 

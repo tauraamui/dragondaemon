@@ -17,7 +17,7 @@ import (
 	db "github.com/tauraamui/dragondaemon/pkg/database"
 	"github.com/tauraamui/dragondaemon/pkg/dragon"
 	"github.com/tauraamui/dragondaemon/pkg/log"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videobackend"
 )
 
 const (
@@ -92,7 +92,7 @@ func (service *Service) Manage() (string, error) {
 
 	log.Info("Starting dragon daemon...")
 
-	server, err := dragon.NewServer(config.DefaultResolver(), video.ResolveBackend(os.Getenv("DRAGON_VIDEO_BACKEND")))
+	server, err := dragon.NewServer(config.DefaultResolver(), videobackend.Resolve(os.Getenv("DRAGON_VIDEO_BACKEND")))
 	if err != nil {
 		log.Fatal(err.Error())
 	}

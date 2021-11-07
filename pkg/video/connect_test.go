@@ -6,22 +6,25 @@ import (
 
 	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videobackend"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 )
 
 type testVideoBackend struct {
 	connectCallback func()
 }
 
-func (tvb testVideoBackend) Connect(context context.Context, address string) (video.Connection, error) {
+func (tvb testVideoBackend) Connect(context context.Context, address string) (videobackend.Connection, error) {
 	tvb.connectCallback()
 	return testVideoConnection{}, nil
 }
 
-func (tvb testVideoBackend) NewFrame() video.Frame {
+func (tvb testVideoBackend) NewFrame() videoframe.Frame {
 	return testVideoFrame{}
 }
 
-func (tvb testVideoBackend) NewWriter() video.ClipWriter {
+func (tvb testVideoBackend) NewWriter() videoclip.Writer {
 	return nil
 }
 
@@ -32,8 +35,8 @@ func (tvf testVideoFrame) DataRef() interface{} {
 	return nil
 }
 
-func (tvf testVideoFrame) Dimensions() video.FrameDimension {
-	return video.FrameDimension{W: 100, H: 50}
+func (tvf testVideoFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{W: 100, H: 50}
 }
 
 func (tvf testVideoFrame) Close() {}
@@ -45,7 +48,7 @@ func (tvc testVideoConnection) UUID() string {
 	return "test-conn-uuid"
 }
 
-func (tvc testVideoConnection) Read(frame video.Frame) error {
+func (tvc testVideoConnection) Read(frame videoframe.Frame) error {
 	return nil
 }
 

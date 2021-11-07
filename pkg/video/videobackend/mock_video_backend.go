@@ -1,4 +1,4 @@
-package video
+package videobackend
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 	"gocv.io/x/gocv"
 	"golang.org/x/image/font"
@@ -24,11 +26,11 @@ func (b *mockVideoBackend) Connect(cancel context.Context, addr string) (Connect
 	return &mockVideoConnection{}, nil
 }
 
-func (b *mockVideoBackend) NewFrame() Frame {
+func (b *mockVideoBackend) NewFrame() videoframe.Frame {
 	return &openCVFrame{mat: gocv.NewMat()}
 }
 
-func (b *mockVideoBackend) NewWriter() ClipWriter {
+func (b *mockVideoBackend) NewWriter() videoclip.Writer {
 	return &openCVClipWriter{}
 }
 
@@ -46,7 +48,7 @@ func (mvc *mockVideoConnection) UUID() string {
 	return mvc.uuid
 }
 
-func (mvc *mockVideoConnection) Read(frame Frame) error {
+func (mvc *mockVideoConnection) Read(frame videoframe.Frame) error {
 	frameMatRef, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
 		return xerror.New("must pass OpenCV frame to MockVideo connection read")

@@ -1,4 +1,4 @@
-package video
+package videoframe
 
 type FrameDimension struct {
 	W, H int

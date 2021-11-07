@@ -7,7 +7,7 @@ import (
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/camera"
 	"github.com/tauraamui/dragondaemon/pkg/log"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 )
 
@@ -21,11 +21,11 @@ type streamConnProccess struct {
 	listener *broadcast.Listener
 	stopping chan interface{}
 	cam      camera.Connection
-	dest     chan video.Frame
+	dest     chan videoframe.Frame
 }
 
 func NewStreamConnProcess(
-	l *broadcast.Listener, cam camera.Connection, dest chan video.Frame,
+	l *broadcast.Listener, cam camera.Connection, dest chan videoframe.Frame,
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
@@ -43,7 +43,7 @@ func (proc *streamConnProccess) Start() <-chan interface{} {
 	return proc.started
 }
 
-func run(ctx context.Context, cam camera.Connection, d chan video.Frame, l broadcast.Listener, s, stopping chan interface{}) {
+func run(ctx context.Context, cam camera.Connection, d chan videoframe.Frame, l broadcast.Listener, s, stopping chan interface{}) {
 	isOn := true
 	started := false
 	for {
@@ -73,7 +73,7 @@ func run(ctx context.Context, cam camera.Connection, d chan video.Frame, l broad
 	}
 }
 
-func stream(cam camera.Connection, frames chan video.Frame) {
+func stream(cam camera.Connection, frames chan videoframe.Frame) {
 	log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
 	frame, err := cam.Read()
 	if err != nil {

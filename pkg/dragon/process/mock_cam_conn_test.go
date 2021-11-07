@@ -2,7 +2,7 @@ package process_test
 
 import (
 	"github.com/tauraamui/dragondaemon/pkg/config/schedule"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 )
 
@@ -18,8 +18,8 @@ func (m *mockFrame) DataRef() interface{} {
 	return m.data
 }
 
-func (m *mockFrame) Dimensions() video.FrameDimension {
-	return video.FrameDimension{W: m.width, H: m.height}
+func (m *mockFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{W: m.width, H: m.height}
 }
 
 func (m *mockFrame) Close() {
@@ -41,7 +41,7 @@ type mockCameraConn struct {
 	spc                 int
 	frameReadIndex      int
 	framesToRead        []mockFrame
-	readFunc            func() (video.Frame, error)
+	readFunc            func() (videoframe.Frame, error)
 	onPostRead          func()
 	readErr             error
 	isOpenFunc          func() bool
@@ -82,7 +82,7 @@ func (m *mockCameraConn) SPC() int {
 	return m.spc
 }
 
-func (m *mockCameraConn) Read() (frame video.Frame, err error) {
+func (m *mockCameraConn) Read() (frame videoframe.Frame, err error) {
 	if m.onPostRead != nil {
 		defer m.onPostRead()
 	}

@@ -1,4 +1,4 @@
-package video
+package videoclip
 
 import (
 	"fmt"
@@ -7,24 +7,25 @@ import (
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/log"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 )
 
 type Clip interface {
-	ClipNoCloser
-	ClipCloser
+	NoCloser
+	Closer
 }
 
-type ClipNoCloser interface {
-	AppendFrame(Frame)
-	GetFrames() []Frame
-	FrameDimensions() (FrameDimension, error)
+type NoCloser interface {
+	AppendFrame(videoframe.Frame)
+	GetFrames() []videoframe.Frame
+	FrameDimensions() (videoframe.FrameDimension, error)
 	FPS() int
 	RootPath() string
 	FileName() string
 }
 
-type ClipCloser interface {
+type Closer interface {
 	Close()
 }
 
@@ -35,7 +36,7 @@ var Timestamp = func() time.Time {
 	return time.Now()
 }
 
-func NewClip(ploc string, fps int) Clip {
+func New(ploc string, fps int) Clip {
 	return &clip{
 		timestamp:           Timestamp(),
 		fps:                 fps,
@@ -50,10 +51,10 @@ type clip struct {
 	fps                 int
 	mu                  sync.Mutex
 	isClosed            bool
-	frames              []Frame
+	frames              []videoframe.Frame
 }
 
-func (c *clip) AppendFrame(f Frame) {
+func (c *clip) AppendFrame(f videoframe.Frame) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -63,9 +64,9 @@ func (c *clip) AppendFrame(f Frame) {
 	c.frames = append(c.frames, f)
 }
 
-func (c *clip) FrameDimensions() (FrameDimension, error) {
+func (c *clip) FrameDimensions() (videoframe.FrameDimension, error) {
 	if len(c.frames) == 0 {
-		return FrameDimension{}, xerror.New("unable to resolve clip's footage dimensions")
+		return videoframe.FrameDimension{}, xerror.New("unable to resolve clip's footage dimensions")
 	}
 	return c.frames[0].Dimensions(), nil
 }
@@ -99,7 +100,7 @@ func (c *clip) Close() {
 	c.isClosed = true
 }
 
-func (c *clip) GetFrames() []Frame {
+func (c *clip) GetFrames() []videoframe.Frame {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.frames

@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/tauraamui/dragondaemon/pkg/broadcast"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 )
 
 type generateClipProcess struct {
@@ -15,13 +16,13 @@ type generateClipProcess struct {
 	listener      *broadcast.Listener
 	stopping      chan interface{}
 	framesPerClip int
-	frames        chan video.Frame
-	dest          chan video.Clip
+	frames        chan videoframe.Frame
+	dest          chan videoclip.NoCloser
 	persistLoc    string
 }
 
 func NewGenerateClipProcess(
-	listener *broadcast.Listener, frames chan video.Frame, dest chan video.Clip, framesPerClip int, persistLoc string,
+	listener *broadcast.Listener, frames chan videoframe.Frame, dest chan videoclip.NoCloser, framesPerClip int, persistLoc string,
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &generateClipProcess{
@@ -63,8 +64,8 @@ func (proc *generateClipProcess) run() {
 	}
 }
 
-func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan video.Frame, count int, persistLoc string) video.Clip {
-	clip := video.NewClip(persistLoc, count)
+func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan videoframe.Frame, count int, persistLoc string) videoclip.NoCloser {
+	clip := videoclip.New(persistLoc, count)
 	i := 0
 	for {
 		time.Sleep(1 * time.Microsecond)

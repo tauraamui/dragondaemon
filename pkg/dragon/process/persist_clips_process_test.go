@@ -6,20 +6,20 @@ import (
 
 	"github.com/matryer/is"
 	"github.com/tauraamui/dragondaemon/pkg/dragon/process"
-	"github.com/tauraamui/dragondaemon/pkg/video"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
 )
 
 type mockClipWriter struct {
-	writtenClips []video.ClipNoCloser
+	writtenClips []videoclip.NoCloser
 	writeErr     error
 }
 
-func (m *mockClipWriter) Write(clip video.ClipNoCloser) error {
+func (m *mockClipWriter) Write(clip videoclip.NoCloser) error {
 	m.writtenClips = append(m.writtenClips, clip)
 	return m.writeErr
 }
 
-func (m *mockClipWriter) hasWrittenClip(is *is.I, clip video.Clip) bool {
+func (m *mockClipWriter) hasWrittenClip(is *is.I, clip videoclip.Clip) bool {
 	is.Helper()
 	for _, c := range m.writtenClips {
 		if c == clip {
@@ -33,7 +33,7 @@ func TestNewPersistClipProcess(t *testing.T) {
 	is := is.New(t)
 
 	testWriter := mockClipWriter{}
-	clipsToWrite := make(chan video.Clip)
+	clipsToWrite := make(chan videoclip.NoCloser)
 	proc := process.NewPersistClipProcess(clipsToWrite, &testWriter)
 	is.True(proc != nil)
 }
@@ -41,9 +41,9 @@ func TestNewPersistClipProcess(t *testing.T) {
 func TestPersistClipProcessWritesClips(t *testing.T) {
 	is := is.New(t)
 
-	clip := video.NewClip("/testroot", 30)
+	clip := videoclip.New("/testroot", 30)
 	testWriter := mockClipWriter{}
-	clipsToWrite := make(chan video.Clip)
+	clipsToWrite := make(chan videoclip.NoCloser)
 	proc := process.NewPersistClipProcess(clipsToWrite, &testWriter)
 
 	proc.Start()
@@ -59,9 +59,9 @@ func TestPersistClipProcessWritesClips(t *testing.T) {
 func TestPersistClipProcessContinuesIfReaderDelayed(t *testing.T) {
 	is := is.New(t)
 
-	clip := video.NewClip("/testroot", 30)
+	clip := videoclip.New("/testroot", 30)
 	testWriter := mockClipWriter{}
-	clipsToWrite := make(chan video.Clip)
+	clipsToWrite := make(chan videoclip.NoCloser)
 	proc := process.NewPersistClipProcess(clipsToWrite, &testWriter)
 
 	proc.Start()

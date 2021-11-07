@@ -1,4 +1,4 @@
-package video
+package videobackend
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoclip"
+	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 	"github.com/tauraamui/xerror"
 	"gocv.io/x/gocv"
 )
@@ -19,8 +21,8 @@ func (frame *openCVFrame) DataRef() interface{} {
 	return &frame.mat
 }
 
-func (frame *openCVFrame) Dimensions() FrameDimension {
-	return FrameDimension{frame.mat.Cols(), frame.mat.Rows()}
+func (frame *openCVFrame) Dimensions() videoframe.FrameDimension {
+	return videoframe.FrameDimension{frame.mat.Cols(), frame.mat.Rows()}
 }
 
 func (frame *openCVFrame) Close() {
@@ -41,11 +43,11 @@ func (b *openCVBackend) Connect(cancel context.Context, addr string) (Connection
 	return &conn, nil
 }
 
-func (b *openCVBackend) NewFrame() Frame {
+func (b *openCVBackend) NewFrame() videoframe.Frame {
 	return &openCVFrame{mat: gocv.NewMat()}
 }
 
-func (b *openCVBackend) NewWriter() ClipWriter {
+func (b *openCVBackend) NewWriter() videoclip.Writer {
 	return &openCVClipWriter{
 		onWriteInitDone: false,
 	}
@@ -56,10 +58,10 @@ const codec = "avc1.4d001e"
 type openCVClipWriter struct {
 	onWriteInitDone bool
 	vw              *gocv.VideoWriter
-	clip            ClipNoCloser
+	clip            videoclip.NoCloser
 }
 
-func (w *openCVClipWriter) init(clip ClipNoCloser) error {
+func (w *openCVClipWriter) init(clip videoclip.NoCloser) error {
 	if err := ensureDirectoryPathExists(clip.RootPath()); err != nil {
 		return err
 	}
@@ -97,7 +99,7 @@ func (w *openCVClipWriter) reset() {
 	w.vw = nil
 }
 
-func (w *openCVClipWriter) Write(clip ClipNoCloser) error {
+func (w *openCVClipWriter) Write(clip videoclip.NoCloser) error {
 	if len(clip.GetFrames()) == 0 {
 		return xerror.New("cannot write empty clip")
 	}
@@ -113,7 +115,7 @@ func (w *openCVClipWriter) Write(clip ClipNoCloser) error {
 	return nil
 }
 
-func (w *openCVClipWriter) writeFrame(frame Frame) error {
+func (w *openCVClipWriter) writeFrame(frame videoframe.Frame) error {
 	mat, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
 		return xerror.New("must pass OpenCV frame to OpenCV writer")
@@ -173,7 +175,7 @@ func (c *openCVConnection) UUID() string {
 	return c.uuid
 }
 
-func (c *openCVConnection) Read(frame Frame) error {
+func (c *openCVConnection) Read(frame videoframe.Frame) error {
 	mat, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
 		return xerror.New("must pass OpenCV frame to OpenCV connection read")
