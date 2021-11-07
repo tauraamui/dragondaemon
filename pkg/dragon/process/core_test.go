@@ -114,11 +114,11 @@ func (m *mockCameraConn) Close() error {
 }
 
 type mockClipWriter struct {
-	writtenClips []video.Clip
+	writtenClips []video.ClipNoCloser
 	writeErr     error
 }
 
-func (m *mockClipWriter) Write(clip video.Clip) error {
+func (m *mockClipWriter) Write(clip video.ClipNoCloser) error {
 	m.writtenClips = append(m.writtenClips, clip)
 	return m.writeErr
 }

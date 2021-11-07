@@ -11,12 +11,20 @@ import (
 )
 
 type Clip interface {
+	ClipNoCloser
+	ClipCloser
+}
+
+type ClipNoCloser interface {
 	AppendFrame(Frame)
 	GetFrames() []Frame
 	FrameDimensions() (FrameDimension, error)
 	FPS() int
 	RootPath() string
 	FileName() string
+}
+
+type ClipCloser interface {
 	Close()
 }
 

@@ -56,10 +56,10 @@ const codec = "avc1.4d001e"
 type openCVClipWriter struct {
 	onWriteInitDone bool
 	vw              *gocv.VideoWriter
-	clip            Clip
+	clip            ClipNoCloser
 }
 
-func (w *openCVClipWriter) init(clip Clip) error {
+func (w *openCVClipWriter) init(clip ClipNoCloser) error {
 	if err := ensureDirectoryPathExists(clip.RootPath()); err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (w *openCVClipWriter) reset() {
 	w.vw = nil
 }
 
-func (w *openCVClipWriter) Write(clip Clip) error {
+func (w *openCVClipWriter) Write(clip ClipNoCloser) error {
 	if len(clip.GetFrames()) == 0 {
 		return xerror.New("cannot write empty clip")
 	}
