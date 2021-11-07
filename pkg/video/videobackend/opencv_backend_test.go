@@ -227,8 +227,8 @@ func (frame invalidFrame) DataRef() interface{} {
 	return nil
 }
 
-func (frame invalidFrame) Dimensions() videoframe.FrameDimension {
-	return videoframe.FrameDimension{W: 100, H: 50}
+func (frame invalidFrame) Dimensions() videoframe.Dimensions {
+	return videoframe.Dimensions{W: 100, H: 50}
 }
 
 func (frame invalidFrame) Close() {}

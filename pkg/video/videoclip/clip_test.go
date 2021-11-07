@@ -35,8 +35,8 @@ func (frame *testFrame) DataRef() interface{} {
 	return nil
 }
 
-func (frame *testFrame) Dimensions() videoframe.FrameDimension {
-	return videoframe.FrameDimension{W: 100, H: 50}
+func (frame *testFrame) Dimensions() videoframe.Dimensions {
+	return videoframe.Dimensions{W: 100, H: 50}
 }
 
 func (frame *testFrame) Close() {

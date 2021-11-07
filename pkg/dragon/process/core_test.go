@@ -25,8 +25,8 @@ func (m *mockFrame) DataRef() interface{} {
 	return m.data
 }
 
-func (m *mockFrame) Dimensions() videoframe.FrameDimension {
-	return videoframe.FrameDimension{W: m.width, H: m.height}
+func (m *mockFrame) Dimensions() videoframe.Dimensions {
+	return videoframe.Dimensions{W: m.width, H: m.height}
 }
 
 func (m *mockFrame) Close() {

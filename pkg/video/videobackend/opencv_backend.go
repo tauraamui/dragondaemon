@@ -21,8 +21,8 @@ func (frame *openCVFrame) DataRef() interface{} {
 	return &frame.mat
 }
 
-func (frame *openCVFrame) Dimensions() videoframe.FrameDimension {
-	return videoframe.FrameDimension{frame.mat.Cols(), frame.mat.Rows()}
+func (frame *openCVFrame) Dimensions() videoframe.Dimensions {
+	return videoframe.Dimensions{frame.mat.Cols(), frame.mat.Rows()}
 }
 
 func (frame *openCVFrame) Close() {

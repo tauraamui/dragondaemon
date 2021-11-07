@@ -1,11 +1,11 @@
 package videoframe
 
-type FrameDimension struct {
+type Dimensions struct {
 	W, H int
 }
 
 type Frame interface {
 	DataRef() interface{}
-	Dimensions() FrameDimension
+	Dimensions() Dimensions
 	Close()
 }

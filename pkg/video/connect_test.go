@@ -35,8 +35,8 @@ func (tvf testVideoFrame) DataRef() interface{} {
 	return nil
 }
 
-func (tvf testVideoFrame) Dimensions() videoframe.FrameDimension {
-	return videoframe.FrameDimension{W: 100, H: 50}
+func (tvf testVideoFrame) Dimensions() videoframe.Dimensions {
+	return videoframe.Dimensions{W: 100, H: 50}
 }
 
 func (tvf testVideoFrame) Close() {}
