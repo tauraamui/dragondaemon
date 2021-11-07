@@ -49,6 +49,7 @@ func (proc *persistClipProcess) run() {
 				if err := proc.writer.Write(clip); err != nil {
 					log.Error(err.Error())
 				}
+				clip.Close()
 			default:
 				continue
 			}

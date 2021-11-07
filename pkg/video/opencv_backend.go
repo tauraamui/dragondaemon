@@ -98,7 +98,6 @@ func (w *openCVClipWriter) reset() {
 }
 
 func (w *openCVClipWriter) Write(clip Clip) error {
-	defer clip.Close()
 	if len(clip.GetFrames()) == 0 {
 		return xerror.New("cannot write empty clip")
 	}
