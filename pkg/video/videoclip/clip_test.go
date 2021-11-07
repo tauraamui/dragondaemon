@@ -55,7 +55,7 @@ func TestClipAppendFrameTracksFrameButDoesNotCloseIt(t *testing.T) {
 	clip.AppendFrame(frame)
 
 	xis := xis.New(is)
-	xis.Contains(clip.GetFrames(), frame)
+	xis.Contains(clip.Frames(), frame)
 	is.True(frameCloseInvoked == false)
 }
 
@@ -69,8 +69,8 @@ func TestClipAppendFrameTracksFrameWhichIsThenClosed(t *testing.T) {
 	clip.AppendFrame(frame)
 
 	xis := xis.New(is)
-	xis.Contains(clip.GetFrames(), frame)
-	xis.Contains(clip.GetFrames(), frame)
+	xis.Contains(clip.Frames(), frame)
+	xis.Contains(clip.Frames(), frame)
 	clip.Close()
 
 	is.True(frameCloseInvoked)

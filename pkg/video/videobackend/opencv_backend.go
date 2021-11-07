@@ -67,7 +67,7 @@ func (w *openCVClipWriter) init(clip videoclip.NoCloser) error {
 	}
 	w.clip = clip
 
-	dimensions, err := clip.FrameDimensions()
+	dimensions, err := clip.Dimensions()
 	if err != nil {
 		return err
 	}
@@ -100,14 +100,17 @@ func (w *openCVClipWriter) reset() {
 }
 
 func (w *openCVClipWriter) Write(clip videoclip.NoCloser) error {
-	if len(clip.GetFrames()) == 0 {
+	// TODO(tauraamui):
+	// make clip frames fetch be statically referenced from here
+	// instead of referring to internal instance again
+	if len(clip.Frames()) == 0 {
 		return xerror.New("cannot write empty clip")
 	}
 	if err := w.init(clip); err != nil {
 		return err
 	}
 	defer w.reset()
-	for _, frame := range clip.GetFrames() {
+	for _, frame := range clip.Frames() {
 		if err := w.writeFrame(frame); err != nil {
 			return err
 		}

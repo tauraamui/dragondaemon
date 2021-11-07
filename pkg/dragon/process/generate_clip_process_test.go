@@ -69,9 +69,9 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 	for i := 0; i < clipsToGenerate; i++ {
 		clip := <-generatedClipsChan
 		if i < clipsToGenerate-1 {
-			is.Equal(len(clip.GetFrames()), framesPerClip)
+			is.Equal(len(clip.Frames()), framesPerClip)
 		} else {
-			frameCount := len(clip.GetFrames())
+			frameCount := len(clip.Frames())
 			is.True(frameCount < framesPerClip || frameCount <= framesPerClip/2)
 		}
 
@@ -141,7 +141,7 @@ receiveClipsProcLoop:
 	is.Equal(len(generatedClips), numClipsToGen)
 	is.True(sentFramesCount >= numClipsToGen*framesPerClip)
 	for i := 0; i < numClipsToGen; i++ {
-		clipsFrames := generatedClips[i].GetFrames()
+		clipsFrames := generatedClips[i].Frames()
 		is.Equal(len(clipsFrames), framesPerClip)
 
 		for j := 0; j < len(clipsFrames); j++ {

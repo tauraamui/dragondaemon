@@ -18,8 +18,8 @@ type Clip interface {
 
 type NoCloser interface {
 	AppendFrame(videoframe.Frame)
-	GetFrames() []videoframe.Frame
-	FrameDimensions() (videoframe.Dimensions, error)
+	Frames() []videoframe.Frame
+	Dimensions() (videoframe.Dimensions, error)
 	FPS() int
 	RootPath() string
 	FileName() string
@@ -64,7 +64,7 @@ func (c *clip) AppendFrame(f videoframe.Frame) {
 	c.frames = append(c.frames, f)
 }
 
-func (c *clip) FrameDimensions() (videoframe.Dimensions, error) {
+func (c *clip) Dimensions() (videoframe.Dimensions, error) {
 	if len(c.frames) == 0 {
 		return videoframe.Dimensions{}, xerror.New("unable to resolve clip's footage dimensions")
 	}
@@ -100,7 +100,7 @@ func (c *clip) Close() {
 	c.isClosed = true
 }
 
-func (c *clip) GetFrames() []videoframe.Frame {
+func (c *clip) Frames() []videoframe.Frame {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.frames
