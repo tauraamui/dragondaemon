@@ -13,13 +13,13 @@ import (
 )
 
 // TODO(tauraamui): re-write delete clip process
-func DeleteOldClips(cam camera.Connection) func(context.Context, chan interface{}) []chan interface{} {
+func DeleteOldClips(cam camera.Connection) func(context.Context, chan struct{}) []chan struct{} {
 	lastDeleteInvokedAt := TimeNow()
-	return func(cancel context.Context, s chan interface{}) []chan interface{} {
-		var stopSignals []chan interface{}
+	return func(cancel context.Context, s chan struct{}) []chan struct{} {
+		var stopSignals []chan struct{}
 		log.Info("Deleting old saved clips for camera [%s]", cam.Title())
-		stopping := make(chan interface{})
-		go func(cancel context.Context, cam camera.Connection, stopping chan interface{}) {
+		stopping := make(chan struct{})
+		go func(cancel context.Context, cam camera.Connection, stopping chan struct{}) {
 		procLoop:
 			for {
 				time.Sleep(1 * time.Microsecond)

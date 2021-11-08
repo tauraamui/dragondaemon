@@ -29,9 +29,9 @@ func (s *Server) SetupProcesses() {
 	}
 }
 
-func outputRuntimeStats() func(context.Context, chan interface{}) []chan interface{} {
-	return func(cancel context.Context, s chan interface{}) []chan interface{} {
-		stopping := make(chan interface{})
+func outputRuntimeStats() func(context.Context, chan struct{}) []chan struct{} {
+	return func(cancel context.Context, s chan struct{}) []chan struct{} {
+		stopping := make(chan struct{})
 		started := false
 	procLoop:
 		for {
@@ -50,7 +50,7 @@ func outputRuntimeStats() func(context.Context, chan interface{}) []chan interfa
 				renderStats(stats)
 			}
 		}
-		return []chan interface{}{stopping}
+		return []chan struct{}{stopping}
 	}
 }
 

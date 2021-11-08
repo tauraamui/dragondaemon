@@ -146,7 +146,7 @@ func TestCoreProcessSetup(t *testing.T) {
 }
 
 type mockProc struct {
-	started chan interface{}
+	started chan struct{}
 	onStart func()
 	onStop  func()
 	onWait  func()
@@ -156,12 +156,12 @@ func (m *mockProc) Setup() Process {
 	return m
 }
 
-func (m *mockProc) Start() <-chan interface{} {
+func (m *mockProc) Start() <-chan struct{} {
 	if m.onStart != nil {
 		m.onStart()
 	}
 	if m.started == nil {
-		m.started = make(chan interface{})
+		m.started = make(chan struct{})
 	}
 	defer close(m.started)
 	return m.started
@@ -341,9 +341,9 @@ func callW3sTimeout(f func() error) error {
 }
 
 func callWTimeout(f func() error, t <-chan time.Time, errmsg string) error {
-	done := make(chan interface{})
+	done := make(chan struct{})
 	err := make(chan error)
-	go func(d chan interface{}, f func() error, e chan error) {
+	go func(d chan struct{}, f func() error, e chan error) {
 		defer close(d)
 		defer close(err)
 		err <- f()

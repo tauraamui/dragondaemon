@@ -10,11 +10,11 @@ import (
 )
 
 type generateClipProcess struct {
-	started       chan interface{}
+	started       chan struct{}
 	ctx           context.Context
 	cancel        context.CancelFunc
 	listener      *broadcast.Listener
-	stopping      chan interface{}
+	stopping      chan struct{}
 	framesPerClip int
 	frames        chan videoframe.Frame
 	dest          chan videoclip.NoCloser
@@ -26,19 +26,19 @@ func NewGenerateClipProcess(
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &generateClipProcess{
-		started: make(chan interface{}),
+		started: make(chan struct{}),
 		ctx:     ctx, cancel: cancel,
 		listener: listener,
 		frames:   frames, dest: dest,
 		framesPerClip: framesPerClip,
 		persistLoc:    persistLoc,
-		stopping:      make(chan interface{}),
+		stopping:      make(chan struct{}),
 	}
 }
 
 func (proc *generateClipProcess) Setup() Process { return proc }
 
-func (proc *generateClipProcess) Start() <-chan interface{} {
+func (proc *generateClipProcess) Start() <-chan struct{} {
 	go proc.run()
 	return proc.started
 }

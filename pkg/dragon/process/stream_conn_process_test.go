@@ -199,8 +199,8 @@ func callW3sTimeout(f func()) error {
 }
 
 func callWTimeout(f func(), t <-chan time.Time, errmsg string) error {
-	done := make(chan interface{})
-	go func(d chan interface{}, f func()) {
+	done := make(chan struct{})
+	go func(d chan struct{}, f func()) {
 		defer close(d)
 		f()
 	}(done, f)

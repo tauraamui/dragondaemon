@@ -15,11 +15,11 @@ const CAM_SWITCHED_OFF_EVT Event = 0x51
 const CAM_SWITCHED_ON_EVT Event = 0x52
 
 type streamConnProccess struct {
-	started  chan interface{}
+	started  chan struct{}
 	ctx      context.Context
 	cancel   context.CancelFunc
 	listener *broadcast.Listener
-	stopping chan interface{}
+	stopping chan struct{}
 	cam      camera.Connection
 	dest     chan videoframe.Frame
 }
@@ -29,21 +29,21 @@ func NewStreamConnProcess(
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
-		started: make(chan interface{}),
+		started: make(chan struct{}),
 		ctx:     ctx, cancel: cancel,
 		listener: l,
-		cam:      cam, dest: dest, stopping: make(chan interface{}),
+		cam:      cam, dest: dest, stopping: make(chan struct{}),
 	}
 }
 
 func (proc *streamConnProccess) Setup() Process { return proc }
 
-func (proc *streamConnProccess) Start() <-chan interface{} {
+func (proc *streamConnProccess) Start() <-chan struct{} {
 	go run(proc.ctx, proc.cam, proc.dest, *proc.listener, proc.started, proc.stopping)
 	return proc.started
 }
 
-func run(ctx context.Context, cam camera.Connection, d chan videoframe.Frame, l broadcast.Listener, s, stopping chan interface{}) {
+func run(ctx context.Context, cam camera.Connection, d chan videoframe.Frame, l broadcast.Listener, s, stopping chan struct{}) {
 	isOn := true
 	started := false
 	for {

@@ -19,7 +19,7 @@ import (
 // 	ConnectWithCancel(context.Context) []error
 // 	SetupProcesses()
 // 	RunProcesses()
-// 	Shutdown() <-chan interface{}
+// 	Shutdown() <-chan struct{}
 // }
 
 func NewServer(cr config.Resolver, vb videobackend.Backend) (*Server, error) {
@@ -32,7 +32,7 @@ func NewServer(cr config.Resolver, vb videobackend.Backend) (*Server, error) {
 		config:        c,
 		videoBackend:  vb,
 		coreProcesses: map[string]process.Process{},
-		shutdownDone:  make(chan interface{}),
+		shutdownDone:  make(chan struct{}),
 	}, nil
 }
 
@@ -40,7 +40,7 @@ type Server struct {
 	runtimeStatsEnabled    bool
 	renderRuntimeStatsProc process.Process
 	videoBackend           videobackend.Backend
-	shutdownDone           chan interface{}
+	shutdownDone           chan struct{}
 	config                 configdef.Values
 	mu                     sync.Mutex
 	coreProcesses          map[string]process.Process
@@ -143,7 +143,7 @@ func (s *Server) shutdown() {
 	close(s.shutdownDone)
 }
 
-func (s *Server) Shutdown() <-chan interface{} {
+func (s *Server) Shutdown() <-chan struct{} {
 	s.shutdownProcesses()
 	s.shutdown()
 	return s.shutdownDone

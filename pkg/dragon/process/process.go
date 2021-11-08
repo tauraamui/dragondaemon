@@ -12,30 +12,30 @@ const SHUTDOWN_EVT Event = 0x50
 
 type Process interface {
 	Setup() Process
-	Start() <-chan interface{}
+	Start() <-chan struct{}
 	Stop()
 	Wait()
 }
 
 type Settings struct {
 	WaitForShutdownMsg string
-	Process            func(context.Context, chan interface{}) []chan interface{}
+	Process            func(context.Context, chan struct{}) []chan struct{}
 }
 
 func New(settings Settings) Process {
 	return &process{
-		started:            make(chan interface{}),
+		started:            make(chan struct{}),
 		waitForShutdownMsg: settings.WaitForShutdownMsg,
 		process:            settings.Process,
 	}
 }
 
 type process struct {
-	started            chan interface{}
-	process            func(context.Context, chan interface{}) []chan interface{}
+	started            chan struct{}
+	process            func(context.Context, chan struct{}) []chan struct{}
 	waitForShutdownMsg string
 	canceller          context.CancelFunc
-	signals            []chan interface{}
+	signals            []chan struct{}
 }
 
 func (p *process) logShutdown() {
@@ -51,13 +51,13 @@ func (p *process) Setup() Process {
 
 func (p *process) initStarted() {
 	if p.started == nil {
-		p.started = make(chan interface{})
+		p.started = make(chan struct{})
 	}
 }
 
-func (p *process) Start() <-chan interface{} {
+func (p *process) Start() <-chan struct{} {
 	p.initStarted()
-	go func(s chan interface{}) {
+	go func(s chan struct{}) {
 		ctx, canceller := context.WithCancel(context.Background())
 		p.canceller = canceller
 		p.signals = append(p.signals, p.process(ctx, s)...)

@@ -9,10 +9,10 @@ import (
 )
 
 type persistClipProcess struct {
-	started  chan interface{}
+	started  chan struct{}
 	ctx      context.Context
 	cancel   context.CancelFunc
-	stopping chan interface{}
+	stopping chan struct{}
 	clips    chan videoclip.NoCloser
 	writer   videoclip.Writer
 }
@@ -20,13 +20,13 @@ type persistClipProcess struct {
 func NewPersistClipProcess(clips chan videoclip.NoCloser, writer videoclip.Writer) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &persistClipProcess{
-		started: make(chan interface{}), ctx: ctx, cancel: cancel, clips: clips, writer: writer, stopping: make(chan interface{}),
+		started: make(chan struct{}), ctx: ctx, cancel: cancel, clips: clips, writer: writer, stopping: make(chan struct{}),
 	}
 }
 
 func (proc *persistClipProcess) Setup() Process { return proc }
 
-func (proc *persistClipProcess) Start() <-chan interface{} {
+func (proc *persistClipProcess) Start() <-chan struct{} {
 	go proc.run()
 	return proc.started
 }

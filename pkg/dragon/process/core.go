@@ -50,7 +50,7 @@ func (proc *persistCameraToDisk) Setup() Process {
 	return proc
 }
 
-func (proc *persistCameraToDisk) Start() <-chan interface{} {
+func (proc *persistCameraToDisk) Start() <-chan struct{} {
 	log.Debug("Monitoring camera on/off state change")
 	proc.monitorCameraOnState.Start()
 	log.Info("Streaming video from camera [%s]", proc.cam.Title())
@@ -85,9 +85,9 @@ func (proc *persistCameraToDisk) Wait() {
 	proc.streamProcess.Wait()
 }
 
-func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection, d time.Duration) func(context.Context, chan interface{}) []chan interface{} {
-	return func(c context.Context, s chan interface{}) []chan interface{} {
-		stopping := make(chan interface{})
+func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection, d time.Duration) func(context.Context, chan struct{}) []chan struct{} {
+	return func(c context.Context, s chan struct{}) []chan struct{} {
+		stopping := make(chan struct{})
 		t := time.NewTicker(1 * d)
 		wasOff := false
 		started := false
@@ -119,6 +119,6 @@ func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection
 			default:
 			}
 		}
-		return []chan interface{}{stopping}
+		return []chan struct{}{stopping}
 	}
 }
