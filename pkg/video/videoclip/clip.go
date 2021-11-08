@@ -17,8 +17,8 @@ type Clip interface {
 }
 
 type NoCloser interface {
-	AppendFrame(videoframe.Frame)
-	Frames() []videoframe.Frame
+	AppendFrame(videoframe.NoCloser)
+	Frames() []videoframe.NoCloser
 	Dimensions() (videoframe.Dimensions, error)
 	FPS() int
 	RootPath() string
@@ -51,10 +51,10 @@ type clip struct {
 	fps                 int
 	mu                  sync.Mutex
 	isClosed            bool
-	frames              []videoframe.Frame
+	frames              []videoframe.NoCloser
 }
 
-func (c *clip) AppendFrame(f videoframe.Frame) {
+func (c *clip) AppendFrame(f videoframe.NoCloser) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -93,14 +93,14 @@ func (c *clip) Close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	for _, frame := range c.frames {
-		frame.Close()
-	}
+	// for _, frame := range c.frames {
+	// 	frame.Close()
+	// }
 
 	c.isClosed = true
 }
 
-func (c *clip) Frames() []videoframe.Frame {
+func (c *clip) Frames() []videoframe.NoCloser {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.frames

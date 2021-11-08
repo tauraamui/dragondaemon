@@ -21,11 +21,11 @@ type streamConnProccess struct {
 	listener *broadcast.Listener
 	stopping chan struct{}
 	cam      camera.Connection
-	dest     chan videoframe.Frame
+	dest     chan videoframe.NoCloser
 }
 
 func NewStreamConnProcess(
-	l *broadcast.Listener, cam camera.Connection, dest chan videoframe.Frame,
+	l *broadcast.Listener, cam camera.Connection, dest chan videoframe.NoCloser,
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
@@ -43,7 +43,7 @@ func (proc *streamConnProccess) Start() <-chan struct{} {
 	return proc.started
 }
 
-func run(ctx context.Context, cam camera.Connection, d chan videoframe.Frame, l broadcast.Listener, s, stopping chan struct{}) {
+func run(ctx context.Context, cam camera.Connection, d chan videoframe.NoCloser, l broadcast.Listener, s, stopping chan struct{}) {
 	isOn := true
 	started := false
 	for {
@@ -73,7 +73,7 @@ func run(ctx context.Context, cam camera.Connection, d chan videoframe.Frame, l 
 	}
 }
 
-func stream(cam camera.Connection, frames chan videoframe.Frame) {
+func stream(cam camera.Connection, frames chan videoframe.NoCloser) {
 	log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
 	frame, err := cam.Read()
 	if err != nil {

@@ -22,7 +22,7 @@ func (frame *openCVFrame) DataRef() interface{} {
 }
 
 func (frame *openCVFrame) Dimensions() videoframe.Dimensions {
-	return videoframe.Dimensions{frame.mat.Cols(), frame.mat.Rows()}
+	return videoframe.Dimensions{W: frame.mat.Cols(), H: frame.mat.Rows()}
 }
 
 func (frame *openCVFrame) Close() {
@@ -118,7 +118,7 @@ func (w *openCVClipWriter) Write(clip videoclip.NoCloser) error {
 	return nil
 }
 
-func (w *openCVClipWriter) writeFrame(frame videoframe.Frame) error {
+func (w *openCVClipWriter) writeFrame(frame videoframe.NoCloser) error {
 	mat, ok := frame.DataRef().(*gocv.Mat)
 	if !ok {
 		return xerror.New("must pass OpenCV frame to OpenCV writer")

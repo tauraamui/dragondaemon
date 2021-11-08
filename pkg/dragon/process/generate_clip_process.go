@@ -16,13 +16,13 @@ type generateClipProcess struct {
 	listener      *broadcast.Listener
 	stopping      chan struct{}
 	framesPerClip int
-	frames        chan videoframe.Frame
+	frames        chan videoframe.NoCloser
 	dest          chan videoclip.NoCloser
 	persistLoc    string
 }
 
 func NewGenerateClipProcess(
-	listener *broadcast.Listener, frames chan videoframe.Frame, dest chan videoclip.NoCloser, framesPerClip int, persistLoc string,
+	listener *broadcast.Listener, frames chan videoframe.NoCloser, dest chan videoclip.NoCloser, framesPerClip int, persistLoc string,
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &generateClipProcess{
@@ -64,7 +64,7 @@ func (proc *generateClipProcess) run() {
 	}
 }
 
-func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan videoframe.Frame, count int, persistLoc string) videoclip.NoCloser {
+func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan videoframe.NoCloser, count int, persistLoc string) videoclip.NoCloser {
 	clip := videoclip.New(persistLoc, count)
 	i := 0
 	for {

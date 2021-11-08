@@ -19,7 +19,7 @@ const persistLoc = "/testroot/clips"
 
 func TestNewGenerateClipProcess(t *testing.T) {
 	b := broadcast.New(0)
-	frames := make(chan videoframe.Frame)
+	frames := make(chan videoframe.NoCloser)
 	generatedClips := make(chan videoclip.NoCloser)
 
 	is := is.New(t)
@@ -29,7 +29,7 @@ func TestNewGenerateClipProcess(t *testing.T) {
 
 func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testing.T) {
 	b := broadcast.New(0)
-	framesChan := make(chan videoframe.Frame)
+	framesChan := make(chan videoframe.NoCloser)
 	generatedClipsChan := make(chan videoclip.NoCloser)
 
 	is := is.New(t)
@@ -40,7 +40,7 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 	done := make(chan error)
 	onLastClip := make(chan bool)
 	clipsToGenerate := 30
-	go func(ctx context.Context, timeout <-chan time.Time, onLastClip chan bool, done chan error, frames chan videoframe.Frame) {
+	go func(ctx context.Context, timeout <-chan time.Time, onLastClip chan bool, done chan error, frames chan videoframe.NoCloser) {
 		defer close(done)
 		for {
 			time.Sleep(1 * time.Microsecond)
@@ -86,7 +86,7 @@ func TestGenerateClipProcessCreatesClipWithBroadcastEventForEarlyPause(t *testin
 
 func TestGenerateClipProcessCreatesClipsWithSpecifiedFrameAmount(t *testing.T) {
 	b := broadcast.New(0)
-	framesChan := make(chan videoframe.Frame)
+	framesChan := make(chan videoframe.NoCloser)
 	generatedClipsChan := make(chan videoclip.NoCloser)
 	numClipsToGen := 3
 

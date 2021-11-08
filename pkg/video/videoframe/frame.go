@@ -5,7 +5,15 @@ type Dimensions struct {
 }
 
 type Frame interface {
+	NoCloser
+	Closer
+}
+
+type NoCloser interface {
 	DataRef() interface{}
 	Dimensions() Dimensions
+}
+
+type Closer interface {
 	Close()
 }

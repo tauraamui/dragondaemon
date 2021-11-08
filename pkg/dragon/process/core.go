@@ -20,7 +20,7 @@ func NewCoreProcess(cam camera.Connection, writer videoclip.Writer) Process {
 		broadcaster: broadcast.New(0),
 		cam:         cam,
 		writer:      writer,
-		frames:      make(chan videoframe.Frame, 3),
+		frames:      make(chan videoframe.NoCloser, 3),
 		clips:       make(chan videoclip.NoCloser, 3),
 	}
 }
@@ -29,7 +29,7 @@ type persistCameraToDisk struct {
 	broadcaster          *broadcast.Broadcaster
 	cam                  camera.Connection
 	writer               videoclip.Writer
-	frames               chan videoframe.Frame
+	frames               chan videoframe.NoCloser
 	clips                chan videoclip.NoCloser
 	monitorCameraOnState Process
 	streamProcess        Process
