@@ -15,6 +15,10 @@ test:
 test-verbose:
 	gotestsum --format standard-verbose ./...
 
+.PHONY: benchmark
+benchmark:
+	go test -run="none" -bench=. ./...
+
 .PHONY: coverage
 coverage:
 	go test -coverpkg=./... -coverprofile=profile.cov ./... && go tool cover -func profile.cov && rm profile.cov
