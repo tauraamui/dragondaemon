@@ -31,55 +31,14 @@ func (m *mockFrame) Close() {
 }
 
 type mockCameraConn struct {
-	uuid                string
-	title               string
-	persistLocation     string
-	fullPersistLocation string
-	maxClipAgeDays      int
-	fps                 int
-	schedule            schedule.Schedule
-	spc                 int
-	frameReadIndex      int
-	framesToRead        []mockFrame
-	readFunc            func() (videoframe.Frame, error)
-	onPostRead          func()
-	readErr             error
-	isOpenFunc          func() bool
-	isOpen              bool
-	isClosing           bool
-	closeErr            error
-}
-
-func (m *mockCameraConn) UUID() string {
-	return m.uuid
-}
-
-func (m *mockCameraConn) Title() string {
-	return m.title
-}
-
-func (m *mockCameraConn) PersistLocation() string {
-	return m.persistLocation
-}
-
-func (m *mockCameraConn) FullPersistLocation() string {
-	return m.fullPersistLocation
-}
-
-func (m *mockCameraConn) MaxClipAgeDays() int {
-	return m.maxClipAgeDays
-}
-
-func (m *mockCameraConn) FPS() int {
-	return m.fps
-}
-
-func (m *mockCameraConn) Schedule() schedule.Schedule {
-	return m.schedule
-}
-
-func (m *mockCameraConn) SPC() int {
-	return m.spc
+	schedule       schedule.Schedule
+	frameReadIndex int
+	framesToRead   []mockFrame
+	readFunc       func() (videoframe.Frame, error)
+	onPostRead     func()
+	readErr        error
+	isOpenFunc     func() bool
+	isOpen         bool
 }
 
 func (m *mockCameraConn) Read() (frame videoframe.Frame, err error) {
@@ -104,12 +63,4 @@ func (m *mockCameraConn) IsOpen() bool {
 		return m.isOpenFunc()
 	}
 	return m.isOpen
-}
-
-func (m *mockCameraConn) IsClosing() bool {
-	return m.isClosing
-}
-
-func (m *mockCameraConn) Close() error {
-	return m.closeErr
 }

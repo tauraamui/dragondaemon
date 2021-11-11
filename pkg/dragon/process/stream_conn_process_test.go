@@ -68,7 +68,7 @@ func (suite *StreamConnProcessTestSuite) TestNewStreamConnProcess() {
 
 	testConn := mockCameraConn{schedule: schedule.NewSchedule(schedule.Week{})}
 	readFrames := make(chan videoframe.NoCloser)
-	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), "testCam", &testConn, readFrames)
 	is.True(proc != nil)
 }
 
@@ -90,7 +90,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessReadsFramesFromCon
 	// to optionally recieve without blocking so the loop
 	// proceeds and the timeout is checked
 	readFrames := make(chan videoframe.NoCloser, 3)
-	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), "testCam", &testConn, readFrames)
 
 	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
@@ -146,7 +146,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessStopsReadingFrames
 	fc := make(chan videoframe.NoCloser)
 
 	b := broadcast.New(0)
-	proc := process.NewStreamConnProcess(b.Listen(), &testConn, fc)
+	proc := process.NewStreamConnProcess(b.Listen(), "testCam", &testConn, fc)
 
 	is := is.New(suite.T())
 	<-proc.Setup().Start()
@@ -249,7 +249,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReturnFram
 	}
 
 	readFrames := make(chan videoframe.NoCloser, 2)
-	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), "testCam", &testConn, readFrames)
 
 	proc.Setup().Start()
 	timeout := time.After(3 * time.Second)
@@ -279,7 +279,7 @@ func (suite *StreamConnProcessTestSuite) TestStreamConnProcessUnableToReadError(
 	}
 
 	readFrames := make(chan videoframe.NoCloser)
-	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), &testConn, readFrames)
+	proc := process.NewStreamConnProcess(broadcast.New(0).Listen(), "testCam", &testConn, readFrames)
 
 	suite.onPostErrorLog = func() {
 		proc.Stop()

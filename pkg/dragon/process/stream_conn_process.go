@@ -20,18 +20,20 @@ type streamConnProccess struct {
 	cancel   context.CancelFunc
 	listener *broadcast.Listener
 	stopping chan struct{}
-	cam      camera.Connection
+	camTitle string
+	cam      camera.IsOpenReader
 	dest     chan videoframe.NoCloser
 }
 
 func NewStreamConnProcess(
-	l *broadcast.Listener, cam camera.Connection, dest chan videoframe.NoCloser,
+	l *broadcast.Listener, camTitle string, cam camera.IsOpenReader, dest chan videoframe.NoCloser,
 ) Process {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &streamConnProccess{
 		started: make(chan struct{}),
 		ctx:     ctx, cancel: cancel,
 		listener: l,
+		camTitle: camTitle,
 		cam:      cam, dest: dest, stopping: make(chan struct{}),
 	}
 }
@@ -39,11 +41,11 @@ func NewStreamConnProcess(
 func (proc *streamConnProccess) Setup() Process { return proc }
 
 func (proc *streamConnProccess) Start() <-chan struct{} {
-	go run(proc.ctx, proc.cam, proc.dest, *proc.listener, proc.started, proc.stopping)
+	go run(proc.ctx, proc.camTitle, proc.cam, proc.dest, *proc.listener, proc.started, proc.stopping)
 	return proc.started
 }
 
-func run(ctx context.Context, cam camera.Connection, d chan videoframe.NoCloser, l broadcast.Listener, s, stopping chan struct{}) {
+func run(ctx context.Context, title string, cam camera.IsOpenReader, d chan videoframe.NoCloser, l broadcast.Listener, s, stopping chan struct{}) {
 	isOn := true
 	started := false
 	for {
@@ -67,7 +69,7 @@ func run(ctx context.Context, cam camera.Connection, d chan videoframe.NoCloser,
 			}
 		default:
 			if cam.IsOpen() && isOn {
-				stream(cam.Title(), cam, d)
+				stream(title, cam, d)
 			}
 		}
 	}

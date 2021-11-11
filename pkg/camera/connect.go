@@ -28,6 +28,11 @@ type Connection interface {
 	Close() error
 }
 
+type IsOpenReader interface {
+	IsOpen
+	Reader
+}
+
 type IsOpen interface {
 	IsOpen() bool
 }

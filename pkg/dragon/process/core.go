@@ -42,7 +42,7 @@ func (proc *persistCameraToDisk) Setup() Process {
 		WaitForShutdownMsg: "",
 		Process:            sendEvtOnCameraStateChange(proc.broadcaster, proc.cam, time.Second),
 	})
-	proc.streamProcess = NewStreamConnProcess(proc.broadcaster.Listen(), proc.cam, proc.frames)
+	proc.streamProcess = NewStreamConnProcess(proc.broadcaster.Listen(), proc.cam.Title(), proc.cam, proc.frames)
 	proc.generateClips = NewGenerateClipProcess(
 		proc.broadcaster.Listen(), proc.frames, proc.clips, proc.cam.FPS()*proc.cam.SPC(), proc.cam.FullPersistLocation(),
 	)
