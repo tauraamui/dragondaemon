@@ -67,14 +67,14 @@ func run(ctx context.Context, cam camera.Connection, d chan videoframe.NoCloser,
 			}
 		default:
 			if cam.IsOpen() && isOn {
-				stream(cam, d)
+				stream(cam.Title(), cam, d)
 			}
 		}
 	}
 }
 
-func stream(cam camera.Connection, frames chan videoframe.NoCloser) {
-	log.Debug("Reading frame from vid stream for camera [%s]", cam.Title())
+func stream(title string, cam camera.Reader, frames chan videoframe.NoCloser) {
+	log.Debug("Reading frame from vid stream for camera [%s]", title)
 	frame, err := cam.Read()
 	if err != nil {
 		log.Error(xerror.Errorf("Unable to retrieve frame: %w. Auto re-connecting is not yet implemented", err).Error())

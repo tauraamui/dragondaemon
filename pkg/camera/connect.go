@@ -14,6 +14,8 @@ import (
 )
 
 type Connection interface {
+	Reader
+	IsOpen
 	UUID() string
 	Title() string
 	PersistLocation() string
@@ -22,10 +24,16 @@ type Connection interface {
 	FPS() int
 	Schedule() schedule.Schedule
 	SPC() int
-	Read() (videoframe.Frame, error)
-	IsOpen() bool
 	IsClosing() bool
 	Close() error
+}
+
+type IsOpen interface {
+	IsOpen() bool
+}
+
+type Reader interface {
+	Read() (videoframe.Frame, error)
 }
 
 type connection struct {

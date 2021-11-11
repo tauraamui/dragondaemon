@@ -25,7 +25,7 @@ func BenchmarkReadingFramesFromMockBackendConnectionStream(b *testing.B) {
 	b.ResetTimer()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		stream(conn, dest)
+		stream(conn.Title(), conn, dest)
 	}
 	b.StopTimer()
 	close(stopReads)
