@@ -3,6 +3,7 @@ package process
 import (
 	"testing"
 
+	"github.com/tauraamui/dragondaemon/pkg/broadcast"
 	"github.com/tauraamui/dragondaemon/pkg/mocks"
 	"github.com/tauraamui/dragondaemon/pkg/video/videoframe"
 )
@@ -30,4 +31,30 @@ func BenchmarkReadingFramesFromMockBackendConnectionStream(b *testing.B) {
 	b.StopTimer()
 	close(stopReads)
 	close(dest)
+}
+
+func BenchmarkStreamConnProcessReading10000Frames(b *testing.B) {
+	const maxFrames uint = 10000
+
+	readFrames := make(chan videoframe.NoCloser, 3)
+	conn := mocks.NewCamConn(mocks.Options{UntrackedFrames: true, IsOpen: true})
+	proc := NewStreamConnProcess(broadcast.New(0).Listen(), "testCam", conn, readFrames)
+
+	proc.Setup().Start()
+
+	var count uint
+procLoop:
+	for {
+		select {
+		case <-readFrames:
+			count++
+		default:
+			if count >= maxFrames {
+				break procLoop
+			}
+		}
+	}
+
+	proc.Stop()
+	proc.Wait()
 }

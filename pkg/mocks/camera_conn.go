@@ -9,10 +9,14 @@ import (
 
 type Options struct {
 	UntrackedFrames bool
+	IsOpen          bool
 }
 
 func NewCamConn(opts Options) camera.Connection {
-	return &mockCameraConn{mockOptions: opts}
+	return &mockCameraConn{
+		mockOptions: opts,
+		isOpen:      opts.IsOpen,
+	}
 }
 
 type mockFrame struct {
