@@ -233,7 +233,7 @@ func TestCoreProcessStop(t *testing.T) {
 	proc.generateClips = &mockProc{onStop: onGenerateProcStop}
 	proc.persistClips = &mockProc{onStop: onPersistProcStop}
 
-	proc.Stop()
+	<-proc.Stop()
 
 	is.True(monitorCamStateProcCalled)
 	is.True(streamProcCalled)
