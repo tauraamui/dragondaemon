@@ -91,8 +91,9 @@ func stream(title string, cam camera.Reader, frames chan videoframe.NoCloser) {
 	}
 }
 
-func (proc *streamConnProccess) Stop() {
+func (proc *streamConnProccess) Stop() <-chan struct{} {
 	proc.cancel()
+	return proc.stopping
 }
 func (proc *streamConnProccess) Wait() {
 	<-proc.stopping

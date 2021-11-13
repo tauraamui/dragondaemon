@@ -13,7 +13,7 @@ const SHUTDOWN_EVT Event = 0x50
 type Process interface {
 	Setup() Process
 	Start() <-chan struct{}
-	Stop()
+	Stop() <-chan struct{}
 	Wait()
 }
 
@@ -65,15 +65,25 @@ func (p *process) Start() <-chan struct{} {
 	return p.started
 }
 
-func (p *process) Stop() {
+func (p *process) Stop() <-chan struct{} {
 	p.logShutdown()
 	if p.canceller != nil {
 		p.canceller()
 	}
+	return p.wait()
 }
 
 func (p *process) Wait() {
-	for _, sig := range p.signals {
-		<-sig
-	}
+	p.wait()
+}
+
+func (p *process) wait() <-chan struct{} {
+	done := make(chan struct{})
+	go func(d chan struct{}) {
+		defer close(done)
+		for _, sig := range p.signals {
+			<-sig
+		}
+	}(done)
+	return done
 }

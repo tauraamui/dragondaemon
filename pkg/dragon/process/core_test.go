@@ -146,10 +146,11 @@ func TestCoreProcessSetup(t *testing.T) {
 }
 
 type mockProc struct {
-	started chan struct{}
-	onStart func()
-	onStop  func()
-	onWait  func()
+	started  chan struct{}
+	stopping chan struct{}
+	onStart  func()
+	onStop   func()
+	onWait   func()
 }
 
 func (m *mockProc) Setup() Process {
@@ -167,10 +168,15 @@ func (m *mockProc) Start() <-chan struct{} {
 	return m.started
 }
 
-func (m *mockProc) Stop() {
+func (m *mockProc) Stop() <-chan struct{} {
 	if m.onStop != nil {
 		m.onStop()
 	}
+	if m.stopping == nil {
+		m.stopping = make(chan struct{})
+	}
+	defer close(m.stopping)
+	return m.stopping
 }
 
 func (m *mockProc) Wait() {
@@ -255,7 +261,7 @@ func TestCoreProcessWait(t *testing.T) {
 	proc.generateClips = &mockProc{onWait: onGenerateProcWait}
 	proc.persistClips = &mockProc{onWait: onPersistProcWait}
 
-	proc.Wait()
+	<-proc.wait()
 
 	is.True(monitorCamStateProcCalled)
 	is.True(streamProcCalled)

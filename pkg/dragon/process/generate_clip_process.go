@@ -93,11 +93,16 @@ func makeClip(ctx context.Context, listener *broadcast.Listener, frames chan vid
 	}
 }
 
-func (proc *generateClipProcess) Stop() {
+func (proc *generateClipProcess) Stop() <-chan struct{} {
 	proc.listener.Close()
 	proc.cancel()
+	return proc.wait()
 }
 
 func (proc *generateClipProcess) Wait() {
-	<-proc.stopping
+	<-proc.wait()
+}
+
+func (proc *generateClipProcess) wait() <-chan struct{} {
+	return proc.stopping
 }

@@ -57,9 +57,14 @@ func (proc *persistClipProcess) run() {
 	}
 }
 
-func (proc *persistClipProcess) Stop() {
+func (proc *persistClipProcess) Stop() <-chan struct{} {
 	proc.cancel()
+	return proc.wait()
 }
+
 func (proc *persistClipProcess) Wait() {
-	<-proc.stopping
+	<-proc.wait()
+}
+func (proc *persistClipProcess) wait() <-chan struct{} {
+	return proc.stopping
 }

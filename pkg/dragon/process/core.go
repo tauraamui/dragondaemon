@@ -63,7 +63,7 @@ func (proc *persistCameraToDisk) Start() <-chan struct{} {
 	return nil
 }
 
-func (proc *persistCameraToDisk) Stop() {
+func (proc *persistCameraToDisk) Stop() <-chan struct{} {
 	log.Debug("Stopping monitoring camera on/off state change")
 	proc.monitorCameraOnState.Stop()
 	log.Info("Stopping writing clips to disk from camera [%s] video stream...", proc.cam.Title())
@@ -72,17 +72,27 @@ func (proc *persistCameraToDisk) Stop() {
 	proc.generateClips.Stop()
 	log.Info("Closing camera [%s] video stream...", proc.cam.Title())
 	proc.streamProcess.Stop()
+	return proc.wait()
 }
 
 func (proc *persistCameraToDisk) Wait() {
-	log.Debug("Waiting for monitoring camera on/off state change to shutdown...")
-	proc.monitorCameraOnState.Wait()
-	log.Info("Waiting for writing clips to disk shutdown...")
-	proc.persistClips.Wait()
-	log.Info("Waiting for generating clips to shutdown...")
-	proc.generateClips.Wait()
-	log.Info("Waiting for streaming video to shutdown...")
-	proc.streamProcess.Wait()
+	proc.wait()
+}
+
+func (proc *persistCameraToDisk) wait() <-chan struct{} {
+	done := make(chan struct{})
+	go func(d chan struct{}) {
+		defer close(d)
+		log.Debug("Waiting for monitoring camera on/off state change to shutdown...")
+		proc.monitorCameraOnState.Wait()
+		log.Info("Waiting for writing clips to disk shutdown...")
+		proc.persistClips.Wait()
+		log.Info("Waiting for generating clips to shutdown...")
+		proc.generateClips.Wait()
+		log.Info("Waiting for streaming video to shutdown...")
+		proc.streamProcess.Wait()
+	}(done)
+	return done
 }
 
 func sendEvtOnCameraStateChange(b *broadcast.Broadcaster, conn camera.Connection, d time.Duration) func(context.Context, chan struct{}) []chan struct{} {
