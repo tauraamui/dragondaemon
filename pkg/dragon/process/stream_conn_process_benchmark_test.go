@@ -11,6 +11,8 @@ import (
 )
 
 func BenchmarkReadingFramesFromInfinateLowSizeFrameProducer(b *testing.B) {
+	b.ResetTimer()
+	b.StopTimer()
 	dest := make(chan videoframe.NoCloser)
 	stopReads := make(chan struct{})
 	go func(frames <-chan videoframe.NoCloser, stop <-chan struct{}) {
@@ -25,7 +27,6 @@ func BenchmarkReadingFramesFromInfinateLowSizeFrameProducer(b *testing.B) {
 		}
 	}(dest, stopReads)
 	conn := mocks.NewCamConn(mocks.Options{UntrackedFrames: true})
-	b.ResetTimer()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		stream(conn.Title(), conn, dest)
@@ -36,6 +37,9 @@ func BenchmarkReadingFramesFromInfinateLowSizeFrameProducer(b *testing.B) {
 }
 
 func BenchmarkStreamConnProcessReading10000LowSizeFrames(b *testing.B) {
+	b.StopTimer()
+	b.ResetTimer()
+
 	const maxFrames uint = 10000
 
 	readFrames := make(chan videoframe.NoCloser, 3)
@@ -44,7 +48,6 @@ func BenchmarkStreamConnProcessReading10000LowSizeFrames(b *testing.B) {
 
 	proc.Setup().Start()
 
-	b.ResetTimer()
 	b.StartTimer()
 	var count uint
 procLoop:
@@ -64,6 +67,8 @@ procLoop:
 }
 
 func BenchmarkStreamConnProcessReading100FramesFromMockVideoStream(b *testing.B) {
+	b.StopTimer()
+	b.ResetTimer()
 	const maxFrames uint = 100
 
 	readFrames := make(chan videoframe.NoCloser, 3)
@@ -76,7 +81,6 @@ func BenchmarkStreamConnProcessReading100FramesFromMockVideoStream(b *testing.B)
 
 	proc.Setup().Start()
 
-	b.ResetTimer()
 	b.StartTimer()
 	var count uint
 procLoop:
