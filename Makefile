@@ -17,7 +17,7 @@ test-verbose:
 
 .PHONY: benchmark
 benchmark:
-	go test -run="none" -bench=. ./...
+	go test -run="none" -bench=. -benchmem ./...
 
 .PHONY: coverage
 coverage:

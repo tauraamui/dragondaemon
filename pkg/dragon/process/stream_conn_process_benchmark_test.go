@@ -66,10 +66,10 @@ procLoop:
 	<-proc.Stop()
 }
 
-func BenchmarkStreamConnProcessReading100FramesFromMockVideoStream(b *testing.B) {
+func BenchmarkStreamConnProcessReading30FramesFromMockVideoStream(b *testing.B) {
 	b.StopTimer()
 	b.ResetTimer()
-	const maxFrames uint = 100
+	const maxFrames uint = 30
 
 	readFrames := make(chan videoframe.NoCloser, 3)
 	conn, err := camera.Connect("mock", "", camera.Settings{}, videobackend.Mock())
