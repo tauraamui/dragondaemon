@@ -42,6 +42,8 @@ func BenchmarkStreamConnProcessReading10000Frames(b *testing.B) {
 
 	proc.Setup().Start()
 
+	b.ResetTimer()
+	b.StartTimer()
 	var count uint
 procLoop:
 	for {
@@ -54,7 +56,7 @@ procLoop:
 			}
 		}
 	}
+	b.StopTimer()
 
-	proc.Stop()
-	proc.Wait()
+	<-proc.Stop()
 }

@@ -50,8 +50,7 @@ func TestPersistClipProcessWritesClips(t *testing.T) {
 
 	clipsToWrite <- clip
 
-	proc.Stop()
-	proc.Wait()
+	<-proc.Stop()
 
 	is.True(testWriter.hasWrittenClip(is, clip))
 }
@@ -70,8 +69,7 @@ func TestPersistClipProcessContinuesIfReaderDelayed(t *testing.T) {
 
 	clipsToWrite <- clip
 
-	proc.Stop()
-	proc.Wait()
+	<-proc.Stop()
 
 	is.True(testWriter.hasWrittenClip(is, clip))
 }
