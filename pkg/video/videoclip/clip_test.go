@@ -31,6 +31,8 @@ type testFrame struct {
 	onClose func()
 }
 
+func (frame *testFrame) Timestamp() int64 { return 0 }
+
 func (frame *testFrame) DataRef() interface{} {
 	return nil
 }
@@ -38,6 +40,8 @@ func (frame *testFrame) DataRef() interface{} {
 func (frame *testFrame) Dimensions() videoframe.Dimensions {
 	return videoframe.Dimensions{W: 100, H: 50}
 }
+
+func (frame *testFrame) ToBytes() []byte { return nil }
 
 func (frame *testFrame) Close() {
 	if frame.onClose != nil {

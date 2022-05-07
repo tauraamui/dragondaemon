@@ -27,6 +27,8 @@ type mockFrame struct {
 	onClose       func()
 }
 
+func (m *mockFrame) Timestamp() int64 { return 0 }
+
 func (m *mockFrame) DataRef() interface{} {
 	return m.data
 }
@@ -34,6 +36,8 @@ func (m *mockFrame) DataRef() interface{} {
 func (m *mockFrame) Dimensions() videoframe.Dimensions {
 	return videoframe.Dimensions{W: m.width, H: m.height}
 }
+
+func (m *mockFrame) ToBytes() []byte { return nil }
 
 func (m *mockFrame) Close() {
 	m.isOpen = false

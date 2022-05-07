@@ -10,8 +10,10 @@ type Frame interface {
 }
 
 type NoCloser interface {
-	DataRef() interface{}
+	Timestamp() int64
 	Dimensions() Dimensions
+	DataRef() interface{}
+	ToBytes() []byte
 }
 
 type Closer interface {

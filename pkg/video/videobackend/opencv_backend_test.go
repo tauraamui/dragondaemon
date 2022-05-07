@@ -223,6 +223,8 @@ func makeClip(rootPath string, seconds, fps int) (videoclip.Clip, error) {
 
 type invalidFrame struct{}
 
+func (frame invalidFrame) Timestamp() int64 { return 0 }
+
 func (frame invalidFrame) DataRef() interface{} {
 	return nil
 }
@@ -230,6 +232,8 @@ func (frame invalidFrame) DataRef() interface{} {
 func (frame invalidFrame) Dimensions() videoframe.Dimensions {
 	return videoframe.Dimensions{W: 100, H: 50}
 }
+
+func (frame invalidFrame) ToBytes() []byte { return nil }
 
 func (frame invalidFrame) Close() {}
 

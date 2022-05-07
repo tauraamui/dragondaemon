@@ -31,6 +31,8 @@ func (tvb testVideoBackend) NewWriter() videoclip.Writer {
 type testVideoFrame struct {
 }
 
+func (tvf testVideoFrame) Timestamp() int64 { return 0 }
+
 func (tvf testVideoFrame) DataRef() interface{} {
 	return nil
 }
@@ -38,6 +40,8 @@ func (tvf testVideoFrame) DataRef() interface{} {
 func (tvf testVideoFrame) Dimensions() videoframe.Dimensions {
 	return videoframe.Dimensions{W: 100, H: 50}
 }
+
+func (tvf testVideoFrame) ToBytes() []byte { return nil }
 
 func (tvf testVideoFrame) Close() {}
 

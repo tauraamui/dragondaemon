@@ -30,10 +30,16 @@ github.com/matryer/is
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
-# github.com/mattn/go-sqlite3 v1.14.5
+# github.com/mattn/go-sqlite3 v1.14.12
+## explicit
 github.com/mattn/go-sqlite3
 # github.com/nakabonne/tstorage v0.3.5
 ## explicit
+github.com/nakabonne/tstorage
+github.com/nakabonne/tstorage/internal/cgroup
+github.com/nakabonne/tstorage/internal/encoding
+github.com/nakabonne/tstorage/internal/syscall
+github.com/nakabonne/tstorage/internal/timerpool
 # github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e
 ## explicit
 # github.com/pkg/errors v0.9.1

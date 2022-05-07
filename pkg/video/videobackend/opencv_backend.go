@@ -13,12 +13,19 @@ import (
 )
 
 type openCVFrame struct {
-	isClosed bool
-	mat      gocv.Mat
+	isClosed  bool
+	mat       gocv.Mat
+	timestamp int64
 }
+
+func (frame *openCVFrame) Timestamp() int64 { return frame.timestamp }
 
 func (frame *openCVFrame) DataRef() interface{} {
 	return &frame.mat
+}
+
+func (frame *openCVFrame) ToBytes() []byte {
+	return frame.mat.ToBytes()
 }
 
 func (frame *openCVFrame) Dimensions() videoframe.Dimensions {
