@@ -13,4 +13,6 @@ func TestRTSPClientConn(t *testing.T) {
 	client, err := rtsp.NewClient("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov")
 	is.NoErr(err)
 	is.NoErr(client.Connect(context.Background()))
+	is.NoErr(client.Options())
+	is.NoErr(client.Close())
 }

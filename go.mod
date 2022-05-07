@@ -3,6 +3,7 @@ module github.com/tauraamui/dragondaemon
 go 1.16
 
 require (
+	github.com/aler9/gortsplib v0.0.0-20220401100817-6c6c6c68c9b4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
