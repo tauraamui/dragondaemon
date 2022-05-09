@@ -2,6 +2,8 @@ package videobackend
 
 import (
 	"context"
+	"encoding/binary"
+	"errors"
 	"os"
 	"sync"
 
@@ -25,7 +27,20 @@ func (frame *openCVFrame) DataRef() interface{} {
 }
 
 func (frame *openCVFrame) ToBytes() []byte {
-	return frame.mat.ToBytes()
+	var r, c, mt uint16
+	// store the OpenCV matrix rows, columns and type
+	r = uint16(frame.mat.Rows())  // 2 bytes
+	c = uint16(frame.mat.Cols())  // 2 bytes
+	mt = uint16(frame.mat.Type()) // 2 byte
+
+	suffix := make([]byte, 8)
+	binary.LittleEndian.PutUint16(suffix[:2], r)
+	binary.LittleEndian.PutUint16(suffix[2:4], c)
+	binary.LittleEndian.PutUint16(suffix[4:6], mt)
+	suffix[6] = 0x13
+	suffix[7] = 0x31
+
+	return append(frame.mat.ToBytes(), suffix...)
 }
 
 func (frame *openCVFrame) Dimensions() videoframe.Dimensions {
@@ -52,6 +67,36 @@ func (b *openCVBackend) Connect(cancel context.Context, addr string) (Connection
 
 func (b *openCVBackend) NewFrame() videoframe.Frame {
 	return &openCVFrame{mat: gocv.NewMat()}
+}
+
+func (b *openCVBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
+	if len(d) < 8 {
+		return nil, errors.New("OpenCV frame expects at least 8 bytes to load")
+	}
+
+	dl := len(d)
+	suffix := d[dl-8:]
+
+	if int(suffix[6]) != 0x13 || int(suffix[7]) != 0x31 {
+		return nil, errors.New("OpenCV frame bytes missing trailing suffix")
+	}
+
+	r := binary.LittleEndian.Uint16(suffix[:2])
+	c := binary.LittleEndian.Uint16(suffix[2:4])
+	mtypeid := binary.LittleEndian.Uint16(suffix[4:6])
+	mattype := gocv.MatType(mtypeid)
+
+	if dl-8 < 8 {
+		d = []byte{}
+	} else {
+		d = d[:dl-8]
+	}
+
+	mat, err := gocv.NewMatFromBytes(int(r), int(c), mattype, d)
+	if err != nil {
+		return nil, err
+	}
+	return &openCVFrame{mat: mat}, nil
 }
 
 func (b *openCVBackend) NewWriter() videoclip.Writer {

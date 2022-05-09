@@ -20,6 +20,7 @@ type Connection interface {
 type Backend interface {
 	Connect(context.Context, string) (Connection, error)
 	NewFrame() videoframe.Frame
+	NewFrameFromBytes([]byte) (videoframe.Frame, error)
 	NewWriter() videoclip.Writer
 }
 

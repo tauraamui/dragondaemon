@@ -60,6 +60,10 @@ func (tvb testVideoBackend) NewFrame() videoframe.Frame {
 	return testVideoFrame{}
 }
 
+func (tvb testVideoBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
+	return testVideoFrame{}, nil
+}
+
 func (tvb testVideoBackend) NewWriter() videoclip.Writer {
 	return nil
 }
@@ -186,6 +190,10 @@ func (b testWaitsOnCancelVideoBackend) Connect(ctx context.Context, addr string)
 
 func (b testWaitsOnCancelVideoBackend) NewFrame() videoframe.Frame {
 	return testVideoFrame{}
+}
+
+func (b testWaitsOnCancelVideoBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
+	return testVideoFrame{}, nil
 }
 
 func (b testWaitsOnCancelVideoBackend) NewWriter() videoclip.Writer {

@@ -2,6 +2,7 @@ package videobackend
 
 import (
 	"context"
+	"errors"
 	"image"
 	"image/color"
 	"image/draw"
@@ -28,6 +29,10 @@ func (b *mockVideoBackend) Connect(cancel context.Context, addr string) (Connect
 
 func (b *mockVideoBackend) NewFrame() videoframe.Frame {
 	return &openCVFrame{mat: gocv.NewMat()}
+}
+
+func (b *mockVideoBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
+	return nil, errors.New("not yet implemented")
 }
 
 func (b *mockVideoBackend) NewWriter() videoclip.Writer {
@@ -107,7 +112,7 @@ func drawTextLayerOntoBaseFrameClone(base image.Image, title string) (image.Imag
 }
 
 func renderBaseFrameCanvas() image.Image {
-	var w, h int = 1400, 1200
+	var w, h int = 600, 400
 	var hw, hh float64 = float64(w / 2), float64(h / 2)
 	r := 200.0
 	θ := 2 * math.Pi / 3

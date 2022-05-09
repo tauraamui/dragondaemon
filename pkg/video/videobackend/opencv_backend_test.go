@@ -2,6 +2,7 @@ package videobackend
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"os"
@@ -173,6 +174,37 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	is.Equal(frame.mat.ToBytes()[:10], []byte{
 		0xe, 0x27, 0x48, 0xe, 0x27, 0x48, 0xe, 0x27, 0x48, 0xe,
 	})
+}
+
+func TestOpenCVFrameToBytesWritesInfoSuffix(t *testing.T) {
+	is := is.New(t)
+	frame := &openCVFrame{
+		mat: gocv.NewMatWithSize(150, 300, gocv.MatTypeCV16SC2),
+	}
+
+	fd := frame.ToBytes()
+	is.True(len(fd) > 8)
+	suffix := fd[len(fd)-8:]
+
+	is.Equal(int(suffix[6]), 0x13)
+	is.Equal(int(suffix[7]), 0x31)
+
+	rows := binary.LittleEndian.Uint16(suffix[:2])
+	is.Equal(int(rows), 150)
+
+	cols := binary.LittleEndian.Uint16(suffix[2:4])
+	is.Equal(int(cols), 300)
+
+	mtypeid := binary.LittleEndian.Uint16(suffix[4:6])
+	mattype := gocv.MatType(mtypeid)
+
+	is.Equal(mattype, gocv.MatTypeCV16SC2)
+
+	bknd := openCVBackend{}
+	frameFromBytes, err := bknd.NewFrameFromBytes(fd)
+	is.NoErr(err)
+	is.True(frameFromBytes != nil)
+	is.Equal(frameFromBytes.ToBytes(), fd)
 }
 
 func makeClips(rootPath string, seconds, fps, count int) ([]videoclip.Clip, error) {

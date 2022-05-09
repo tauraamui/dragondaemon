@@ -24,6 +24,10 @@ func (tvb testVideoBackend) NewFrame() videoframe.Frame {
 	return testVideoFrame{}
 }
 
+func (tvb testVideoBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
+	return testVideoFrame{}, nil
+}
+
 func (tvb testVideoBackend) NewWriter() videoclip.Writer {
 	return nil
 }
