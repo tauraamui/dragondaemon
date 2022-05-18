@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 
@@ -27,20 +28,49 @@ func (frame *openCVFrame) DataRef() interface{} {
 }
 
 func (frame *openCVFrame) ToBytes() []byte {
-	var r, c, mt uint16
-	// store the OpenCV matrix rows, columns and type
-	r = uint16(frame.mat.Rows())  // 2 bytes
-	c = uint16(frame.mat.Cols())  // 2 bytes
-	mt = uint16(frame.mat.Type()) // 2 byte
+	prefix := make([]byte, 12)
+	prefix[0] = 0x31
+	prefix[1] = 0x13
 
-	suffix := make([]byte, 8)
-	binary.LittleEndian.PutUint16(suffix[:2], r)
-	binary.LittleEndian.PutUint16(suffix[2:4], c)
-	binary.LittleEndian.PutUint16(suffix[4:6], mt)
-	suffix[6] = 0x13
-	suffix[7] = 0x31
+	frameMatData := frame.mat.ToBytes()
+	storeUint32(prefix, 2, len(frameMatData)) // store size of frame data
+	storeUint16(prefix, 6, frame.mat.Rows())
+	storeUint16(prefix, 8, frame.mat.Cols())
+	storeUint16(prefix, 10, int(frame.mat.Type()))
 
-	return append(frame.mat.ToBytes(), suffix...)
+	return append(prefix, frameMatData...)
+}
+
+func storeUint16(data []byte, index int, value int) {
+	if datal := len(data); index+2 > datal {
+		panic(fmt.Errorf("run out of space to store two bytes: MAX(%d), INDEX(%d), %d bytes left over", datal, index, datal-index))
+	}
+
+	binary.LittleEndian.PutUint16(data[index:index+2], uint16(value))
+}
+
+func storeUint32(data []byte, index int, value int) {
+	if datal := len(data); index+4 > datal {
+		panic(fmt.Errorf("run out of space to store four bytes: MAX(%d), INDEX(%d), %d bytes left over", datal, index, datal-index))
+	}
+
+	binary.LittleEndian.PutUint32(data[index:index+4], uint32(value))
+}
+
+func loadUint16(data []byte, index int) uint16 {
+	if datal := len(data); index+2 > datal {
+		panic(fmt.Errorf("run out of space to load two bytes: MAX(%d), INDEX(%d), %d bytes left over", datal, index, datal-index))
+	}
+
+	return binary.LittleEndian.Uint16(data[index : index+2])
+}
+
+func loadUint32(data []byte, index int) uint32 {
+	if datal := len(data); index+4 > datal {
+		panic(fmt.Errorf("run out of space to load four bytes: MAX(%d), INDEX(%d), %d bytes left over", datal, index, datal-index))
+	}
+
+	return binary.LittleEndian.Uint32(data[index : index+4])
 }
 
 func (frame *openCVFrame) Dimensions() videoframe.Dimensions {
@@ -70,32 +100,26 @@ func (b *openCVBackend) NewFrame() videoframe.Frame {
 }
 
 func (b *openCVBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
-	if len(d) < 8 {
-		return nil, errors.New("OpenCV frame expects at least 8 bytes to load")
+	if len(d) < 12 { // an encoded OpenCV frame should contain a prefix of 12 bytes so...
+		return nil, errors.New("OpenCV frame expects at least 12 bytes to load")
 	}
 
-	dl := len(d)
-	suffix := d[dl-8:]
-
-	if int(suffix[6]) != 0x13 || int(suffix[7]) != 0x31 {
-		return nil, errors.New("OpenCV frame bytes missing trailing suffix")
+	prefix := d[:12]
+	if int(prefix[0]) != 0x31 || int(prefix[1]) != 0x13 {
+		return nil, errors.New("OpenCV frame bytes missing leading prefix")
 	}
 
-	r := binary.LittleEndian.Uint16(suffix[:2])
-	c := binary.LittleEndian.Uint16(suffix[2:4])
-	mtypeid := binary.LittleEndian.Uint16(suffix[4:6])
-	mattype := gocv.MatType(mtypeid)
+	s := loadUint32(prefix, 2)
+	r := loadUint16(prefix, 6)
+	c := loadUint16(prefix, 8)
+	mattype := gocv.MatType(loadUint16(prefix, 10))
+	frameMatData := d[12:s]
 
-	if dl-8 < 8 {
-		d = []byte{}
-	} else {
-		d = d[:dl-8]
-	}
-
-	mat, err := gocv.NewMatFromBytes(int(r), int(c), mattype, d)
+	mat, err := gocv.NewMatFromBytes(int(r), int(c), mattype, frameMatData)
 	if err != nil {
 		return nil, err
 	}
+
 	return &openCVFrame{mat: mat}, nil
 }
 

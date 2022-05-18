@@ -2,7 +2,6 @@ package videobackend
 
 import (
 	"context"
-	"errors"
 	"image"
 	"image/color"
 	"image/draw"
@@ -32,7 +31,8 @@ func (b *mockVideoBackend) NewFrame() videoframe.Frame {
 }
 
 func (b *mockVideoBackend) NewFrameFromBytes(d []byte) (videoframe.Frame, error) {
-	return nil, errors.New("not yet implemented")
+	openCVBackend := openCVBackend{}
+	return openCVBackend.NewFrameFromBytes(d)
 }
 
 func (b *mockVideoBackend) NewWriter() videoclip.Writer {

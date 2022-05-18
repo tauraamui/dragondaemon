@@ -2,7 +2,6 @@ package videobackend
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"os"
@@ -176,35 +175,57 @@ func TestOpenAndReadFromVideoStreamReadsToInternalFrameData(t *testing.T) {
 	})
 }
 
-func TestOpenCVFrameToBytesWritesInfoSuffix(t *testing.T) {
+func TestOpenCVFrameToBytesWritesInfoPrefix(t *testing.T) {
 	is := is.New(t)
+
 	frame := &openCVFrame{
 		mat: gocv.NewMatWithSize(150, 300, gocv.MatTypeCV16SC2),
 	}
+	frame.mat.AddFloat(43.556)
 
 	fd := frame.ToBytes()
-	is.True(len(fd) > 8)
-	suffix := fd[len(fd)-8:]
+	prefix := fd[:12]
 
-	is.Equal(int(suffix[6]), 0x13)
-	is.Equal(int(suffix[7]), 0x31)
+	is.Equal(int(prefix[0]), 0x31)
+	is.Equal(int(prefix[1]), 0x13)
 
-	rows := binary.LittleEndian.Uint16(suffix[:2])
-	is.Equal(int(rows), 150)
-
-	cols := binary.LittleEndian.Uint16(suffix[2:4])
-	is.Equal(int(cols), 300)
-
-	mtypeid := binary.LittleEndian.Uint16(suffix[4:6])
-	mattype := gocv.MatType(mtypeid)
-
-	is.Equal(mattype, gocv.MatTypeCV16SC2)
+	is.Equal(int(loadUint32(prefix, 2)), 180000)
+	is.Equal(int(loadUint16(prefix, 6)), 150)
+	is.Equal(int(loadUint16(prefix, 8)), 300)
+	is.Equal(gocv.MatType(int(loadUint16(prefix, 10))), gocv.MatTypeCV16SC2)
 
 	bknd := openCVBackend{}
 	frameFromBytes, err := bknd.NewFrameFromBytes(fd)
 	is.NoErr(err)
 	is.True(frameFromBytes != nil)
-	is.Equal(frameFromBytes.ToBytes(), fd)
+}
+
+func TestOpenCVFrameToBytesConvertsCorrectly(t *testing.T) {
+	is := is.New(t)
+	bknd := openCVBackend{}
+
+	frame := &openCVFrame{
+		mat: gocv.NewMatWithSize(150, 300, gocv.MatTypeCV16SC2),
+	}
+	frame.mat.AddFloat(43.556)
+
+	fd := frame.ToBytes()
+
+	newSeparateFrame, err := bknd.NewFrameFromBytes(fd)
+	is.NoErr(err)
+	is.True(newSeparateFrame != nil)
+
+	is.Equal(newSeparateFrame.Dimensions(), videoframe.Dimensions{W: 300, H: 150})
+
+	if m, ok := newSeparateFrame.DataRef().(*gocv.Mat); ok {
+		frameMatBytes := frame.mat.ToBytes()
+		mBytes := m.ToBytes()
+		is.Equal(len(frameMatBytes), len(mBytes))
+		for i := 0; i < len(frameMatBytes); i++ {
+			fmt.Printf("i = %d\n", i)
+			is.Equal(frameMatBytes[i], mBytes[i])
+		}
+	}
 }
 
 func makeClips(rootPath string, seconds, fps, count int) ([]videoclip.Clip, error) {
