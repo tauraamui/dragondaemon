@@ -23,6 +23,9 @@ Connect to multiple RTSP based streams (IP cameras) and save timestamped clips t
 }
 ```
 
+### Time series video documentation
+Found [here](https://github.com/tauraamui/dragondaemon/blob/docs/define-branch-for-tvs/time-series-video.md)
+
 ## Getting Started
 
 At this time this project will need to be built before being able to run.
